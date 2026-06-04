@@ -1,0 +1,210 @@
+---
+description: NestJS Backend Rules
+globs:
+alwaysApply: true
+---
+
+### Project Stack
+- NestJS with TypeScript (strict mode)
+- Prisma ORM for all database operations
+- Zod or class-validator + class-transformer for validation
+- Winston Logger from src/common/logger
+- PNPM as package manager
+- JWT for authentication
+- Passport.js for auth strategies
+
+### Strict Type Safety & Best Practices
+- **No `any`**: Never use the `any` type. Use specific interfaces, types, or `unknown`.
+- **Dependency Injection**: When extending base classes (e.g., `BasePaginationService`), always inject required dependencies in the child class and pass them to `super()`. Never use `super(null as any)`.
+- **Async/Await**: Every `async` method must contain at least one `await`. If a method only returns a promise, return it directly and remove the `async` keyword.
+- **Prisma Types**: 
+  - Import models directly from `@prisma/client` (e.g., `import { User } from '@prisma/client'`).
+  - Avoid `Prisma.ModelGetPayload<{}>` and the unsafe `{}` type.
+  - Use `Prisma.ModelGetPayload<{ include: { ... } }>` only for complex relations, otherwise prefer the direct model type.
+
+### Architecture
+- Follow Clean Architecture principles:
+  Controller → Use Case → Service → Repository → Database
+- Strict separation of layers — no cross-layer imports
+- Each module must be self-contained (NestJS module pattern)
+- Dependency injection for all services and repositories
+- Domain logic must never depend on frameworks or infrastructure
+
+### Module Structure
+Each feature module must follow this structure:
+  feature/
+  ├── controllers/        # HTTP handlers only — no business logic
+  ├── use-cases/          # One class per business operation
+  ├── services/           # Domain services, complex logic
+  ├── repositories/       # Prisma queries, data access
+  ├── dto/                # Request/Response DTOs
+  ├── interfaces/         # TypeScript interfaces
+  ├── entities/           # Domain entities
+  └── feature.module.ts   # NestJS module declaration
+
+### File Naming Convention
+| File | When to use |
+|---|---|
+| *.controller.ts | Route handlers, HTTP layer only |
+| *.use-case.ts | Single business operation (CreateUserUseCase) |
+| *.service.ts | Domain logic shared between use-cases |
+| *.repository.ts | Prisma queries, data source abstraction |
+| *.dto.ts | Request/Response Data Transfer Objects |
+| *.entity.ts | Domain objects with business logic |
+| *.interface.ts | TypeScript contracts and abstractions |
+| *.types.ts | Enums, utility types |
+| *.schema.ts | Zod validation schemas |
+| *.constants.ts | Fixed values, config constants |
+| *.guard.ts | NestJS guards (auth, roles) |
+| *.decorator.ts | Custom decorators |
+| *.pipe.ts | Validation/transformation pipes |
+| *.interceptor.ts | Logging, transform response interceptors |
+| *.filter.ts | Global exception filters |
+| *.config.ts | Module configuration |
+| *.factory.ts | Object/data generation factories |
+
+### Controllers
+- Controllers handle HTTP only — no business logic allowed
+- One controller per resource (UsersController, AuthController)
+- Always use typed DTOs for request body and response
+- Always use appropriate HTTP decorators (@Get, @Post, @Put, @Delete, @Patch)
+- Document all endpoints with Swagger (@ApiTags, @ApiOperation, @ApiResponse)
+- Use guards for protected routes (@UseGuards(JwtAuthGuard))
+- Example:
+  @Post()
+  @ApiOperation({ summary: 'Create user' })
+  async create(@Body() dto: CreateUserDto): Promise<UserResponseDto> {
+    return this.createUserUseCase.execute(dto)
+  }
+
+### Use Cases
+- One class = one business operation (Single Responsibility)
+- Name: VerbNounUseCase (CreateUserUseCase, DeletePostUseCase)
+- Must have a single public method: execute(dto): Promise<Result>
+- Use Cases orchestrate services and repositories — no direct Prisma calls
+- Example:
+  @Injectable()
+  export class CreateUserUseCase {
+    constructor(private readonly userRepository: UserRepository) {}
+    async execute(dto: CreateUserDto): Promise<UserEntity> { ... }
+  }
+
+### Repositories
+- All database queries go through repositories only — never Prisma in controllers/use-cases
+- Always use Prisma ORM — no raw SQL unless absolutely necessary
+- Abstract repositories behind interfaces for testability:
+  abstract class IUserRepository { abstract findById(id: string): Promise<UserEntity | null> }
+- Use Prisma transactions for multi-step operations:
+  prisma.$transaction([...])
+- Always handle Prisma errors and map them to domain errors
+
+### DTOs
+- Use class-validator decorators for all input DTOs:
+  @IsString() @IsEmail() @IsNotEmpty() @MinLength(8)
+- Use class-transformer for serialization:
+  @Exclude() for sensitive fields (password, tokens)
+  @Expose() for explicitly allowed fields
+- Separate Request DTOs and Response DTOs
+- Never return raw Prisma entities from controllers
+
+### Validation
+- Apply global ValidationPipe in main.ts:
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }))
+- whitelist: true — strips unknown properties automatically
+- forbidNonWhitelisted: true — throws on unknown properties
+- transform: true — auto-transforms primitives to correct types
+- Validate all env variables at startup with Joi or Zod
+
+### Error Handling
+- Use NestJS built-in exceptions: NotFoundException, BadRequestException, UnauthorizedException, ForbiddenException
+- Create a global exception filter for unified error response shape:
+  { statusCode, message, code, timestamp, path }
+- Never expose internal error details or stack traces in production
+- Use typed Result pattern in use-cases:
+  type Result<T> = { success: true; data: T } | { success: false; error: AppError }
+- Map Prisma errors to domain exceptions (P2002 → ConflictException)
+
+### Authentication & Authorization
+- Use JWT access + refresh token strategy
+- Access token: short TTL (15min), Refresh token: long TTL (7d), stored httpOnly cookie
+- Protect all private routes with JwtAuthGuard
+- Use RBAC via custom RolesGuard + @Roles() decorator
+- Never store plain text passwords — always bcrypt (salt rounds >= 12)
+- Rotate refresh tokens on each use (refresh token rotation)
+- Invalidate all tokens on logout (token blacklist or DB flag)
+
+### Security
+- Apply Helmet middleware: app.use(helmet())
+- Apply rate limiting: ThrottlerModule (e.g. 100 req/min per IP)
+- Enable CORS with explicit whitelist of allowed origins
+- Validate all inputs — never trust client data
+- Use Prisma parameterized queries always — never string-concatenated SQL
+- Never log sensitive data (passwords, tokens, PII)
+- Apply @UseInterceptors(ClassSerializerInterceptor) globally to prevent data leaks
+- Regularly audit dependencies: pnpm audit
+- Use CSRF protection if using cookie-based auth
+
+### Environment Variables
+- All env vars validated at startup via Joi/Zod in src/config/env.validation.ts
+- Access env only through ConfigService — never process.env directly:
+  constructor(private readonly config: ConfigService) {}
+  this.config.get<string>('DATABASE_URL')
+- Never commit .env files — use .env.example with all required keys
+
+### Logging
+- Always use Winston logger — never use console.log in production:
+  import { logger } from 'src/common/logger'
+  logger.info('User created', { userId, email })
+  logger.error('Database error', { error, context: 'UserRepository' })
+- Log all incoming requests via LoggingInterceptor
+- Log all unhandled exceptions via GlobalExceptionFilter
+- Log levels: error / warn / info / debug
+- Never log passwords, tokens, or PII
+- Use function Console only in Development envirement
+  Console.log("только в dev");
+  Console.warn("предупреждение");
+  Console.error("ошибка");
+
+### Performance
+- Use pagination for all list endpoints (cursor or offset-based)
+- Use Prisma select to fetch only required fields — never select *
+- Use database indexes for frequently queried fields
+- Use NestJS caching (@CacheKey, @CacheTTL) for expensive read operations
+- Use Bull/BullMQ for heavy background tasks (emails, exports, processing)
+- Prefer async/await — avoid blocking operations in event loop
+
+### API Design
+- Follow RESTful conventions:
+  GET /users — list, GET /users/:id — single
+  POST /users — create, PUT /users/:id — full update
+  PATCH /users/:id — partial update, DELETE /users/:id — delete
+- API versioning: /api/v1/...
+- All responses must follow consistent shape:
+  { data, meta?, message?, statusCode }
+- Use Swagger for full API documentation (SwaggerModule.setup)
+- Use @ApiProperty() on all DTO fields
+
+### Code Quality
+- All comments must be in English
+- Add JSDoc comments for all public methods and classes
+- Document complex business logic and algorithms
+- No ESLint rule disabling (no eslint-disable comments)
+- No TypeScript any — use unknown with type guards
+- Prefer const over let; never use var
+- Use path aliases: @/ = src/
+
+### Testing TEMPORARY OFF, dont think about it.
+- Unit tests for use-cases and services (Jest)
+- Integration tests for repositories with test database
+- E2E tests for critical API flows (Supertest + Jest)
+- Test files: *.spec.ts placed next to the module
+- Mock all external dependencies in unit tests
+- Minimum coverage for business logic: 80%
+- Use in-memory SQLite or test containers for DB tests
+
+### Documentation
+- Store all .md documentation files in /docs folder
+- Do not create separate docs for minor changes
+- Create a prompts.md file in /docs with all task history
+- Update documentation after every significant feature
+- Document all public APIs, DTOs and use-cases

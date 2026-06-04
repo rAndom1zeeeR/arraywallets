@@ -1,0 +1,153 @@
+---
+description: Next.js Frontend Rules
+globs:
+alwaysApply: true
+---
+
+### Project Stack
+- Next.js App Router with Server Side Rendering
+- TypeScript (strict mode)
+- Tailwind CSS + Shadcn/ui components
+- Prisma ORM for database queries
+- Zod for validation
+- Winston Logger from @/common/logger
+- Shared API client from @/shared/infrastructure/api/client
+- PNPM as package manager
+
+### Strict Type Safety & Best Practices
+- **No `any`**: Never use the `any` type. Use specific interfaces, types, or `unknown`.
+- **Dependency Injection**: When extending base classes, always inject required dependencies in the child class and pass them to `super()`. Never use `super(null as any)`.
+- **Async/Await**: Every `async` method must contain at least one `await`. If a method only returns a promise, return it directly and remove the `async` keyword.
+- **Prisma Types**: 
+  - Import models directly from `@prisma/client` (e.g., `import { User } from '@prisma/client'`).
+  - Avoid `Prisma.ModelGetPayload<{}>` and the unsafe `{}` type.
+  - Use `Prisma.ModelGetPayload<{ include: { ... } }>` only for complex relations, otherwise prefer the direct model type.
+
+### Architecture
+- Layered Clean Architecture by domain module:
+  app/ → modules/{wallet,swap,jetton}/ → shared/
+- Each module contains co-located layers:
+  domain/ → application/ → api/ → presentation/
+- shared/ holds cross-cutting code:
+  config/, constants/, lib/ (pure utils), infrastructure/ (prisma, tonapi, sync)
+- Import direction: presentation → application → domain; infrastructure only from application/api
+- Prefer React Server Components (RSC) by default
+- Use 'use client' only when Web API or interactivity is strictly required
+- Wrap all client components in Suspense with meaningful fallback
+- Use dynamic import for non-critical/heavy components
+
+### File Naming Convention
+| File | When to use |
+|---|---|
+| *.interface.ts | Entity interfaces, API response types |
+| *.types.ts | Enums, complex types, utility types |
+| *.service.ts | API layer, backend communication |
+| *.mock.ts | Mock data, test fixtures |
+| *.constants.ts | Fixed values, config constants |
+| *.utils.ts | Pure helper functions |
+| *.schema.ts | Zod/Yup validation schemas |
+| *.adapter.ts | Data transformation logic |
+| *.use-case.ts | Business scenarios (apply flow) |
+| *.entity.ts | Domain objects and logic |
+| *.repository.ts | Data source abstraction (when needed) |
+| *.config.ts | App/module configuration |
+| *.dto.ts | Data Transfer Objects (API contracts) |
+
+### Component Rules
+- One component per file
+- Component file name = PascalCase (e.g. UserCard.tsx)
+- All utility/helper files = kebab-case
+- Export components as named exports, not default
+- Props interface must be defined above the component:
+  interface UserCardProps { ... }
+
+### Styling
+- Use Tailwind CSS utility classes only — no inline styles
+- Primary color theme: sky-blue (sky-500 / sky-600)
+- Support both light and dark themes via Tailwind dark: modifier
+- Use cn() utility from @/shared/lib/utils for conditional classes
+- Prefer Shadcn/ui primitives before writing custom UI
+
+### Performance
+- Prefer server components — avoid unnecessary client-side state
+- Minimize useEffect and useState usage
+- Use Next.js Image component for all images:
+  - WebP format preferred
+  - Always include width and height
+  - Use lazy loading (default) unless above the fold
+- Use Next.js Link component for all internal navigation
+- Prefetch critical routes
+- Use loading.tsx and error.tsx in each route segment
+
+### Data Fetching
+- Fetch data in Server Components using async/await directly
+- Never fetch data in client components unless unavoidable
+- Use React cache() for deduplicating server-side requests
+- Always validate API responses with Zod schemas
+- Handle loading and error states explicitly
+- Use SWR or React Query only for real-time/client-side mutations
+
+### Environment Variables
+- Never access process.env directly in components
+- All env vars must be validated at startup via Zod in src/config/env.ts:
+  export const env = z.object({ DATABASE_URL: z.string().url() }).parse(process.env)
+- Client-side env vars must be prefixed with NEXT_PUBLIC_
+- Never expose sensitive values to client components
+
+### Routing & Links
+- All external links must have: target="_blank" rel="noopener noreferrer"
+- Use Next.js Link for internal navigation
+- Dynamic routes must have generateStaticParams when applicable
+- Use parallel routes and intercepting routes for modals/drawers
+
+### Error Handling
+- Every page must have error.tsx and not-found.tsx boundaries
+- Use typed Result pattern for service layer:
+  type Result<T> = { success: true; data: T } | { success: false; error: string }
+- Never throw plain strings — always throw Error instances
+- Log all errors via Winston: import { logger } from '@/common/logger'
+
+### Security
+- Validate ALL user input with Zod before processing
+- Sanitize output to prevent XSS (never use dangerouslySetInnerHTML without sanitization)
+- Use Next.js middleware for authentication guards on protected routes
+- Never store sensitive data (tokens, secrets) in localStorage or cookies without httpOnly flag
+- Use CSRF protection for all mutations
+- Apply Content Security Policy headers via next.config.ts
+- Regularly audit dependencies: pnpm audit
+
+### API Client
+- Always use shared API client for all HTTP requests:
+  import { apiClient } from '@/shared/infrastructure/api/client'
+- Never use fetch/axios directly in components or features
+- All API responses must match typed interfaces
+
+### Logging
+- Always use Winston logger — never use console.log in production code:
+  import { logger } from '@/common/logger'
+  logger.info('User signed in', { userId })
+  logger.error('Failed to fetch data', { error, context })
+- Log levels: error / warn / info / debug
+
+### Code Quality
+- All comments must be in English
+- Add JSDoc comments for all public functions and hooks
+- Document complex business logic and algorithms
+- No ESLint rule disabling (no eslint-disable comments)
+- No TypeScript any — use unknown with type guards
+- Prefer const over let; never use var
+- Use path aliases: @/ = src/
+
+### Testing
+- Unit tests for utils, use-cases, adapters (Vitest)
+- Component tests for critical UI (React Testing Library)
+- E2E tests for critical user flows (Playwright)
+- Test files: *.spec.ts | *.test.ts placed next to the module
+- Minimum coverage for business logic: 80%
+
+### Documentation
+- Store all .md documentation files in /docs folder
+- Do not create separate docs for minor changes
+- Create a prompts.md file in /docs with all task history
+- Update documentation after every significant feature
+- Document all utility functions and helpers

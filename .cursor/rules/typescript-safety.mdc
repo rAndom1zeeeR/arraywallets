@@ -1,0 +1,69 @@
+---
+description: Enforces strict TypeScript safety, correct async/await usage, and Prisma/NestJS best practices to avoid common errors.
+globs: **/*.ts, **/*.tsx
+alwaysApply: true
+---
+
+# TypeScript & Framework Safety Rules
+
+### 1. No `any` Policy
+- **Rule**: Never use the `any` type.
+- **Action**: Use specific interfaces, types, or `unknown` with type guards.
+- **Why**: `any` bypasses type checking and leads to runtime crashes.
+
+### 2. Dependency Injection & Base Classes
+- **Rule**: When extending a class that requires dependencies (e.g., `BasePaginationService` requiring `PrismaService`), ALWAYS inject those dependencies in the child class constructor.
+- **Action**: Pass the real service instance to `super()`. NEVER use `super(null as any)` or `super(undefined as any)`.
+- **Example**:
+  ```typescript
+  // ❌ BAD
+  constructor(private readonly repo: Repo) {
+    super(null as any);
+  }
+
+  // ✅ GOOD
+  constructor(private readonly repo: Repo, prisma: PrismaService) {
+    super(prisma);
+  }
+  ```
+
+### 3. Async/Await Integrity
+- **Rule**: Every method marked as `async` MUST contain at least one `await` expression.
+- **Action**: 
+  - If you need to wait for a promise, use `await`.
+  - If you are just returning a promise without processing its result, remove the `async` keyword and return the promise directly.
+- **Example**:
+  ```typescript
+  // ❌ BAD
+  async getData() {
+    return this.prisma.user.findMany(); // Missing await
+  }
+
+  // ✅ GOOD
+  async getData() {
+    return await this.prisma.user.findMany();
+  }
+  // OR
+  getData() {
+    return this.prisma.user.findMany();
+  }
+  ```
+
+### 4. Prisma Model Typing
+- **Rule**: Avoid generic or empty Prisma payload types.
+- **Action**: 
+  - Prefer importing models directly from `@prisma/client` (e.g., `import { User } from "@prisma/client"`).
+  - NEVER use `Prisma.ModelGetPayload<{}>` or the unsafe `{}` (empty object) type.
+  - If a truly empty object type is needed, use `Record<string, never>`.
+- **Example**:
+  ```typescript
+  // ❌ BAD
+  async find(): Promise<Prisma.UserGetPayload<{}>> { ... }
+
+  // ✅ GOOD
+  async find(): Promise<User> { ... }
+  ```
+
+### 5. Type Safety in Repositories
+- **Rule**: Avoid `as any` or `as any[]` when returning data from Prisma.
+- **Action**: Define explicit return types for methods that include relations using `Prisma.ModelGetPayload<{ include: ... }>`.

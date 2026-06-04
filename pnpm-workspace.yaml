@@ -1,0 +1,21 @@
+packages:
+  - .
+  - ../tonapi-js/packages/*
+overrides:
+  "@ton/core": ^0.63.1
+allowBuilds:
+  "@prisma/engines": true
+  prisma: true
+  core-js-pure: true
+  esbuild: true
+  msw: true
+  sharp: true
+  unrs-resolver: true
+ignoredBuiltDependencies:
+  - sharp
+  - unrs-resolver
+minimumReleaseAgeExclude:
+  - "@random1ze/ton-api-adapter@0.4.1"
+  - "@random1ze/ton-api-client@0.5.0-alpha.9"
+  # transitive via @ton/ton — fresh release blocks frozen Docker install
+  - axios@1.17.0
