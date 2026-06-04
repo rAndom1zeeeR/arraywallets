@@ -2,7 +2,7 @@
 CREATE TYPE "ChainJettonVerification" AS ENUM ('none', 'whitelist', 'graylist', 'blacklist');
 
 -- CreateEnum
-CREATE TYPE "ChainActionType" AS ENUM ('TON_TRANSFER', 'JETTON_TRANSFER', 'JETTON_SWAP', 'JETTON_BURN', 'JETTON_MINT', 'SMART_CONTRACT_EXEC', 'DEPOSIT_STAKE', 'WITHDRAW_STAKE', 'NFT_TRANSFER', 'NFT_MINT', 'NFT_SALE', 'SUBSCRIBE', 'UNSUBSCRIBE', 'AUCTION_BID', 'DOMAIN_RENEW', 'UNKNOWN');
+CREATE TYPE "ChainActionType" AS ENUM ('TON_TRANSFER', 'JETTON_TRANSFER', 'FLAWED_JETTON_TRANSFER', 'JETTON_SWAP', 'JETTON_BURN', 'JETTON_MINT', 'SMART_CONTRACT_EXEC', 'DEPOSIT_STAKE', 'WITHDRAW_STAKE', 'NFT_TRANSFER', 'NFT_MINT', 'NFT_SALE', 'SUBSCRIBE', 'UNSUBSCRIBE', 'AUCTION_BID', 'DOMAIN_RENEW', 'UNKNOWN');
 
 -- CreateEnum
 CREATE TYPE "ChainActionStatus" AS ENUM ('success', 'failed', 'pending');
@@ -23,6 +23,8 @@ CREATE TABLE "chain_address" (
     "is_wallet" BOOLEAN NOT NULL DEFAULT false,
     "first_seen_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "last_seen_at" TIMESTAMPTZ(3) NOT NULL,
+    "events_count" INTEGER NOT NULL DEFAULT 0,
+    "actions_count" INTEGER NOT NULL DEFAULT 0,
 
     CONSTRAINT "chain_address_pkey" PRIMARY KEY ("id")
 );
@@ -52,6 +54,7 @@ CREATE TABLE "chain_event" (
     "is_scam" BOOLEAN NOT NULL DEFAULT false,
     "in_progress" BOOLEAN NOT NULL DEFAULT false,
     "extra" BIGINT NOT NULL,
+    "raw_data" JSONB,
     "created_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "chain_event_pkey" PRIMARY KEY ("id")

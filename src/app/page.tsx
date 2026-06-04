@@ -8,6 +8,8 @@ import {
 import { resolveDisplayDetails } from "@/features/sync-events/lib/display-details.utils";
 import { TonviewerAccountLink } from "@/features/sync-events/components/TonviewerAccountLink";
 import { TonviewerTransactionLink } from "@/features/sync-events/components/TonviewerTransactionLink";
+import { TransactionRawDetailsButton } from "@/features/sync-events/components/TransactionRawDetailsButton";
+import { buildTransactionRawDetailsPayload } from "@/features/sync-events/lib/raw-details.utils";
 import { getWalletStats } from "@/features/sync-events/model/sync-service";
 import {
   normalizeWalletAddress,
@@ -201,9 +203,9 @@ export default async function Home({ searchParams }: PageProps) {
               <span>
                 Status:{" "}
                 <span className={`font-medium ${syncState.status === ChainSyncStatus.COMPLETED ? "text-green-600" :
-                    syncState.status === ChainSyncStatus.ERROR ? "text-red-600" :
-                      syncState.status === ChainSyncStatus.SYNCING ? "text-blue-600" :
-                        "text-gray-600"
+                  syncState.status === ChainSyncStatus.ERROR ? "text-red-600" :
+                    syncState.status === ChainSyncStatus.SYNCING ? "text-blue-600" :
+                      "text-gray-600"
                   }`}>
                   {syncState.status}
                 </span>
@@ -248,6 +250,7 @@ export default async function Home({ searchParams }: PageProps) {
                 <th className="px-3 py-2 text-left text-sm font-medium">From / To</th>
                 <th className="px-3 py-2 text-left text-sm font-medium">Amount</th>
                 <th className="px-3 py-2 text-left text-sm font-medium">Details</th>
+                <th className="px-3 py-2 text-left text-sm font-medium w-24">Raw</th>
               </tr>
             </thead>
             <tbody>
@@ -256,99 +259,107 @@ export default async function Home({ searchParams }: PageProps) {
                   const detailsText = getActionDetailsText(tx);
 
                   return (
-                  <tr
-                    key={`${event.id}-${tx.id}`}
-                    className={`border-b hover:bg-gray-50 dark:hover:bg-gray-900 ${txIndex === 0 ? "" : "border-t border-dashed"
-                      }`}
-                  >
-                    {txIndex === 0 && (
-                      <td className="px-3 py-2 text-sm" rowSpan={event.actions.length}>
-                        <div className="font-medium">
-                          {new Date(event.timestamp).toLocaleDateString()}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {new Date(event.timestamp).toLocaleTimeString()}
-                        </div>
-                        <div className="mt-1">
-                          <TonviewerTransactionLink
-                            tonEventId={event.tonEventId}
-                            rawData={event.rawData}
-                          />
-                        </div>
-                      </td>
-                    )}
-                    <td className="px-3 py-2 text-sm">
-                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${tx.type === "TON_TRANSFER" ? "bg-blue-100 text-blue-800" :
+                    <tr
+                      key={`${event.id}-${tx.id}`}
+                      className={`border-b hover:bg-gray-50 dark:hover:bg-gray-900 ${txIndex === 0 ? "" : "border-t border-dashed"
+                        }`}
+                    >
+                      {txIndex === 0 && (
+                        <td className="px-3 py-2 text-sm" rowSpan={event.actions.length}>
+                          <div className="font-medium">
+                            {new Date(event.timestamp).toLocaleDateString()}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {new Date(event.timestamp).toLocaleTimeString()}
+                          </div>
+                          <div className="mt-1">
+                            <TonviewerTransactionLink
+                              tonEventId={event.tonEventId}
+                              rawData={event.rawData}
+                            />
+                          </div>
+                        </td>
+                      )}
+                      <td className="px-3 py-2 text-sm">
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${tx.type === "TON_TRANSFER" ? "bg-blue-100 text-blue-800" :
                           tx.type === "JETTON_TRANSFER" ? "bg-purple-100 text-purple-800" :
                             tx.type === "FLAWED_JETTON_TRANSFER" ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200" :
-                            tx.type === "JETTON_SWAP" ? "bg-orange-100 text-orange-800" :
-                              tx.type === "JETTON_BURN" ? "bg-red-100 text-red-800" :
-                                tx.type === "JETTON_MINT" ? "bg-green-100 text-green-800" :
-                                  tx.type === "DEPOSIT_STAKE" ? "bg-teal-100 text-teal-800" :
-                                    tx.type === "WITHDRAW_STAKE" ? "bg-cyan-100 text-cyan-800" :
-                                      tx.type === "SMART_CONTRACT_EXEC" ? "bg-gray-100 text-gray-800" :
-                                        "bg-gray-100 text-gray-800"
-                        }`}>
-                        {tx.type.replace(/_/g, " ")}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2 text-sm">
-                      {getDirectionBadge(tx.direction)}
-                    </td>
-                    <td className="px-3 py-2 text-sm">
-                      <div className="space-y-1">
-                        {tx.from && (
-                          <div className="text-xs">
-                            <span className="text-gray-500">From: </span>
-                            <TonviewerAccountLink
-                              address={tx.from.rawAddress}
-                              label={formatAddress(tx.from.rawAddress, 12)}
-                            />
-                            {tx.from.name && (
-                              <span className="ml-1 text-gray-600">({tx.from.name})</span>
-                            )}
-                          </div>
-                        )}
-                        {tx.to && (
-                          <div className="text-xs">
-                            <span className="text-gray-500">To: </span>
-                            <TonviewerAccountLink
-                              address={tx.to.rawAddress}
-                              label={formatAddress(tx.to.rawAddress, 12)}
-                            />
-                            {tx.to.name && (
-                              <span className="ml-1 text-gray-600">({tx.to.name})</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-3 py-2 text-sm">
-                      {tx.displayAmount ? (
-                        <span className={`font-medium ${tx.direction === "INCOMING" ? "text-green-600" :
+                              tx.type === "JETTON_SWAP" ? "bg-orange-100 text-orange-800" :
+                                tx.type === "JETTON_BURN" ? "bg-red-100 text-red-800" :
+                                  tx.type === "JETTON_MINT" ? "bg-green-100 text-green-800" :
+                                    tx.type === "DEPOSIT_STAKE" ? "bg-teal-100 text-teal-800" :
+                                      tx.type === "WITHDRAW_STAKE" ? "bg-cyan-100 text-cyan-800" :
+                                        tx.type === "SMART_CONTRACT_EXEC" ? "bg-gray-100 text-gray-800" :
+                                          "bg-gray-100 text-gray-800"
+                          }`}>
+                          {tx.type.replace(/_/g, " ")}
+                        </span>
+                      </td>
+                      <td className="px-3 py-2 text-sm">
+                        {getDirectionBadge(tx.direction)}
+                      </td>
+                      <td className="px-3 py-2 text-sm">
+                        <div className="space-y-1">
+                          {tx.from && (
+                            <div className="text-xs">
+                              <span className="text-gray-500">From: </span>
+                              <TonviewerAccountLink
+                                address={tx.from.rawAddress}
+                                label={formatAddress(tx.from.rawAddress, 12)}
+                              />
+                              {tx.from.name && (
+                                <span className="ml-1 text-gray-600">({tx.from.name})</span>
+                              )}
+                            </div>
+                          )}
+                          {tx.to && (
+                            <div className="text-xs">
+                              <span className="text-gray-500">To: </span>
+                              <TonviewerAccountLink
+                                address={tx.to.rawAddress}
+                                label={formatAddress(tx.to.rawAddress, 12)}
+                              />
+                              {tx.to.name && (
+                                <span className="ml-1 text-gray-600">({tx.to.name})</span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-3 py-2 text-sm">
+                        {tx.displayAmount ? (
+                          <span className={`font-medium ${tx.direction === "INCOMING" ? "text-green-600" :
                             tx.direction === "OUTGOING" ? "text-red-600" :
                               ""
-                          }`}>
-                          {tx.direction === "INCOMING" ? "+" : tx.direction === "OUTGOING" ? "-" : ""}
-                          {tx.displayAmount}
-                        </span>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                    <td className="px-3 py-2 text-sm">
-                      {detailsText ? (
-                        <div
-                          className="max-w-xs truncate text-xs text-gray-600 dark:text-gray-400"
-                          title={detailsText}
-                        >
-                          {detailsText}
-                        </div>
-                      ) : (
-                        <span className="text-gray-400">—</span>
-                      )}
-                    </td>
-                  </tr>
+                            }`}>
+                            {tx.direction === "INCOMING" ? "+" : tx.direction === "OUTGOING" ? "-" : ""}
+                            {tx.displayAmount}
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-sm">
+                        {detailsText ? (
+                          <div
+                            className="max-w-xs truncate text-xs text-gray-600 dark:text-gray-400"
+                            title={detailsText}
+                          >
+                            {detailsText}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-sm">
+                        <TransactionRawDetailsButton
+                          details={buildTransactionRawDetailsPayload({
+                            event,
+                            action: tx,
+                          })}
+                        />
+                      </td>
+                    </tr>
                   );
                 })
               ))}
