@@ -1,24 +1,11 @@
 import { randomUUID } from "node:crypto";
-import { AccountEvent } from "@/shared/api/ton-api";
-import {
-  ChainJettonVerification,
-  ChainSyncStatus,
-  Prisma,
-} from "@generated/prisma/client";
+import { AccountEvent } from "@/shared/api/tonapi";
+import { ChainJettonVerification, ChainSyncStatus, Prisma } from "@/shared/api/prisma-client";
 import { prisma } from "@/shared/api/prisma";
-import {
-  toRawTonAddress,
-  getWalletAddressVariants,
-  collectMatchingWalletAddressKeys,
-} from "@/shared/lib/ton-address";
+import { toRawTonAddress, getWalletAddressVariants, collectMatchingWalletAddressKeys } from "@/shared/lib/ton-address";
 import { serializeForJson } from "@/shared/lib/serialize-json";
 import { isSyncCancelledError, throwIfAborted } from "@/shared/lib/sync-abort";
-import {
-  transformAccountEvent,
-  TransformedEvent,
-  TransformedAddress,
-  TransformedJetton,
-} from "./transformer";
+import { transformAccountEvent, TransformedEvent, TransformedAddress, TransformedJetton } from "./transformer";
 
 /** Matches TonAPI page size (`limit: 100`). */
 export const SYNC_BATCH_SIZE = 100;
@@ -58,7 +45,7 @@ async function resolveAddressIds(
     return idByRaw;
   }
 
-  const rawAddresses = addresses.map((a) => a.raw);
+  const rawAddresses = addresses.map(a => a.raw);
   const existing = await tx.chainAddress.findMany({
     where: { rawAddress: { in: rawAddresses } },
     select: { id: true, rawAddress: true },
@@ -68,13 +55,13 @@ async function resolveAddressIds(
     idByRaw.set(row.rawAddress.toLowerCase(), row.id);
   }
 
-  const missing = addresses.filter((a) => !idByRaw.has(a.raw.toLowerCase()));
+  const missing = addresses.filter(a => !idByRaw.has(a.raw.toLowerCase()));
   if (missing.length === 0) {
     return idByRaw;
   }
 
   await tx.chainAddress.createMany({
-    data: missing.map((addr) => ({
+    data: missing.map(addr => ({
       rawAddress: addr.raw,
       name: addr.name,
       isScam: addr.isScam,
@@ -85,7 +72,7 @@ async function resolveAddressIds(
   });
 
   const inserted = await tx.chainAddress.findMany({
-    where: { rawAddress: { in: missing.map((m) => m.raw) } },
+    where: { rawAddress: { in: missing.map(m => m.raw) } },
     select: { id: true, rawAddress: true },
   });
 
@@ -106,7 +93,7 @@ async function resolveJettonIds(
     return idByAddress;
   }
 
-  const addresses = jettons.map((j) => j.address);
+  const addresses = jettons.map(j => j.address);
   const existing = await tx.chainJetton.findMany({
     where: { address: { in: addresses } },
     select: { id: true, address: true },
@@ -116,13 +103,13 @@ async function resolveJettonIds(
     idByAddress.set(row.address.toLowerCase(), row.id);
   }
 
-  const missing = jettons.filter((j) => !idByAddress.has(j.address.toLowerCase()));
+  const missing = jettons.filter(j => !idByAddress.has(j.address.toLowerCase()));
   if (missing.length === 0) {
     return idByAddress;
   }
 
   await tx.chainJetton.createMany({
-    data: missing.map((jet) => ({
+    data: missing.map(jet => ({
       address: jet.address,
       name: jet.name,
       symbol: jet.symbol,
@@ -135,7 +122,7 @@ async function resolveJettonIds(
   });
 
   const inserted = await tx.chainJetton.findMany({
-    where: { address: { in: missing.map((m) => m.address) } },
+    where: { address: { in: missing.map(m => m.address) } },
     select: { id: true, address: true },
   });
 
@@ -169,19 +156,11 @@ function buildActionCreateData(
   addressIdMap: Map<string, string>,
   jettonIdMap: Map<string, string>
 ): Prisma.ChainActionCreateManyInput[] {
-  return transformed.transactions.map((action) => {
-    const fromId = action.fromRaw
-      ? addressIdMap.get(action.fromRaw.toLowerCase())
-      : undefined;
-    const toId = action.toRaw
-      ? addressIdMap.get(action.toRaw.toLowerCase())
-      : undefined;
-    const jettonId = action.jettonAddress
-      ? jettonIdMap.get(action.jettonAddress.toLowerCase())
-      : undefined;
-    const jettonInId = action.jetton2Address
-      ? jettonIdMap.get(action.jetton2Address.toLowerCase())
-      : undefined;
+  return transformed.transactions.map(action => {
+    const fromId = action.fromRaw ? addressIdMap.get(action.fromRaw.toLowerCase()) : undefined;
+    const toId = action.toRaw ? addressIdMap.get(action.toRaw.toLowerCase()) : undefined;
+    const jettonId = action.jettonAddress ? jettonIdMap.get(action.jettonAddress.toLowerCase()) : undefined;
+    const jettonInId = action.jetton2Address ? jettonIdMap.get(action.jetton2Address.toLowerCase()) : undefined;
 
     return {
       eventId,
@@ -206,9 +185,7 @@ function buildActionCreateData(
   });
 }
 
-function collectUniqueAddresses(
-  transformedEvents: TransformedEvent[]
-): TransformedAddress[] {
+function collectUniqueAddresses(transformedEvents: TransformedEvent[]): TransformedAddress[] {
   const byRaw = new Map<string, TransformedAddress>();
   for (const event of transformedEvents) {
     for (const addr of event.addresses) {
@@ -244,7 +221,7 @@ async function bulkUpsertRawEvents(
   }
 
   const now = new Date();
-  const valueRows = items.map((item) => {
+  const valueRows = items.map(item => {
     const chainEventId = eventIdByTonEventId.get(item.transformed.eventId);
     if (!chainEventId) {
       throw new Error(`Missing chain event id for ${item.transformed.eventId}`);
@@ -300,8 +277,8 @@ async function saveEventsBatch(
   }
 
   const normalizedWallet = toRawTonAddress(walletAddress);
-  const uniqueAddresses = collectUniqueAddresses(items.map((i) => i.transformed));
-  const uniqueJettons = collectUniqueJettons(items.map((i) => i.transformed));
+  const uniqueAddresses = collectUniqueAddresses(items.map(i => i.transformed));
+  const uniqueJettons = collectUniqueJettons(items.map(i => i.transformed));
 
   return prisma.$transaction(
     async (tx: Prisma.TransactionClient) => {
@@ -332,9 +309,7 @@ async function saveEventsBatch(
         if (!eventId) {
           throw new Error(`Missing event id for ${transformed.eventId}`);
         }
-        actionRows.push(
-          ...buildActionCreateData(eventId, transformed, addressIdMap, jettonIdMap)
-        );
+        actionRows.push(...buildActionCreateData(eventId, transformed, addressIdMap, jettonIdMap));
       }
 
       await tx.chainEvent.createMany({ data: eventRows });
@@ -383,10 +358,7 @@ async function resolveWalletAddressKeysForDeletion(
     }),
   ]);
 
-  const storedAddresses = [
-    ...eventWallets.map((row) => row.walletAddress),
-    ...rawWallets.map((row) => row.walletAddress),
-  ];
+  const storedAddresses = [...eventWallets.map(row => row.walletAddress), ...rawWallets.map(row => row.walletAddress)];
 
   const addressKeys = collectMatchingWalletAddressKeys(storedAddresses, normalized);
 
@@ -400,12 +372,8 @@ async function resolveWalletAddressKeysForDeletion(
 /**
  * Removes synced events/raw payloads for one wallet only; does not touch other wallets.
  */
-export async function clearWalletSyncData(
-  walletAddress: string
-): Promise<ClearWalletSyncDataResult> {
-  const { normalized, addressKeys } = await resolveWalletAddressKeysForDeletion(
-    walletAddress
-  );
+export async function clearWalletSyncData(walletAddress: string): Promise<ClearWalletSyncDataResult> {
+  const { normalized, addressKeys } = await resolveWalletAddressKeysForDeletion(walletAddress);
 
   const walletScopeFilter = { walletAddress: { in: addressKeys } };
 
@@ -481,10 +449,7 @@ export async function repairIncompleteEvents(walletAddress: string): Promise<num
   return incompleteIds.length;
 }
 
-export async function syncAccountEvent(
-  event: AccountEvent,
-  walletAddress: string
-): Promise<number> {
+export async function syncAccountEvent(event: AccountEvent, walletAddress: string): Promise<number> {
   const result = await syncAccountEvents([event], walletAddress);
   return result.actionsSaved;
 }
@@ -512,16 +477,8 @@ async function syncAccountEventsWithSplitFallback(
 
     console.error(`Batch sync failed (${items.length} events), splitting retry:`, error);
     const mid = Math.ceil(items.length / 2);
-    const left = await syncAccountEventsWithSplitFallback(
-      items.slice(0, mid),
-      walletAddress,
-      signal
-    );
-    const right = await syncAccountEventsWithSplitFallback(
-      items.slice(mid),
-      walletAddress,
-      signal
-    );
+    const left = await syncAccountEventsWithSplitFallback(items.slice(0, mid), walletAddress, signal);
+    const right = await syncAccountEventsWithSplitFallback(items.slice(mid), walletAddress, signal);
 
     return {
       saved: left.saved + right.saved,
@@ -542,7 +499,7 @@ export async function syncAccountEvents(
     return { saved: 0, skipped: 0, repaired: 0, errors: 0, actionsSaved: 0 };
   }
 
-  const tonEventIds = events.map((e) => e.eventId);
+  const tonEventIds = events.map(e => e.eventId);
   const existingRows = await prisma.chainEvent.findMany({
     where: { tonEventId: { in: tonEventIds } },
     select: {
@@ -551,9 +508,7 @@ export async function syncAccountEvents(
       _count: { select: { actions: true } },
     },
   });
-  const existingByTonId = new Map(
-    existingRows.map((row) => [row.tonEventId, row])
-  );
+  const existingByTonId = new Map(existingRows.map(row => [row.tonEventId, row]));
 
   let skipped = 0;
   let repaired = 0;
@@ -652,11 +607,7 @@ export async function getWalletStats(walletAddress: string): Promise<{
   };
 }
 
-export async function getEventsFromDb(
-  walletAddress: string,
-  limit: number = 100,
-  offset: number = 0
-) {
+export async function getEventsFromDb(walletAddress: string, limit: number = 100, offset: number = 0) {
   const normalized = toRawTonAddress(walletAddress);
 
   return prisma.chainEvent.findMany({
@@ -718,9 +669,7 @@ export async function getSyncState(walletAddress: string) {
 /**
  * Minimum lt among synced events — cursor for TonAPI `before_lt` (older history).
  */
-export async function getOldestSyncedLt(
-  walletAddress: string
-): Promise<bigint | null> {
+export async function getOldestSyncedLt(walletAddress: string): Promise<bigint | null> {
   const walletVariants = getWalletAddressVariants(walletAddress);
 
   const oldest = await prisma.chainEvent.findFirst({
@@ -739,9 +688,7 @@ export async function getOldestSyncedLt(
 /**
  * Maximum lt among synced events (newest in DB).
  */
-export async function getNewestSyncedLt(
-  walletAddress: string
-): Promise<bigint | null> {
+export async function getNewestSyncedLt(walletAddress: string): Promise<bigint | null> {
   const walletVariants = getWalletAddressVariants(walletAddress);
 
   const newest = await prisma.chainEvent.findFirst({

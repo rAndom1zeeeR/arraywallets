@@ -1,4 +1,4 @@
-import { TonApiClient } from "@/shared/api/ton-api";
+import { TonApiClient } from "@/shared/api/tonapi";
 import { tonapiApiKey, tonapiBaseUrl } from "@/shared/config/env.config";
 
 // Initialize the TonApi

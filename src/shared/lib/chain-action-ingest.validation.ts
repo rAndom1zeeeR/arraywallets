@@ -1,4 +1,4 @@
-import { ChainActionDirection, ChainActionType } from "@generated/prisma/client";
+import { ChainActionDirection, ChainActionType } from "@/shared/api/prisma-client";
 
 const TRANSFER_TYPES: ReadonlySet<ChainActionType> = new Set([
   ChainActionType.TON_TRANSFER,

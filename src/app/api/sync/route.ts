@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Address } from "@ton/core";
-import { AccountEvent } from "@/shared/api/ton-api";
+import { AccountEvent } from "@/shared/api/tonapi";
 import { TONAPI_CLIENT } from "@/shared/api/tonapi-client";
 import { RateLimiter } from "@/shared/lib/rate-limiter";
 import { isSyncCancelledError, throwIfAborted } from "@/shared/lib/sync-abort";
-import { ChainSyncStatus } from "@generated/prisma/client";
+import { ChainSyncStatus } from "@/shared/api/prisma-client";
 import { toRawTonAddress } from "@/shared/lib/ton-address";
 import {
   syncAccountEvents,
@@ -254,9 +254,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     if (force) {
       const cleared = await clearWalletSyncData(normalizedAddress);
       clearedEvents = cleared.eventsDeleted;
-      console.log(
-        `Force resync: cleared ${cleared.eventsDeleted} events, ${cleared.rawEventsDeleted} raw`
-      );
+      console.log(`Force resync: cleared ${cleared.eventsDeleted} events, ${cleared.rawEventsDeleted} raw`);
     } else if (shouldRepair) {
       const deleted = await repairIncompleteEvents(normalizedAddress);
       console.log(`Repaired: deleted ${deleted} incomplete events`);
@@ -268,9 +266,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const maxPages = fetchAll ? Number.POSITIVE_INFINITY : maxPagesPerRun;
     const signal = request.signal;
 
-    const oldestLtBefore = shouldContinueFromLast
-      ? await getOldestSyncedLt(normalizedAddress)
-      : null;
+    const oldestLtBefore = shouldContinueFromLast ? await getOldestSyncedLt(normalizedAddress) : null;
 
     // New transactions (only when we already have history in DB)
     if (shouldContinueFromLast && oldestLtBefore !== null) {
@@ -284,8 +280,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    resumeBeforeLt =
-      shouldContinueFromLast && oldestLtBefore !== null ? oldestLtBefore : undefined;
+    resumeBeforeLt = shouldContinueFromLast && oldestLtBefore !== null ? oldestLtBefore : undefined;
 
     hasMore = await syncOlderEvents(
       parsedAddress,
@@ -297,8 +292,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       signal
     );
 
-    const finalStatus =
-      totals.errors > 0 ? ChainSyncStatus.ERROR : ChainSyncStatus.COMPLETED;
+    const finalStatus = totals.errors > 0 ? ChainSyncStatus.ERROR : ChainSyncStatus.COMPLETED;
     await updateSyncState(normalizedAddress, {
       status: finalStatus,
       eventsSynced: totals.saved,
@@ -328,18 +322,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       }
 
       const stats = normalizedAddress ? await getWalletStats(normalizedAddress) : undefined;
-      const oldestLtAfter = normalizedAddress
-        ? await getOldestSyncedLt(normalizedAddress)
-        : null;
+      const oldestLtAfter = normalizedAddress ? await getOldestSyncedLt(normalizedAddress) : null;
 
       return NextResponse.json({
-        ...buildSyncResponse(
-          normalizedAddress ?? "",
-          totals,
-          hasMore,
-          resumeBeforeLt,
-          true
-        ),
+        ...buildSyncResponse(normalizedAddress ?? "", totals, hasMore, resumeBeforeLt, true),
         oldestSyncedLt: oldestLtAfter?.toString() ?? null,
         stats,
       });

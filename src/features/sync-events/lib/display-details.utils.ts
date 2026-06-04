@@ -1,4 +1,4 @@
-import { ChainActionDirection } from "@generated/prisma/client";
+import { ChainActionDirection } from "@/shared/api/prisma-client";
 
 const TRANSFERRING_PREFIX = /^transferring\s+/i;
 const AMOUNT_ONLY_PATTERN = /^[\d][\d.,]*\s+[\w₮]+$/u;

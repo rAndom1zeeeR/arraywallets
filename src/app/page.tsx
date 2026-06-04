@@ -19,7 +19,7 @@ import {
   type ChainAction,
   type ChainAddress,
   type ChainJetton,
-} from "@generated/prisma/client";
+} from "@/shared/api/prisma-client";
 
 interface PageProps {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;

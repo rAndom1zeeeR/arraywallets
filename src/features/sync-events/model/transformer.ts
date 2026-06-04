@@ -1,12 +1,9 @@
 import { Address } from "@ton/core";
-import { AccountEvent, Action, JettonPreview, AccountAddress } from "@/shared/api/ton-api";
-import { ChainActionType, ChainActionStatus, ChainActionDirection } from "@generated/prisma/client";
+import { AccountEvent, Action, JettonPreview, AccountAddress } from "@/shared/api/tonapi";
+import { ChainActionType, ChainActionStatus, ChainActionDirection } from "@/shared/api/prisma-client";
 import { toRawTonAddress } from "@/shared/lib/ton-address";
 import { serializeForJson } from "@/shared/lib/serialize-json";
-import {
-  isAmountLabelEquivalent,
-  normalizeSimplePreviewText,
-} from "@/features/sync-events/lib/display-details.utils";
+import { isAmountLabelEquivalent, normalizeSimplePreviewText } from "@/features/sync-events/lib/display-details.utils";
 
 // Типы для промежуточного результата трансформации
 export interface TransformedAddress {
@@ -107,15 +104,11 @@ function formatAmount(amount: bigint | undefined, decimals: number, symbol: stri
   return `${value} ${symbol}`;
 }
 
-function formatSwapDisplayAmount(
-  swap: NonNullable<Action["JettonSwap"]>
-): string | undefined {
+function formatSwapDisplayAmount(swap: NonNullable<Action["JettonSwap"]>): string | undefined {
   const parts: string[] = [];
 
   if (swap.jettonMasterIn && swap.amountIn) {
-    parts.push(
-      `-${formatAmount(swap.amountIn, swap.jettonMasterIn.decimals, swap.jettonMasterIn.symbol) ?? ""}`
-    );
+    parts.push(`-${formatAmount(swap.amountIn, swap.jettonMasterIn.decimals, swap.jettonMasterIn.symbol) ?? ""}`);
   } else if (swap.tonIn && swap.tonIn > 0n) {
     parts.push(`-${formatAmount(swap.tonIn, 9, "TON") ?? ""}`);
   }
@@ -123,9 +116,7 @@ function formatSwapDisplayAmount(
   parts.push("→");
 
   if (swap.jettonMasterOut && swap.amountOut) {
-    parts.push(
-      `+${formatAmount(swap.amountOut, swap.jettonMasterOut.decimals, swap.jettonMasterOut.symbol) ?? ""}`
-    );
+    parts.push(`+${formatAmount(swap.amountOut, swap.jettonMasterOut.decimals, swap.jettonMasterOut.symbol) ?? ""}`);
   } else if (swap.tonOut && swap.tonOut > 0n) {
     parts.push(`+${formatAmount(swap.tonOut, 9, "TON") ?? ""}`);
   }
@@ -156,9 +147,7 @@ function bigintToDecimal(value: bigint | undefined): string | undefined {
   return value.toString();
 }
 
-function coerceBigInt(
-  value: bigint | string | number | undefined
-): bigint | undefined {
+function coerceBigInt(value: bigint | string | number | undefined): bigint | undefined {
   if (value === undefined) {
     return undefined;
   }
@@ -202,11 +191,7 @@ function getFlawedJettonTransfer(action: Action): FlawedJettonTransferPayload | 
   return actionWithFlawed.FlawedJettonTransfer;
 }
 
-function formatFlawedJettonDisplayAmount(
-  sentAmount: bigint,
-  receivedAmount: bigint,
-  jetton: JettonPreview
-): string {
+function formatFlawedJettonDisplayAmount(sentAmount: bigint, receivedAmount: bigint, jetton: JettonPreview): string {
   const sent = formatAmount(sentAmount, jetton.decimals, jetton.symbol);
   const received = formatAmount(receivedAmount, jetton.decimals, jetton.symbol);
 
@@ -234,10 +219,7 @@ interface BuildDisplayDetailsOptions {
 }
 
 /** Details column: comments and TonAPI simplePreview only (no amounts). */
-function buildDisplayDetails(
-  action: Action,
-  options?: BuildDisplayDetailsOptions
-): string | undefined {
+function buildDisplayDetails(action: Action, options?: BuildDisplayDetailsOptions): string | undefined {
   const parts: string[] = [];
 
   if (options?.comment) {
@@ -259,11 +241,7 @@ function buildDisplayDetails(
     const isDuplicate =
       !normalizedPreview ||
       (options?.displayAmount !== undefined &&
-        isAmountLabelEquivalent(
-          normalizedPreview,
-          options.displayAmount,
-          options.direction
-        ));
+        isAmountLabelEquivalent(normalizedPreview, options.displayAmount, options.direction));
 
     if (normalizedPreview && !isDuplicate) {
       parts.push(truncateText(normalizedPreview, 80));
@@ -357,19 +335,13 @@ function transformAction(
     case "FlawedJettonTransfer": {
       const fjt = getFlawedJettonTransfer(action);
       if (fjt) {
-        const sentAmount =
-          coerceBigInt(fjt.sentAmount) ?? coerceBigInt(fjt.sent_amount);
-        const receivedAmount =
-          coerceBigInt(fjt.receivedAmount) ?? coerceBigInt(fjt.received_amount);
+        const sentAmount = coerceBigInt(fjt.sentAmount) ?? coerceBigInt(fjt.sent_amount);
+        const receivedAmount = coerceBigInt(fjt.receivedAmount) ?? coerceBigInt(fjt.received_amount);
 
         result.type = ChainActionType.FLAWED_JETTON_TRANSFER;
         result.fromRaw = addAddress(fjt.sender);
         result.toRaw = addAddress(fjt.recipient);
-        result.direction = determineDirection(
-          result.fromRaw,
-          result.toRaw,
-          eventAccountAddress
-        );
+        result.direction = determineDirection(result.fromRaw, result.toRaw, eventAccountAddress);
         result.jettonAddress = addJetton(fjt.jetton);
 
         if (sentAmount !== undefined) {
@@ -381,27 +353,17 @@ function transformAction(
 
         result.details = {
           sentAmount: sentAmount !== undefined ? bigintToDecimal(sentAmount) : undefined,
-          receivedAmount:
-            receivedAmount !== undefined ? bigintToDecimal(receivedAmount) : undefined,
-          sendersWallet:
-            typeof fjt.sendersWallet === "string"
-              ? fjt.sendersWallet
-              : fjt.sendersWallet?.toString(),
+          receivedAmount: receivedAmount !== undefined ? bigintToDecimal(receivedAmount) : undefined,
+          sendersWallet: typeof fjt.sendersWallet === "string" ? fjt.sendersWallet : fjt.sendersWallet?.toString(),
           recipientsWallet:
-            typeof fjt.recipientsWallet === "string"
-              ? fjt.recipientsWallet
-              : fjt.recipientsWallet?.toString(),
+            typeof fjt.recipientsWallet === "string" ? fjt.recipientsWallet : fjt.recipientsWallet?.toString(),
           comment: fjt.comment,
           encryptedComment: fjt.encryptedComment,
           refund: fjt.refund,
         };
 
         if (fjt.jetton && sentAmount !== undefined && receivedAmount !== undefined) {
-          result.displayAmount = formatFlawedJettonDisplayAmount(
-            sentAmount,
-            receivedAmount,
-            fjt.jetton
-          );
+          result.displayAmount = formatFlawedJettonDisplayAmount(sentAmount, receivedAmount, fjt.jetton);
           result.displayCurrency = fjt.jetton.symbol;
         }
 
@@ -643,8 +605,7 @@ function transformAction(
         originalType: action.type,
         simplePreview: action.simplePreview,
       };
-      result.description =
-        buildDisplayDetails(action) ?? action.type;
+      result.description = buildDisplayDetails(action) ?? action.type;
   }
 
   return { tx: result, addresses, jettons };
