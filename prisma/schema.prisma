@@ -45,11 +45,20 @@ model ChainJetton {
   verification ChainJettonVerification @default(NONE)
   score       Int      @default(0)
 
+  /// TonAPI `TokenRates.prices` (display only, not for trading).
+  priceUsd       Decimal?  @map("price_usd") @db.Decimal(36, 18)
+  priceTon       Decimal?  @map("price_ton") @db.Decimal(36, 18)
+  diff24hUsd     String?   @map("diff_24h_usd")
+  diff7dUsd      String?   @map("diff_7d_usd")
+  diff30dUsd     String?   @map("diff_30d_usd")
+  priceUpdatedAt DateTime? @map("price_updated_at") @db.Timestamptz(3)
+
   firstSeenAt DateTime @default(now()) @map("first_seen_at") @db.Timestamptz(3)
 
   actions     ChainAction[] @relation("ActionJetton")
   actionsIn   ChainAction[] @relation("ActionJettonIn")
   actionsOut  ChainAction[] @relation("ActionJettonOut")
+  walletPnl   ChainWalletPnl[]
 
   @@index([address])
   @@index([symbol])
@@ -174,6 +183,7 @@ enum ChainActionType {
   JETTON_TRANSFER
   FLAWED_JETTON_TRANSFER
   JETTON_SWAP
+  INFERRED_SWAP
   JETTON_BURN
   JETTON_MINT
   SMART_CONTRACT_EXEC
@@ -237,4 +247,38 @@ enum ChainSyncStatus {
   PAUSED     @map("paused")
   ERROR      @map("error")
   COMPLETED  @map("completed")
+}
+
+// ==================== SWAP PNL (materialized) ====================
+
+/// Per-wallet swap PnL: one row for TON, one for USDT, one per jetton (excluding USDT-like masters).
+model ChainWalletPnl {
+  id            String   @id @default(uuid()) @db.Uuid
+  /// Wallet account address in raw `workchain:hex` form.
+  walletAddress String   @map("wallet_address")
+  assetKind     ChainWalletPnlAssetKind @map("asset_kind")
+  /// Stable key: `ton`, `usdt`, or jetton master raw address (lowercase).
+  assetKey      String   @map("asset_key")
+  jettonId      String?  @map("jetton_id") @db.Uuid
+  jetton        ChainJetton? @relation(fields: [jettonId], references: [id], onDelete: SetNull)
+  /// Jetton decimals when `assetKind` is JETTON or USDT; null for TON.
+  decimals      Int?
+  spentRaw      Decimal  @map("spent_raw") @db.Decimal(78, 0)
+  receivedRaw   Decimal  @map("received_raw") @db.Decimal(78, 0)
+  netRaw        Decimal  @map("net_raw") @db.Decimal(78, 0)
+  /// Total successful JETTON_SWAP count for the wallet (stored on the TON row only).
+  swapCount     Int      @default(0) @map("swap_count")
+  computedAt    DateTime @default(now()) @map("computed_at") @db.Timestamptz(3)
+
+  @@unique([walletAddress, assetKey])
+  @@index([walletAddress])
+  @@index([walletAddress, assetKind])
+  @@index([jettonId])
+  @@map("chain_wallet_pnl")
+}
+
+enum ChainWalletPnlAssetKind {
+  TON    @map("ton")
+  USDT   @map("usdt")
+  JETTON @map("jetton")
 }

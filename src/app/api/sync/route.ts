@@ -1,22 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Address } from "@ton/core";
-import { AccountEvent } from "@/shared/api/tonapi";
-import { TONAPI_CLIENT } from "@/shared/api/tonapi-client";
-import { RateLimiter } from "@/shared/lib/rate-limiter";
-import { isSyncCancelledError, throwIfAborted } from "@/shared/lib/sync-abort";
-import { ChainSyncStatus } from "@/shared/api/prisma-client";
-import { toRawTonAddress } from "@/shared/lib/ton-address";
+import { AccountEvent } from "@/shared/infrastructure/api/tonapi";
+import { TONAPI_CLIENT } from "@/shared/infrastructure/api/tonapi-client";
+import { callTonapi, isTonApiRateLimitError } from "@/shared/infrastructure/tonapi/tonapi-limiter";
+import { isSyncCancelledError, throwIfAborted } from "@/shared/infrastructure/sync/sync-abort";
+import { ChainSyncStatus } from "@/shared/infrastructure/api/prisma-client";
+import { toRawTonAddress } from "@/shared/lib/ton/ton-address";
 import {
   syncAccountEvents,
   updateSyncState,
   repairIncompleteEvents,
+  repairTraceInferredSwapEvents,
   clearWalletSyncData,
   getWalletStats,
   getOldestSyncedLt,
   getSyncState,
   SYNC_BATCH_SIZE,
-} from "@/features/sync-events/model/sync-service";
-import { getWalletSwapStats, repairJettonSwapActionFields } from "@/features/sync-events/model/swap-stats.service";
+} from "@/modules/wallet/application/sync-service";
+import { getWalletSwapStats, repairJettonSwapActionFields } from "@/modules/swap/application/swap-stats.service";
 
 const API_PAGE_SIZE = SYNC_BATCH_SIZE;
 const DEFAULT_MAX_PAGES_PER_RUN = 30;
@@ -37,6 +38,7 @@ interface SyncTotals {
   saved: number;
   skipped: number;
   repaired: number;
+  traceSwapsRepaired: number;
   swapsRepaired: number;
   errors: number;
   actionsSaved: number;
@@ -48,6 +50,7 @@ function createTotals(): SyncTotals {
     saved: 0,
     skipped: 0,
     repaired: 0,
+    traceSwapsRepaired: 0,
     swapsRepaired: 0,
     errors: 0,
     actionsSaved: 0,
@@ -66,13 +69,12 @@ function createTotals(): SyncTotals {
 
 async function fetchAccountEventsPage(
   parsedAddress: Address,
-  limiter: RateLimiter,
   signal: AbortSignal,
   beforeLt?: bigint
 ): Promise<AccountEvent[]> {
   throwIfAborted(signal);
 
-  const response = await limiter.throttle(
+  const response = await callTonapi(
     () =>
       TONAPI_CLIENT.getAccountEvents(parsedAddress, {
         limit: API_PAGE_SIZE,
@@ -114,7 +116,6 @@ function isFullySkippedPage(
 async function syncNewestEvents(
   parsedAddress: Address,
   walletAddress: string,
-  limiter: RateLimiter,
   totals: SyncTotals,
   maxPages: number,
   signal: AbortSignal
@@ -124,7 +125,7 @@ async function syncNewestEvents(
 
   while (pages < maxPages) {
     throwIfAborted(signal);
-    const events = await fetchAccountEventsPage(parsedAddress, limiter, signal, beforeLt);
+    const events = await fetchAccountEventsPage(parsedAddress, signal, beforeLt);
     if (events.length === 0) {
       break;
     }
@@ -158,7 +159,6 @@ async function syncNewestEvents(
 async function syncOlderEvents(
   parsedAddress: Address,
   walletAddress: string,
-  limiter: RateLimiter,
   totals: SyncTotals,
   startBeforeLt: bigint | undefined,
   maxPages: number,
@@ -169,7 +169,7 @@ async function syncOlderEvents(
 
   while (pages < maxPages) {
     throwIfAborted(signal);
-    const events = await fetchAccountEventsPage(parsedAddress, limiter, signal, beforeLt);
+    const events = await fetchAccountEventsPage(parsedAddress, signal, beforeLt);
     if (events.length === 0) {
       return false;
     }
@@ -212,6 +212,7 @@ function buildSyncResponse(
     saved: totals.saved,
     skipped: totals.skipped,
     repaired: totals.repaired,
+    traceSwapsRepaired: totals.traceSwapsRepaired,
     swapsRepaired: totals.swapsRepaired,
     errors: totals.errors,
     actionsSaved: totals.actionsSaved,
@@ -259,16 +260,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       const cleared = await clearWalletSyncData(normalizedAddress);
       clearedEvents = cleared.eventsDeleted;
       console.log(`Force resync: cleared ${cleared.eventsDeleted} events, ${cleared.rawEventsDeleted} raw`);
-    } else if (shouldRepair) {
-      const deleted = await repairIncompleteEvents(normalizedAddress);
-      const swapsFixed = await repairJettonSwapActionFields(normalizedAddress);
-      totals.swapsRepaired = swapsFixed;
-      console.log(`Repaired: deleted ${deleted} incomplete events, fixed ${swapsFixed} swap rows`);
     }
 
     await updateSyncState(normalizedAddress, { status: ChainSyncStatus.SYNCING });
 
-    const limiter = new RateLimiter(1100);
+    if (shouldRepair) {
+      const deleted = await repairIncompleteEvents(normalizedAddress);
+      totals.traceSwapsRepaired = await repairTraceInferredSwapEvents(normalizedAddress);
+      totals.swapsRepaired = await repairJettonSwapActionFields(normalizedAddress);
+      totals.repaired += deleted;
+      console.log(
+        `Repaired: deleted ${deleted} incomplete events, trace swaps ${totals.traceSwapsRepaired}, fixed ${totals.swapsRepaired} swap rows`
+      );
+    }
+
     const maxPages = fetchAll ? Number.POSITIVE_INFINITY : maxPagesPerRun;
     const signal = request.signal;
 
@@ -276,27 +281,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     // New transactions (only when we already have history in DB)
     if (shouldContinueFromLast && oldestLtBefore !== null) {
-      await syncNewestEvents(
-        parsedAddress,
-        normalizedAddress,
-        limiter,
-        totals,
-        Math.min(HEAD_PAGES_LIMIT, maxPages),
-        signal
-      );
+      await syncNewestEvents(parsedAddress, normalizedAddress, totals, Math.min(HEAD_PAGES_LIMIT, maxPages), signal);
     }
 
     resumeBeforeLt = shouldContinueFromLast && oldestLtBefore !== null ? oldestLtBefore : undefined;
 
-    hasMore = await syncOlderEvents(
-      parsedAddress,
-      normalizedAddress,
-      limiter,
-      totals,
-      resumeBeforeLt,
-      maxPages,
-      signal
-    );
+    hasMore = await syncOlderEvents(parsedAddress, normalizedAddress, totals, resumeBeforeLt, maxPages, signal);
 
     const finalStatus = totals.errors > 0 ? ChainSyncStatus.ERROR : ChainSyncStatus.COMPLETED;
     await updateSyncState(normalizedAddress, {
@@ -345,6 +335,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     console.error("Sync error:", error);
 
+    const isRateLimited = isTonApiRateLimitError(error);
+
     if (normalizedAddress) {
       await updateSyncState(normalizedAddress, {
         status: ChainSyncStatus.ERROR,
@@ -354,10 +346,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     return NextResponse.json(
       {
-        error: "Sync failed",
+        error: isRateLimited ? "TonAPI rate limit" : "Sync failed",
         message: error instanceof Error ? error.message : String(error),
+        traceSwapsRepaired: totals.traceSwapsRepaired,
+        swapsRepaired: totals.swapsRepaired,
       },
-      { status: 500 }
+      { status: isRateLimited ? 429 : 500 }
     );
   }
 }

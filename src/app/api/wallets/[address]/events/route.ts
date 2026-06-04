@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { loadWalletEventsPage, parseWalletAddressParam } from "@/features/sync-events/api/wallet-api.handlers";
-import { parsePageParam } from "@/features/sync-events/model/wallet-page.utils";
-import { serializeForJson } from "@/shared/lib/serialize-json";
+import { loadWalletEventsPage, parseWalletAddressParam } from "@/modules/wallet/api/wallet-api.handlers";
+import { parsePageParam } from "@/modules/wallet/domain/wallet-page.utils";
+import { serializeForJson } from "@/shared/infrastructure/sync/serialize-json";
 
 interface RouteContext {
   params: Promise<{ address: string }>;

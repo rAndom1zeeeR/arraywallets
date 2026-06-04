@@ -1,6 +1,6 @@
 /**
  * Client-safe mirrors of Prisma enums from `schema.prisma`.
- * Do not import `@/shared/api/prisma-client` in `"use client"` modules.
+ * Do not import `@/shared/infrastructure/api/prisma-client` in `"use client"` modules.
  */
 
 export const ChainSyncStatus = {

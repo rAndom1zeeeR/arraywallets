@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
-import { parsePageParam } from "@/features/sync-events/model/wallet-page.utils";
+import { parsePageParam } from "@/modules/wallet/domain/wallet-page.utils";
 
 const DEFAULT_ADDRESS = "EQD_VOCkZZxBqRlHgqVXzKpoW_29kR-S0t02VN4VxiDTr7Bl";
 
@@ -19,6 +19,7 @@ export default async function Home({ searchParams }: HomePageProps) {
 
   redirect(
     getWalletPagePath(addressParam, {
+      tab: "events",
       page: page > 1 ? page : undefined,
       swaps: swapsOnly,
     })

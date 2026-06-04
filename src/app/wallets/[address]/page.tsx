@@ -1,9 +1,9 @@
 import { Suspense } from "react";
 import { Address } from "@ton/core";
-import { WalletTransactionsPage } from "@/widgets/wallet-transactions/ui/WalletTransactionsPage";
-import { parsePageParam } from "@/features/sync-events/model/wallet-page.utils";
-import { normalizeWalletAddress } from "@/shared/lib/ton-address";
-import { decodeWalletAddressParam } from "@/shared/lib/wallet-route.utils";
+import { WalletTransactionsPage } from "@/modules/wallet/presentation/pages/WalletTransactionsPage";
+import { parsePageParam } from "@/modules/wallet/domain/wallet-page.utils";
+import { normalizeWalletAddress } from "@/shared/lib/ton/ton-address";
+import { decodeWalletAddressParam, parseWalletTabParam } from "@/shared/lib/wallet-route.utils";
 
 interface WalletPageProps {
   params: Promise<{ address: string }>;
@@ -31,11 +31,17 @@ export default async function WalletPage({ params, searchParams }: WalletPagePro
 
   const addressString = normalizeWalletAddress(address.toString());
   const currentPage = parsePageParam(query.page);
+  const activeTab = parseWalletTabParam(query.tab);
   const swapsOnly = query.swaps === "1";
 
   return (
     <Suspense fallback={<main className="p-4 text-sm text-gray-500">Loading wallet…</main>}>
-      <WalletTransactionsPage address={addressString} currentPage={currentPage} swapsOnly={swapsOnly} />
+      <WalletTransactionsPage
+        address={addressString}
+        activeTab={activeTab}
+        currentPage={currentPage}
+        swapsOnly={swapsOnly}
+      />
     </Suspense>
   );
 }
