@@ -1,19 +1,12 @@
 "use client";
 
 import type { JettonRateQuote } from "@/modules/jetton/domain/jetton-rates.types";
+import { formatMoney, formatPercentChange24h } from "@/modules/jetton/domain/money-format.utils";
 import { cn } from "@/shared/lib/utils";
 
 interface JettonPriceCellProps {
   rate: JettonRateQuote | undefined;
   isLoading: boolean;
-}
-
-function formatUsdPrice(value: number): string {
-  if (value >= 1) {
-    return `$${value.toLocaleString(undefined, { maximumFractionDigits: 4 })}`;
-  }
-
-  return `$${value.toLocaleString(undefined, { maximumFractionDigits: 8 })}`;
 }
 
 function parseDiffPercent(diff: string | null): number | null {
@@ -41,17 +34,18 @@ export function JettonPriceCell({ rate, isLoading }: JettonPriceCellProps) {
   const diffValue = parseDiffPercent(rate?.diff24hUsd ?? null);
   const diffIsPositive = diffValue !== null && diffValue > 0;
   const diffIsNegative = diffValue !== null && diffValue < 0;
+  const diff24hText = diffValue !== null ? formatPercentChange24h(diffValue) : null;
+  const usdPriceText = hasUsd && rate?.usd ? formatMoney(rate.usd, "usdUnitPrice") : null;
+  const tonPriceText = hasTon && rate?.ton ? formatMoney(rate.ton, "tonUnitPrice") : null;
 
   return (
     <div className="min-w-[5rem] text-right sm:min-w-[5.5rem]">
-      {hasUsd && rate?.usd ? (
-        <div className="font-medium tabular-nums text-foreground">{formatUsdPrice(rate.usd)}</div>
-      ) : hasTon && rate?.ton ? (
-        <div className="font-medium tabular-nums text-foreground">
-          {rate.ton.toLocaleString(undefined, { maximumFractionDigits: 6 })} TON
-        </div>
+      {usdPriceText ? (
+        <div className="font-medium tabular-nums text-foreground">{usdPriceText}</div>
+      ) : tonPriceText ? (
+        <div className="font-medium tabular-nums text-foreground">{tonPriceText}</div>
       ) : null}
-      {hasUsd && rate?.diff24hUsd && (
+      {diff24hText && (
         <div
           className={cn(
             "mt-0.5 text-xs font-medium tabular-nums",
@@ -60,13 +54,11 @@ export function JettonPriceCell({ rate, isLoading }: JettonPriceCellProps) {
             diffValue === 0 && "text-muted-foreground"
           )}
         >
-          {rate.diff24hUsd} 24h
+          {diff24hText}
         </div>
       )}
-      {hasUsd && hasTon && rate?.ton && (
-        <div className="mt-0.5 text-[10px] tabular-nums text-muted-foreground">
-          {rate.ton.toLocaleString(undefined, { maximumFractionDigits: 6 })} TON
-        </div>
+      {usdPriceText && tonPriceText && (
+        <div className="mt-0.5 text-[10px] tabular-nums text-muted-foreground">{tonPriceText}</div>
       )}
     </div>
   );

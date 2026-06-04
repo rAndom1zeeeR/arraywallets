@@ -1,16 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
-import type { TransactionRawDetailsPayload } from "@/modules/wallet/domain/raw-details.utils";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import {
+  formatTransactionRawDetailsJson,
+  type TransactionRawDetailsPayload,
+} from "@/modules/wallet/domain/raw-details.utils";
 import { cn } from "@/shared/lib/utils";
 
 interface TransactionRawDetailsButtonProps {
   details: TransactionRawDetailsPayload;
   className?: string;
-}
-
-function formatJson(payload: TransactionRawDetailsPayload): string {
-  return JSON.stringify(payload, null, 2);
 }
 
 export function TransactionRawDetailsButton({ details, className }: TransactionRawDetailsButtonProps) {
@@ -19,7 +19,7 @@ export function TransactionRawDetailsButton({ details, className }: TransactionR
   const [isOpen, setIsOpen] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
 
-  const formattedJson = formatJson(details);
+  const formattedJson = useMemo(() => formatTransactionRawDetailsJson(details), [details]);
 
   const handleOpen = useCallback(() => {
     setIsOpen(true);
@@ -78,15 +78,19 @@ export function TransactionRawDetailsButton({ details, className }: TransactionR
         Details
       </button>
 
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
+      {isOpen &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 text-left"
+            role="presentation"
+          >
           <button type="button" className="absolute inset-0 bg-black/50" aria-label="Закрыть" onClick={handleClose} />
 
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby={dialogTitleId}
-            className="relative z-10 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-border bg-card shadow-xl"
+            className="relative z-10 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-border bg-card text-left shadow-xl"
           >
             <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
               <div>
@@ -124,14 +128,15 @@ export function TransactionRawDetailsButton({ details, className }: TransactionR
               </div>
             </div>
 
-            <div className="overflow-auto p-4">
-              <pre className="rounded-lg bg-secondary/50 p-3 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap text-foreground">
+            <div className="min-h-0 flex-1 overflow-auto p-4">
+              <pre className="block w-full max-w-full overflow-x-auto rounded-lg bg-secondary/50 p-3 text-left font-mono text-xs leading-relaxed whitespace-pre text-foreground">
                 {formattedJson}
               </pre>
             </div>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body
+        )}
     </>
   );
 }

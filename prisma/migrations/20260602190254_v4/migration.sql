@@ -2,7 +2,7 @@
 CREATE TYPE "ChainJettonVerification" AS ENUM ('none', 'whitelist', 'graylist', 'blacklist');
 
 -- CreateEnum
-CREATE TYPE "ChainActionType" AS ENUM ('TON_TRANSFER', 'JETTON_TRANSFER', 'FLAWED_JETTON_TRANSFER', 'JETTON_SWAP', 'JETTON_BURN', 'JETTON_MINT', 'SMART_CONTRACT_EXEC', 'DEPOSIT_STAKE', 'WITHDRAW_STAKE', 'NFT_TRANSFER', 'NFT_MINT', 'NFT_SALE', 'SUBSCRIBE', 'UNSUBSCRIBE', 'AUCTION_BID', 'DOMAIN_RENEW', 'UNKNOWN');
+CREATE TYPE "ChainActionType" AS ENUM ('TON_TRANSFER', 'JETTON_TRANSFER', 'FLAWED_JETTON_TRANSFER', 'JETTON_SWAP', 'INFERRED_SWAP', 'JETTON_BURN', 'JETTON_MINT', 'SMART_CONTRACT_EXEC', 'DEPOSIT_STAKE', 'WITHDRAW_STAKE', 'NFT_TRANSFER', 'NFT_MINT', 'NFT_SALE', 'SUBSCRIBE', 'UNSUBSCRIBE', 'AUCTION_BID', 'DOMAIN_RENEW', 'UNKNOWN');
 
 -- CreateEnum
 CREATE TYPE "ChainActionStatus" AS ENUM ('success', 'failed', 'pending');
@@ -12,6 +12,9 @@ CREATE TYPE "ChainActionDirection" AS ENUM ('incoming', 'outgoing', 'self', 'unk
 
 -- CreateEnum
 CREATE TYPE "ChainSyncStatus" AS ENUM ('idle', 'syncing', 'paused', 'error', 'completed');
+
+-- CreateEnum
+CREATE TYPE "ChainWalletPnlAssetKind" AS ENUM ('ton', 'usdt', 'jetton');
 
 -- CreateTable
 CREATE TABLE "chain_address" (
@@ -39,6 +42,12 @@ CREATE TABLE "chain_jetton" (
     "image" TEXT,
     "verification" "ChainJettonVerification" NOT NULL DEFAULT 'none',
     "score" INTEGER NOT NULL DEFAULT 0,
+    "price_usd" DECIMAL(36,18),
+    "price_ton" DECIMAL(36,18),
+    "diff_24h_usd" TEXT,
+    "diff_7d_usd" TEXT,
+    "diff_30d_usd" TEXT,
+    "price_updated_at" TIMESTAMPTZ(3),
     "first_seen_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "chain_jetton_pkey" PRIMARY KEY ("id")
@@ -119,6 +128,23 @@ CREATE TABLE "chain_sync_state" (
     CONSTRAINT "chain_sync_state_pkey" PRIMARY KEY ("id")
 );
 
+-- CreateTable
+CREATE TABLE "chain_wallet_pnl" (
+    "id" UUID NOT NULL,
+    "wallet_address" TEXT NOT NULL,
+    "asset_kind" "ChainWalletPnlAssetKind" NOT NULL,
+    "asset_key" TEXT NOT NULL,
+    "jetton_id" UUID,
+    "decimals" INTEGER,
+    "spent_raw" DECIMAL(78,0) NOT NULL,
+    "received_raw" DECIMAL(78,0) NOT NULL,
+    "net_raw" DECIMAL(78,0) NOT NULL,
+    "swap_count" INTEGER NOT NULL DEFAULT 0,
+    "computed_at" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "chain_wallet_pnl_pkey" PRIMARY KEY ("id")
+);
+
 -- CreateIndex
 CREATE UNIQUE INDEX "chain_address_raw_address_key" ON "chain_address"("raw_address");
 
@@ -197,6 +223,18 @@ CREATE INDEX "chain_sync_state_updated_at_idx" ON "chain_sync_state"("updated_at
 -- CreateIndex
 CREATE INDEX "chain_sync_state_last_ton_event_id_idx" ON "chain_sync_state"("last_ton_event_id");
 
+-- CreateIndex
+CREATE INDEX "chain_wallet_pnl_wallet_address_idx" ON "chain_wallet_pnl"("wallet_address");
+
+-- CreateIndex
+CREATE INDEX "chain_wallet_pnl_wallet_address_asset_kind_idx" ON "chain_wallet_pnl"("wallet_address", "asset_kind");
+
+-- CreateIndex
+CREATE INDEX "chain_wallet_pnl_jetton_id_idx" ON "chain_wallet_pnl"("jetton_id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "chain_wallet_pnl_wallet_address_asset_key_key" ON "chain_wallet_pnl"("wallet_address", "asset_key");
+
 -- AddForeignKey
 ALTER TABLE "chain_raw_event" ADD CONSTRAINT "chain_raw_event_chain_event_id_fkey" FOREIGN KEY ("chain_event_id") REFERENCES "chain_event"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
@@ -220,3 +258,6 @@ ALTER TABLE "chain_action" ADD CONSTRAINT "chain_action_jetton_out_id_fkey" FORE
 
 -- AddForeignKey
 ALTER TABLE "chain_sync_state" ADD CONSTRAINT "chain_sync_state_last_ton_event_id_fkey" FOREIGN KEY ("last_ton_event_id") REFERENCES "chain_event"("ton_event_id") ON DELETE SET NULL ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "chain_wallet_pnl" ADD CONSTRAINT "chain_wallet_pnl_jetton_id_fkey" FOREIGN KEY ("jetton_id") REFERENCES "chain_jetton"("id") ON DELETE SET NULL ON UPDATE CASCADE;

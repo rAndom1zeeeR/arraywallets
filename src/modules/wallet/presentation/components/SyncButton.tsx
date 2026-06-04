@@ -1,8 +1,8 @@
 "use client";
 
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
-import { useState, useCallback, useRef } from "react";
 import { walletQueryKeys } from "@/modules/wallet/api/wallet-query-keys";
 import { buttonStyles } from "@/shared/presentation/components/data-table/data-table.styles";
 import { cn } from "@/shared/lib/utils";
@@ -11,6 +11,8 @@ interface SyncButtonProps {
   address: string;
   isSyncing: boolean;
   incompleteEvents?: number;
+  historyComplete?: boolean;
+  autoStart?: boolean;
 }
 
 interface SyncResult {
@@ -20,6 +22,8 @@ interface SyncResult {
   errors: number;
   actionsSaved: number;
   hasMore: boolean;
+  historyComplete?: boolean;
+  incrementalOnly?: boolean;
   cancelled?: boolean;
   force?: boolean;
   clearedEvents?: number;
@@ -34,10 +38,17 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException && error.name === "AbortError";
 }
 
-export function SyncButton({ address, isSyncing: initialSyncing, incompleteEvents = 0 }: SyncButtonProps) {
+export function SyncButton({
+  address,
+  isSyncing: initialSyncing,
+  incompleteEvents = 0,
+  historyComplete = false,
+  autoStart = false,
+}: SyncButtonProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const abortRef = useRef<AbortController | null>(null);
+  const autoStartTriggeredRef = useRef(false);
   const [isSyncing, setIsSyncing] = useState(initialSyncing);
   const [result, setResult] = useState<SyncResult | null>(null);
 
@@ -94,6 +105,8 @@ export function SyncButton({ address, isSyncing: initialSyncing, incompleteEvent
           errors: data.errors ?? 0,
           actionsSaved: data.actionsSaved ?? 0,
           hasMore: Boolean(data.hasMore),
+          historyComplete: Boolean(data.historyComplete),
+          incrementalOnly: Boolean(data.incrementalOnly),
           cancelled: Boolean(data.cancelled),
           force: Boolean(data.force),
           clearedEvents: data.clearedEvents ?? 0,
@@ -135,12 +148,23 @@ export function SyncButton({ address, isSyncing: initialSyncing, incompleteEvent
     void runSync({ force: true });
   }, [runSync]);
 
+  useEffect(() => {
+    if (!autoStart || autoStartTriggeredRef.current || initialSyncing) {
+      return;
+    }
+
+    autoStartTriggeredRef.current = true;
+    void runSync({ force: false });
+  }, [autoStart, initialSyncing, runSync]);
+
   const hasIncompleteEvents = incompleteEvents > 0;
   const syncButtonLabel = isSyncing
     ? "Syncing..."
     : hasIncompleteEvents
       ? `Sync + repair (${incompleteEvents})`
-      : "Continue sync";
+      : historyComplete
+        ? "Sync new"
+        : "Continue sync";
 
   return (
     <div className="flex flex-col items-end gap-2">
@@ -153,6 +177,9 @@ export function SyncButton({ address, isSyncing: initialSyncing, incompleteEvent
         <div className="text-right text-sm text-muted-foreground">
           {result.cancelled && (
             <p className="mb-1 font-medium text-amber-400">Синхронизация остановлена</p>
+          )}
+          {result.incrementalOnly && !result.cancelled && (
+            <p className="mb-1 font-medium text-profit">Только новые транзакции</p>
           )}
           {result.force && !result.cancelled && (
             <p className="mb-1 font-medium text-orange-400">

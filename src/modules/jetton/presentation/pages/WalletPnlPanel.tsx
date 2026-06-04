@@ -1,11 +1,12 @@
 "use client";
 
-import { Suspense, useMemo } from "react";
+import { Suspense } from "react";
 import {
   JETTON_PNL_PAGE_SIZE,
   JettonPnlPagination,
 } from "@/modules/jetton/presentation/components/JettonPnlPagination";
 import { BaseAssetSwapPnlSection } from "@/modules/jetton/presentation/components/BaseAssetSwapPnlSection";
+import { TonPureTransfersSection } from "@/modules/jetton/presentation/components/TonPureTransfersSection";
 import { JettonPortfolioPnlTable } from "@/modules/jetton/presentation/components/JettonPortfolioPnlTable";
 import type { WalletSwapStatsResult } from "@/modules/swap/application/swap-stats.service";
 import { DataTableShell } from "@/shared/presentation/components/data-table/data-table-shell";
@@ -24,12 +25,6 @@ export function WalletPnlPanel({ address, currentPage, stats }: WalletPnlPanelPr
   const totalJettons = portfolio.length;
   const totalPages = Math.max(1, Math.ceil(totalJettons / JETTON_PNL_PAGE_SIZE));
   const safePage = Math.min(Math.max(1, currentPage), totalPages);
-  const sliceStart = (safePage - 1) * JETTON_PNL_PAGE_SIZE;
-  const visibleRows = useMemo(
-    () => portfolio.slice(sliceStart, sliceStart + JETTON_PNL_PAGE_SIZE),
-    [portfolio, sliceStart]
-  );
-
   const hasUsdtFlow = pnl.usdt.spentRaw > 0n || pnl.usdt.receivedRaw > 0n;
 
   return (
@@ -47,7 +42,6 @@ export function WalletPnlPanel({ address, currentPage, stats }: WalletPnlPanelPr
         currency="ton"
         swapCount={aggregate.swapCount}
         tonPnlWithTransfers={tonPnlWithTransfers}
-        tonTransfers={tonTransfers}
       />
 
       {hasUsdtFlow ? (
@@ -83,7 +77,11 @@ export function WalletPnlPanel({ address, currentPage, stats }: WalletPnlPanelPr
           )}
 
           <Suspense fallback={<p className="text-sm text-muted-foreground">Загрузка…</p>}>
-            <JettonPortfolioPnlTable rows={visibleRows} />
+            <JettonPortfolioPnlTable
+              rows={portfolio}
+              pageIndex={safePage - 1}
+              pageSize={JETTON_PNL_PAGE_SIZE}
+            />
           </Suspense>
 
           {totalJettons > JETTON_PNL_PAGE_SIZE && (
@@ -98,6 +96,8 @@ export function WalletPnlPanel({ address, currentPage, stats }: WalletPnlPanelPr
           )}
         </DataTableShell>
       )}
+
+      <TonPureTransfersSection transfers={tonTransfers} />
     </div>
   );
 }

@@ -6,6 +6,8 @@ export interface WalletPageQueryOptions {
   tab?: WalletTabId;
   page?: number;
   swaps?: boolean;
+  /** Starts sync automatically on the wallet page. */
+  sync?: boolean;
 }
 
 export function parseWalletTabParam(value: string | string[] | undefined): WalletTabId {
@@ -48,6 +50,10 @@ export function getWalletPagePath(address: string, options: WalletPageQueryOptio
 
   if (options.swaps) {
     params.set("swaps", "1");
+  }
+
+  if (options.sync) {
+    params.set("sync", "1");
   }
 
   const query = params.toString();

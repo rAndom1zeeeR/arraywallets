@@ -5,6 +5,7 @@ import { toRawTonAddress } from "@/shared/lib/ton/ton-address";
 import { serializeForJson } from "@/shared/infrastructure/sync/serialize-json";
 import { isAmountLabelEquivalent, normalizeSimplePreviewText } from "@/modules/wallet/domain/display-details.utils";
 import { inferSwapsFromTransactions } from "@/modules/swap/domain/swap-inference.utils";
+import { formatMoneyJetton, formatMoneyTonFromNanoton } from "@/modules/jetton/domain/money-format.utils";
 
 // Типы для промежуточного результата трансформации
 export interface TransformedAddress {
@@ -91,7 +92,7 @@ function transformJetton(jetton: JettonPreview | undefined): TransformedJetton |
   };
 }
 
-// Помощник для форматирования суммы
+/** Formats smallest-unit amount for Events displayAmount (stored in DB). */
 function formatAmount(
   amount: bigint | string | number | undefined | null,
   decimals: number,
@@ -102,14 +103,11 @@ function formatAmount(
     return undefined;
   }
 
-  const divisor = BigInt(10) ** BigInt(decimals);
-  const whole = coerced / divisor;
-  const frac = coerced % divisor;
+  if (symbol === "TON" && decimals === 9) {
+    return formatMoneyTonFromNanoton(coerced);
+  }
 
-  const fracStr = frac.toString().padStart(decimals, "0").replace(/0+$/, "");
-  const value = fracStr ? `${whole}.${fracStr}` : whole.toString();
-
-  return `${value} ${symbol}`;
+  return formatMoneyJetton(coerced, decimals, symbol);
 }
 
 function formatSwapDisplayAmount(swap: NonNullable<Action["JettonSwap"]>): string | undefined {

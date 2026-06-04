@@ -18,6 +18,8 @@ export interface DataTableProps<TData> {
   tbodyClassName?: string;
   bodyCellClassName?: string;
   renderSubComponent?: (row: Row<TData>) => ReactNode;
+  /** When set, overrides TanStack row expansion (use with local expand state if getExpandedRowModel breaks sorting). */
+  isRowExpanded?: (row: Row<TData>) => boolean;
   renderRow?: (row: Row<TData>, cells: ReactNode[]) => ReactNode;
   getRowClassName?: (row: Row<TData>) => string | undefined;
   subRowClassName?: string;
@@ -46,6 +48,7 @@ export function DataTable<TData>({
   tbodyClassName,
   bodyCellClassName,
   renderSubComponent,
+  isRowExpanded,
   renderRow,
   getRowClassName,
   subRowClassName,
@@ -136,7 +139,7 @@ export function DataTable<TData>({
               return (
                 <Fragment key={row.id}>
                   {mainRow}
-                  {row.getIsExpanded() && renderSubComponent && (
+                  {(isRowExpanded ? isRowExpanded(row) : row.getIsExpanded()) && renderSubComponent && (
                     <tr className={cn(dataTableStyles.subRow, subRowClassName)}>
                       <td
                         colSpan={row.getVisibleCells().length}

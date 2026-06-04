@@ -1,4 +1,5 @@
-import { formatJettonFromRaw, formatTonFromNanoton, parseNanoton } from "@/shared/lib/ton/ton-amount.utils";
+import { formatMoneyJetton, formatMoneyTonFromNanoton } from "@/modules/jetton/domain/money-format.utils";
+import { formatTonFromNanoton, parseNanoton } from "@/shared/lib/ton/ton-amount.utils";
 import { getEffectiveTonLegs, isPtonLikeJetton } from "@/modules/swap/domain/wrapped-ton.utils";
 
 export interface SwapJettonPrice {
@@ -237,7 +238,9 @@ function formatCounterpartList(items: JettonCounterpartTotal[]): string {
     return "—";
   }
 
-  return items.map(item => formatJettonFromRaw(item.amountRaw, item.jetton.decimals, item.jetton.symbol)).join(", ");
+  return items
+    .map(item => formatMoneyJetton(item.amountRaw, item.jetton.decimals, item.jetton.symbol))
+    .join(", ");
 }
 
 export function aggregateSwapsByJetton(swaps: SwapActionSnapshot[]): JettonSwapBreakdown[] {
@@ -320,10 +323,10 @@ export function aggregateSwapsByJetton(swaps: SwapActionSnapshot[]): JettonSwapB
 export function formatJettonSwapBreakdowns(rows: JettonSwapBreakdown[]): JettonSwapBreakdownFormatted[] {
   return rows.map(row => ({
     ...row,
-    spent: formatJettonFromRaw(row.spentRaw, row.jetton.decimals, row.jetton.symbol),
-    received: formatJettonFromRaw(row.receivedRaw, row.jetton.decimals, row.jetton.symbol),
-    tonPaid: formatTonFromNanoton(row.tonPaidNanoton),
-    tonReceived: formatTonFromNanoton(row.tonReceivedNanoton),
+    spent: formatMoneyJetton(row.spentRaw, row.jetton.decimals, row.jetton.symbol),
+    received: formatMoneyJetton(row.receivedRaw, row.jetton.decimals, row.jetton.symbol),
+    tonPaid: formatMoneyTonFromNanoton(row.tonPaidNanoton),
+    tonReceived: formatMoneyTonFromNanoton(row.tonReceivedNanoton),
     counterpartsReceivedText: formatCounterpartList(row.counterpartsReceived),
     counterpartsPaidText: formatCounterpartList(row.counterpartsPaid),
   }));

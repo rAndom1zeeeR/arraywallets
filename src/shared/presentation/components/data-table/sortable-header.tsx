@@ -1,7 +1,7 @@
 "use client";
 
 import type { Column } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp } from "lucide-react";
+import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/shared/lib/utils";
 
@@ -24,9 +24,11 @@ export function DataTableSortHeader<TData>({ column, label, className }: DataTab
   return (
     <button
       type="button"
-      onClick={column.getToggleSortingHandler()}
+      onClick={event => {
+        column.toggleSorting(undefined, event.shiftKey);
+      }}
       className={cn(
-        "inline-flex items-center gap-1 transition-colors select-none",
+        "inline-flex cursor-pointer items-center gap-1 transition-colors select-none",
         "text-muted-foreground hover:text-foreground",
         sorted && "text-foreground",
         className
@@ -38,7 +40,9 @@ export function DataTableSortHeader<TData>({ column, label, className }: DataTab
         <ArrowUp className="size-3 shrink-0" aria-hidden />
       ) : sorted === "desc" ? (
         <ArrowDown className="size-3 shrink-0" aria-hidden />
-      ) : null}
+      ) : (
+        <ChevronsUpDown className="size-3 shrink-0 opacity-40" aria-hidden />
+      )}
     </button>
   );
 }

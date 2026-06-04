@@ -1180,13 +1180,49 @@ function legsTonOnly(legs: LegSumResult): LegSumResult {
   };
 }
 
-function legsUsdOnly(legs: LegSumResult): LegSumResult {
+/**
+ * Maps counterparty TON legs to USD for USDT portfolio cost basis / proceeds.
+ */
+function legsUsdWithTonConverted(
+  legs: LegSumResult,
+  timestampSec: number,
+  tonUsdLookup: (timestampSec: number) => number | null
+): LegSumResult {
+  let totalUsd = legs.totalUsd;
+  let incompleteUsd = legs.incompleteUsd;
+  const convertedLegs: PortfolioPaymentLeg[] = legs.legs.filter(leg => leg.usd !== null);
+
+  for (const leg of legs.legs) {
+    if (leg.ton === null) {
+      continue;
+    }
+
+    const tonUsd = tonUsdLookup(timestampSec);
+    if (tonUsd === null) {
+      incompleteUsd = true;
+      convertedLegs.push({
+        ...leg,
+        usd: null,
+        usdFormatted: null,
+      });
+      continue;
+    }
+
+    const usd = leg.ton * tonUsd;
+    totalUsd += usd;
+    convertedLegs.push({
+      ...leg,
+      usd,
+      usdFormatted: formatUsd(usd),
+    });
+  }
+
   return {
     totalTon: 0,
-    totalUsd: legs.totalUsd,
-    legs: legs.legs.filter(leg => leg.usd !== null),
-    incompleteTon: legs.incompleteTon && legs.totalUsd === 0,
-    incompleteUsd: legs.incompleteUsd,
+    totalUsd,
+    legs: convertedLegs,
+    incompleteTon: false,
+    incompleteUsd,
   };
 }
 
@@ -1385,20 +1421,30 @@ function processTonNativeSwaps(
 function processUsdtNativeSwaps(
   swaps: SwapActionSnapshot[],
   state: JettonAccumulator,
-  getJettonUsdAt: (jetton: SwapJettonRef, timestampSec: number) => number | null
+  getJettonUsdAt: (jetton: SwapJettonRef, timestampSec: number) => number | null,
+  tonUsdLookup: (timestampSec: number) => number | null
 ): void {
   const chronological = [...swaps].sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
 
   for (const swap of chronological) {
+    const timestampSec = Math.floor(swap.timestamp.getTime() / 1000);
     const buyLeg = resolveUsdtBuyLeg(swap);
     if (buyLeg) {
-      const paid = legsUsdOnly(sumPaidLegsForSwap(swap, buyLeg.jetton.address, getJettonUsdAt));
+      const paid = legsUsdWithTonConverted(
+        sumPaidLegsForSwap(swap, buyLeg.jetton.address, getJettonUsdAt),
+        timestampSec,
+        tonUsdLookup
+      );
       applyBuy(state, swap, buyLeg.amountRaw, paid);
     }
 
     const sellLeg = resolveUsdtSellLeg(swap);
     if (sellLeg) {
-      const proceeds = legsUsdOnly(sumProceedsLegsForSwap(swap, sellLeg.jetton.address, getJettonUsdAt));
+      const proceeds = legsUsdWithTonConverted(
+        sumProceedsLegsForSwap(swap, sellLeg.jetton.address, getJettonUsdAt),
+        timestampSec,
+        tonUsdLookup
+      );
       applySell(state, swap, sellLeg.amountRaw, proceeds);
     }
   }
@@ -1432,7 +1478,8 @@ export function buildTonNativePortfolioPnl(
  */
 export function buildUsdtNativePortfolioPnl(
   swaps: SwapActionSnapshot[],
-  getJettonUsdAt: (jetton: SwapJettonRef, timestampSec: number) => number | null
+  getJettonUsdAt: (jetton: SwapJettonRef, timestampSec: number) => number | null,
+  tonUsdLookup: (timestampSec: number) => number | null
 ): JettonPortfolioPnlLine | null {
   const hasUsdtFlow = swaps.some(
     swap =>
@@ -1446,7 +1493,7 @@ export function buildUsdtNativePortfolioPnl(
 
   const map = new Map<string, JettonAccumulator>();
   const state = ensureAccumulator(map, resolveUsdtPortfolioJetton(swaps));
-  processUsdtNativeSwaps(swaps, state, getJettonUsdAt);
+  processUsdtNativeSwaps(swaps, state, getJettonUsdAt, tonUsdLookup);
 
   return mapUsdtNativeAccumulatorToLine(state);
 }

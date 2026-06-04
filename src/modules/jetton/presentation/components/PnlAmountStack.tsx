@@ -30,7 +30,7 @@ export function PnlAmountStack({
   const amountClass = size === "lg" ? "text-lg font-semibold tabular-nums" : "font-medium tabular-nums text-sm";
 
   return (
-    <div className="text-right">
+    <div>
       {hasTon && <div className={cn(amountClass, pnlClassNameFromNumber(ton))}>{formatTonAmount(ton)}</div>}
       {hasUsd && (
         <div className={cn(amountClass, hasTon && "mt-0.5", pnlClassNameFromNumber(usd))}>{formatUsd(usd)}</div>

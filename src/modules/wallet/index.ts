@@ -16,3 +16,4 @@ export {
 export { parsePageParam } from "./domain/wallet-page.utils";
 export type { EventWithActions, WalletEventActionRow } from "./domain/wallet-events.types";
 export { WalletTransactionsPage } from "./presentation/pages/WalletTransactionsPage";
+export { WalletsListPage } from "./presentation/pages/WalletsListPage";

@@ -33,6 +33,7 @@ export default async function WalletPage({ params, searchParams }: WalletPagePro
   const currentPage = parsePageParam(query.page);
   const activeTab = parseWalletTabParam(query.tab);
   const swapsOnly = query.swaps === "1";
+  const autoStartSync = query.sync === "1";
 
   return (
     <Suspense fallback={<main className="mx-auto max-w-7xl px-4 py-6 text-sm text-muted-foreground">Loading wallet…</main>}>
@@ -41,6 +42,7 @@ export default async function WalletPage({ params, searchParams }: WalletPagePro
         activeTab={activeTab}
         currentPage={currentPage}
         swapsOnly={swapsOnly}
+        autoStartSync={autoStartSync}
       />
     </Suspense>
   );

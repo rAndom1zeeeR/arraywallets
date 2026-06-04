@@ -155,3 +155,49 @@ export function buildTransactionRawDetailsPayload(params: BuildRawDetailsParams)
     rawEvent: event.rawData ?? null,
   });
 }
+
+function tryParseEmbeddedJsonString(value: string): unknown {
+  const trimmed = value.trim();
+  const looksLikeJsonObject = trimmed.startsWith("{") && trimmed.endsWith("}");
+  const looksLikeJsonArray = trimmed.startsWith("[") && trimmed.endsWith("]");
+
+  if (!looksLikeJsonObject && !looksLikeJsonArray) {
+    return value;
+  }
+
+  try {
+    return JSON.parse(trimmed) as unknown;
+  } catch {
+    return value;
+  }
+}
+
+function normalizeEmbeddedJsonStrings(value: unknown): unknown {
+  if (typeof value === "string") {
+    const parsed = tryParseEmbeddedJsonString(value);
+    return parsed === value ? value : normalizeEmbeddedJsonStrings(parsed);
+  }
+
+  if (Array.isArray(value)) {
+    return value.map(entry => normalizeEmbeddedJsonStrings(entry));
+  }
+
+  if (value !== null && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>).map(([key, entry]) => [
+        key,
+        normalizeEmbeddedJsonStrings(entry),
+      ])
+    );
+  }
+
+  return value;
+}
+
+/**
+ * Pretty-prints transaction raw details for UI display and clipboard copy.
+ */
+export function formatTransactionRawDetailsJson(payload: TransactionRawDetailsPayload): string {
+  const normalized = normalizeEmbeddedJsonStrings(serializeForJson(payload));
+  return JSON.stringify(normalized, null, 2);
+}

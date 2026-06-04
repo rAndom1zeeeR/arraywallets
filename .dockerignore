@@ -1,0 +1,26 @@
+# Dependencies and build artifacts
+node_modules
+.next
+out
+generated
+
+# Git and IDE
+.git
+.gitignore
+.cursor
+.vscode
+.codegraph
+
+# Env and secrets (injected at runtime)
+.env
+.env.*
+
+# Docs and local data
+.docs
+coverage
+*.md
+!README.md
+
+# OS
+.DS_Store
+Thumbs.db

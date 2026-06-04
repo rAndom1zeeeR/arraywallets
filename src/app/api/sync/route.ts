@@ -15,6 +15,7 @@ import {
   getWalletStats,
   getOldestSyncedLt,
   getSyncState,
+  countQuickIncompleteEvents,
   SYNC_BATCH_SIZE,
 } from "@/modules/wallet/application/sync-service";
 import { getWalletSwapStats, repairJettonSwapActionFields } from "@/modules/swap/application/swap-stats.service";
@@ -202,7 +203,9 @@ function buildSyncResponse(
   totals: SyncTotals,
   hasMore: boolean,
   resumeBeforeLt: bigint | undefined,
-  cancelled: boolean
+  cancelled: boolean,
+  historyComplete: boolean,
+  incrementalOnly: boolean
 ) {
   return {
     success: !cancelled,
@@ -217,6 +220,8 @@ function buildSyncResponse(
     errors: totals.errors,
     actionsSaved: totals.actionsSaved,
     hasMore,
+    historyComplete,
+    incrementalOnly,
     continuedFromLt: resumeBeforeLt?.toString() ?? null,
   };
 }
@@ -226,6 +231,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   const totals = createTotals();
   let resumeBeforeLt: bigint | undefined;
   let hasMore = false;
+  let historyComplete = false;
+  let incrementalOnly = false;
 
   try {
     const body = (await request.json()) as SyncRequestBody;
@@ -262,9 +269,26 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       console.log(`Force resync: cleared ${cleared.eventsDeleted} events, ${cleared.rawEventsDeleted} raw`);
     }
 
+    const [existingSyncState, oldestLtBefore] = await Promise.all([
+      shouldContinueFromLast ? getSyncState(normalizedAddress) : Promise.resolve(null),
+      shouldContinueFromLast ? getOldestSyncedLt(normalizedAddress) : Promise.resolve(null),
+    ]);
+
+    historyComplete = existingSyncState?.historyComplete ?? false;
+
+    const quickIncompleteEvents =
+      shouldContinueFromLast && historyComplete
+        ? await countQuickIncompleteEvents(normalizedAddress)
+        : 0;
+
+    incrementalOnly =
+      shouldContinueFromLast && historyComplete && quickIncompleteEvents === 0;
+
     await updateSyncState(normalizedAddress, { status: ChainSyncStatus.SYNCING });
 
-    if (shouldRepair) {
+    const shouldRunRepair = shouldRepair && !incrementalOnly;
+
+    if (shouldRunRepair) {
       const deleted = await repairIncompleteEvents(normalizedAddress);
       totals.traceSwapsRepaired = await repairTraceInferredSwapEvents(normalizedAddress);
       totals.swapsRepaired = await repairJettonSwapActionFields(normalizedAddress);
@@ -277,8 +301,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const maxPages = fetchAll ? Number.POSITIVE_INFINITY : maxPagesPerRun;
     const signal = request.signal;
 
-    const oldestLtBefore = shouldContinueFromLast ? await getOldestSyncedLt(normalizedAddress) : null;
-
     // New transactions (only when we already have history in DB)
     if (shouldContinueFromLast && oldestLtBefore !== null) {
       await syncNewestEvents(parsedAddress, normalizedAddress, totals, Math.min(HEAD_PAGES_LIMIT, maxPages), signal);
@@ -286,7 +308,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     resumeBeforeLt = shouldContinueFromLast && oldestLtBefore !== null ? oldestLtBefore : undefined;
 
-    hasMore = await syncOlderEvents(parsedAddress, normalizedAddress, totals, resumeBeforeLt, maxPages, signal);
+    if (incrementalOnly) {
+      hasMore = false;
+    } else {
+      hasMore = await syncOlderEvents(parsedAddress, normalizedAddress, totals, resumeBeforeLt, maxPages, signal);
+      historyComplete = !hasMore;
+    }
 
     const finalStatus = totals.errors > 0 ? ChainSyncStatus.ERROR : ChainSyncStatus.COMPLETED;
     await updateSyncState(normalizedAddress, {
@@ -294,19 +321,38 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       eventsSynced: totals.saved,
       actionsSynced: totals.actionsSaved,
       error: totals.errors > 0 ? `${totals.errors} events failed` : undefined,
+      historyComplete,
     });
 
-    const stats = await getWalletStats(normalizedAddress);
+    const stats =
+      incrementalOnly && totals.saved === 0 && totals.repaired === 0
+        ? undefined
+        : await getWalletStats(normalizedAddress).catch(error => {
+            console.error("getWalletStats after sync failed:", error);
+            return undefined;
+          });
     const oldestLtAfter = await getOldestSyncedLt(normalizedAddress);
 
-    try {
-      await getWalletSwapStats(normalizedAddress);
-    } catch (pnlError) {
-      console.error("Wallet PnL materialization failed:", pnlError);
+    const shouldRefreshPnl = totals.saved > 0 || totals.repaired > 0 || !incrementalOnly;
+
+    if (shouldRefreshPnl) {
+      try {
+        await getWalletSwapStats(normalizedAddress);
+      } catch (pnlError) {
+        console.error("Wallet PnL materialization failed:", pnlError);
+      }
     }
 
     return NextResponse.json({
-      ...buildSyncResponse(normalizedAddress, totals, hasMore, resumeBeforeLt, false),
+      ...buildSyncResponse(
+        normalizedAddress,
+        totals,
+        hasMore,
+        resumeBeforeLt,
+        false,
+        historyComplete,
+        incrementalOnly
+      ),
       force,
       clearedEvents,
       oldestSyncedLt: oldestLtAfter?.toString() ?? null,
@@ -323,11 +369,24 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         });
       }
 
-      const stats = normalizedAddress ? await getWalletStats(normalizedAddress) : undefined;
+      const stats = normalizedAddress
+        ? await getWalletStats(normalizedAddress).catch(error => {
+            console.error("getWalletStats after cancel failed:", error);
+            return undefined;
+          })
+        : undefined;
       const oldestLtAfter = normalizedAddress ? await getOldestSyncedLt(normalizedAddress) : null;
 
       return NextResponse.json({
-        ...buildSyncResponse(normalizedAddress ?? "", totals, hasMore, resumeBeforeLt, true),
+        ...buildSyncResponse(
+          normalizedAddress ?? "",
+          totals,
+          hasMore,
+          resumeBeforeLt,
+          true,
+          historyComplete,
+          incrementalOnly
+        ),
         oldestSyncedLt: oldestLtAfter?.toString() ?? null,
         stats,
       });

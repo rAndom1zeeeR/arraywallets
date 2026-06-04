@@ -4,7 +4,7 @@ import { useCallback, useId, useMemo, useState } from "react";
 import {
   createColumnHelper,
   getCoreRowModel,
-  getExpandedRowModel,
+  getPaginationRowModel,
   getSortedRowModel,
   type SortingState,
   useReactTable,
@@ -12,7 +12,15 @@ import {
 import { JettonAssetCell } from "@/modules/jetton/presentation/components/JettonAssetCell";
 import { PnlAmountStack } from "@/modules/jetton/presentation/components/PnlAmountStack";
 import type { JettonPortfolioPnlLine, PortfolioTradeDetail } from "@/modules/jetton/domain/jetton-portfolio-pnl.utils";
-import { formatTonUsdPair } from "@/modules/jetton/domain/money-format.utils";
+import {
+  formatMoneyJetton,
+  formatPercentChange24h,
+  formatTonAmount,
+  formatTonPrice,
+  formatTonUsdPair,
+  formatUsd,
+  formatUsdUnitPrice,
+} from "@/modules/jetton/domain/money-format.utils";
 import { buildTonviewerTransactionUrl } from "@/shared/lib/tonviewer";
 import { tonapiBaseUrl } from "@/shared/config/env.config";
 import { DataTable } from "@/shared/presentation/components/data-table/data-table";
@@ -35,6 +43,9 @@ const LEG_KIND_LABELS: Record<string, string> = {
 
 interface JettonPortfolioPnlTableProps {
   rows: JettonPortfolioPnlLine[];
+  /** When set, sorting applies to the full dataset and rows are paginated client-side. */
+  pageIndex?: number;
+  pageSize?: number;
 }
 
 interface MetricCellProps {
@@ -100,11 +111,81 @@ function resolvePriceSortValue(row: JettonPortfolioPnlLine): number | null {
   return row.currentPriceUsd ?? row.currentPriceTon ?? null;
 }
 
-interface PortfolioTradeCardProps {
-  trade: PortfolioTradeDetail;
+function formatLineInvested(line: JettonPortfolioPnlLine): string | null {
+  if (line.totalInvestedTon > 0) {
+    return formatTonAmount(line.totalInvestedTon);
+  }
+  if (line.totalInvestedUsd > 0) {
+    return formatUsd(line.totalInvestedUsd);
+  }
+  return null;
 }
 
-function PortfolioTradeCard({ trade }: PortfolioTradeCardProps) {
+function formatLineHoldingsQuantity(line: JettonPortfolioPnlLine): string | null {
+  if (line.holdingsRaw === 0n) {
+    return null;
+  }
+  return formatMoneyJetton(line.holdingsRaw, line.jetton.decimals, line.jetton.symbol);
+}
+
+function formatLineHoldingsValue(line: JettonPortfolioPnlLine): string | null {
+  if (line.holdingsValueTon !== null && line.holdingsValueTon !== undefined) {
+    return formatTonAmount(line.holdingsValueTon);
+  }
+  if (line.holdingsValueUsd !== null && line.holdingsValueUsd !== undefined) {
+    return formatUsd(line.holdingsValueUsd);
+  }
+  return null;
+}
+
+function formatLineAvgPrice(line: JettonPortfolioPnlLine): string | null {
+  if (line.avgBuyPriceUsd !== null && line.avgBuyPriceUsd !== undefined) {
+    return formatUsdUnitPrice(line.avgBuyPriceUsd);
+  }
+  if (line.avgBuyPriceTon !== null && line.avgBuyPriceTon !== undefined) {
+    return formatTonPrice(line.avgBuyPriceTon);
+  }
+  return null;
+}
+
+function formatLineSpotPrice(line: JettonPortfolioPnlLine): string | null {
+  if (line.currentPriceUsd !== null && line.currentPriceUsd !== undefined && line.currentPriceUsd > 0) {
+    const usd = formatUsdUnitPrice(line.currentPriceUsd);
+    const ton =
+      line.currentPriceTon !== null && line.currentPriceTon !== undefined && line.currentPriceTon > 0
+        ? formatTonPrice(line.currentPriceTon)
+        : null;
+    return ton && usd ? `${usd} · ${ton}` : usd;
+  }
+  if (line.currentPriceTon !== null && line.currentPriceTon !== undefined) {
+    return formatTonPrice(line.currentPriceTon);
+  }
+  return null;
+}
+
+function formatLinePriceChange24h(line: JettonPortfolioPnlLine): string | null {
+  const diffRaw = line.jetton.price?.diff24hUsd;
+  if (diffRaw === null || diffRaw === undefined) {
+    return null;
+  }
+  const diff = Number.parseFloat(diffRaw.replace(/[^\d.+-]/g, ""));
+  return Number.isFinite(diff) ? formatPercentChange24h(diff) : null;
+}
+
+function formatLineProceeds(line: JettonPortfolioPnlLine): string | null {
+  return formatTonUsdPair(
+    line.totalProceedsTon > 0 ? line.totalProceedsTon : null,
+    line.totalProceedsUsd > 0 ? line.totalProceedsUsd : null
+  );
+}
+
+interface PortfolioTradeCardProps {
+  trade: PortfolioTradeDetail;
+  jettonDecimals: number;
+  jettonSymbol: string;
+}
+
+function PortfolioTradeCard({ trade, jettonDecimals, jettonSymbol }: PortfolioTradeCardProps) {
   const tonviewerHref = buildTonviewerTransactionUrl(trade.tonEventId, null, tonapiBaseUrl);
 
   return (
@@ -151,7 +232,9 @@ function PortfolioTradeCard({ trade }: PortfolioTradeCardProps) {
       <div className="mt-1.5 grid gap-1 text-sm sm:grid-cols-2">
         <div>
           <span className="text-xs text-muted-foreground">Amount</span>
-          <div className="font-medium text-foreground">{trade.jettonAmount}</div>
+          <div className="font-medium text-foreground">
+            {formatMoneyJetton(trade.jettonAmountRaw, jettonDecimals, jettonSymbol)}
+          </div>
         </div>
         <div>
           <span className="text-xs text-muted-foreground">Unit price · Total</span>
@@ -186,9 +269,18 @@ function PortfolioTradeCard({ trade }: PortfolioTradeCardProps) {
 
 const columnHelper = createColumnHelper<JettonPortfolioPnlLine>();
 
-export function JettonPortfolioPnlTable({ rows }: JettonPortfolioPnlTableProps) {
+export function JettonPortfolioPnlTable({ rows, pageIndex, pageSize }: JettonPortfolioPnlTableProps) {
   const panelIdPrefix = useId();
   const [sorting, setSorting] = useState<SortingState>([{ id: "pnl", desc: true }]);
+  const [expandedRowIds, setExpandedRowIds] = useState<Record<string, boolean>>({});
+  const isPaginated = pageSize !== undefined && pageSize > 0;
+
+  const toggleExpandedRow = useCallback((rowId: string) => {
+    setExpandedRowIds(prev => ({
+      ...prev,
+      [rowId]: !prev[rowId],
+    }));
+  }, []);
 
   const columns = useMemo(
     () => [
@@ -208,16 +300,14 @@ export function JettonPortfolioPnlTable({ rows }: JettonPortfolioPnlTableProps) 
           const diff24h =
             diff24hRaw !== null && diff24hRaw !== undefined ? Number.parseFloat(diff24hRaw) : null;
           const diff24hValid = diff24h !== null && Number.isFinite(diff24h);
+          const priceChange24h = formatLinePriceChange24h(row.original);
 
           return (
             <MetricCell
-              primary={row.original.currentPrice}
+              primary={formatLineSpotPrice(row.original)}
               secondary={
-                diff24hValid
-                  ? `${diff24h >= 0 ? "+" : ""}${diff24h.toFixed(2)}% 24h`
-                  : row.original.currentPriceUnit === "ton"
-                    ? "цена в TON"
-                    : undefined
+                priceChange24h ??
+                (row.original.currentPriceUnit === "ton" ? "цена в TON" : undefined)
               }
               tone={diff24hValid ? profitTone(diff24h) : "neutral"}
             />
@@ -227,23 +317,25 @@ export function JettonPortfolioPnlTable({ rows }: JettonPortfolioPnlTableProps) 
       columnHelper.accessor(resolveInvestedSortValue, {
         id: "invested",
         header: ({ column }) => <DataTableSortHeader column={column} label="Invested" />,
+        sortingFn: createNullableNumberSortingFn("invested"),
         meta: { align: "right", hideBelow: "md" },
-        cell: ({ row }) => (
+        cell: ({ row }) => {
+          const proceedsText = formatLineProceeds(row.original);
+
+          return (
           <MetricCell
-            primary={row.original.totalInvested}
+            primary={formatLineInvested(row.original)}
             secondary={
               row.original.hasIncompleteTonBasis || row.original.hasIncompleteUsdBasis
                 ? "неполные ноги"
-                : row.original.totalProceedsTon > 0 || row.original.totalProceedsUsd > 0
-                  ? `proceeds ${formatTonUsdPair(
-                      row.original.totalProceedsTon > 0 ? row.original.totalProceedsTon : null,
-                      row.original.totalProceedsUsd > 0 ? row.original.totalProceedsUsd : null
-                    )}`
+                : proceedsText
+                  ? `proceeds ${proceedsText}`
                   : undefined
             }
             muted={row.original.hasIncompleteTonBasis || row.original.hasIncompleteUsdBasis}
           />
-        ),
+          );
+        },
       }),
       columnHelper.accessor(row => row.avgBuyPriceUsd ?? row.avgBuyPriceTon ?? null, {
         id: "avgPrice",
@@ -253,7 +345,7 @@ export function JettonPortfolioPnlTable({ rows }: JettonPortfolioPnlTableProps) 
         meta: { align: "right", hideBelow: "lg" },
         cell: ({ row }) => (
           <MetricCell
-            primary={row.original.avgBuyPrice}
+            primary={formatLineAvgPrice(row.original)}
             secondary={
               row.original.isTonNative
                 ? "средняя цена TON на свапах"
@@ -285,7 +377,10 @@ export function JettonPortfolioPnlTable({ rows }: JettonPortfolioPnlTableProps) 
         sortingFn: createBigintSortingFn("holdings"),
         meta: { align: "right", hideBelow: "sm" },
         cell: ({ row }) => (
-          <MetricCell primary={row.original.holdingsValue} secondary={row.original.holdings} />
+          <MetricCell
+            primary={formatLineHoldingsValue(row.original)}
+            secondary={formatLineHoldingsQuantity(row.original) ?? undefined}
+          />
         ),
       }),
       columnHelper.display({
@@ -293,24 +388,31 @@ export function JettonPortfolioPnlTable({ rows }: JettonPortfolioPnlTableProps) 
         header: " ",
         enableSorting: false,
         meta: { align: "right", headerClassName: "text-muted-foreground" },
-        cell: ({ row }) => {
+        cell: ({ row, table }) => {
           const tradeCount = row.original.trades.length;
           const panelId = `${panelIdPrefix}-${row.id}`;
+          const expandMeta = table.options.meta?.expand;
 
           if (tradeCount === 0) {
             return <span className="text-xs text-muted-foreground">—</span>;
           }
 
+          if (!expandMeta) {
+            return null;
+          }
+
+          const isExpanded = expandMeta.expandedRowIds[row.id] ?? false;
+
           return (
             <div className="text-right">
               <button
                 type="button"
-                onClick={row.getToggleExpandedHandler()}
-                aria-expanded={row.getIsExpanded()}
+                onClick={() => expandMeta.toggleExpandedRow(row.id)}
+                aria-expanded={isExpanded}
                 aria-controls={panelId}
                 className={buttonStyles.ghost}
               >
-                {row.getIsExpanded() ? "Less" : `Deals (${tradeCount})`}
+                {isExpanded ? "Less" : `Deals (${tradeCount})`}
               </button>
             </div>
           );
@@ -323,12 +425,29 @@ export function JettonPortfolioPnlTable({ rows }: JettonPortfolioPnlTableProps) 
   const table = useReactTable({
     data: rows,
     columns,
-    state: { sorting },
+    meta: {
+      expand: {
+        expandedRowIds,
+        toggleExpandedRow,
+      },
+    },
+    initialState: {
+      sorting: [{ id: "pnl", desc: true }],
+      ...(isPaginated
+        ? { pagination: { pageIndex: pageIndex ?? 0, pageSize } }
+        : {}),
+    },
+    state: {
+      sorting,
+      ...(isPaginated
+        ? { pagination: { pageIndex: pageIndex ?? 0, pageSize } }
+        : {}),
+    },
     onSortingChange: setSorting,
+    enableSorting: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
-    getRowCanExpand: row => row.original.trades.length > 0,
+    ...(isPaginated ? { getPaginationRowModel: getPaginationRowModel() } : {}),
     getRowId: row => row.jetton.address,
   });
 
@@ -340,7 +459,12 @@ export function JettonPortfolioPnlTable({ rows }: JettonPortfolioPnlTableProps) 
         </p>
         <ul className="max-h-80 space-y-2 overflow-y-auto text-sm">
           {row.original.trades.map(trade => (
-            <PortfolioTradeCard key={`${trade.swapId}-${trade.side}`} trade={trade} />
+            <PortfolioTradeCard
+              key={`${trade.swapId}-${trade.side}`}
+              trade={trade}
+              jettonDecimals={row.original.jetton.decimals}
+              jettonSymbol={row.original.jetton.symbol}
+            />
           ))}
         </ul>
       </div>
@@ -356,6 +480,7 @@ export function JettonPortfolioPnlTable({ rows }: JettonPortfolioPnlTableProps) 
     <DataTable
       table={table}
       tableClassName="min-w-[36rem] sm:min-w-[56rem]"
+      isRowExpanded={row => expandedRowIds[row.id] ?? false}
       renderSubComponent={renderSubComponent}
     />
   );

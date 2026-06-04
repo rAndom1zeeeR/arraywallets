@@ -230,6 +230,8 @@ model ChainSyncState {
 
   eventsSynced Int     @default(0) @map("events_synced")
   actionsSynced Int    @default(0) @map("actions_synced")
+  /// True when TonAPI history is fully backfilled to genesis (no more `before_lt` pages).
+  historyComplete Boolean @default(false) @map("history_complete")
 
   startedAt   DateTime? @map("started_at") @db.Timestamptz(3)
   completedAt DateTime? @map("completed_at") @db.Timestamptz(3)

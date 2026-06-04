@@ -12,6 +12,7 @@ export interface WalletEventJetton {
   address: string;
   symbol: string;
   name: string;
+  decimals: number;
 }
 
 export interface WalletEventActionRow {

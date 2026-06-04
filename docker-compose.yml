@@ -1,0 +1,36 @@
+# tonapi stack (Dokploy / Traefik or plain Docker).
+# Before first deploy: pnpm prisma:deploy against the same DATABASE_URL.
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_TONAPI_BASE_URL: ${NEXT_PUBLIC_TONAPI_BASE_URL:-https://tonapi.io}
+        NEXT_PUBLIC_TONAPI_API_KEY: ${NEXT_PUBLIC_TONAPI_API_KEY:-}
+        DATABASE_URL: ${DATABASE_URL:-postgresql://build:build@127.0.0.1:5432/build}
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
+      NEXT_PUBLIC_TONAPI_BASE_URL: ${NEXT_PUBLIC_TONAPI_BASE_URL:-https://tonapi.io}
+      NEXT_PUBLIC_TONAPI_API_KEY: ${NEXT_PUBLIC_TONAPI_API_KEY:-}
+      TZ: Europe/Moscow
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 2048M
+        reservations:
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 90s
+    restart: unless-stopped

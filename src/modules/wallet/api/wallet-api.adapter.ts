@@ -1,7 +1,13 @@
 import type { TonTransferPnlSummary } from "@/modules/jetton/domain/ton-transfer-pnl.utils";
 import type { WalletSwapStatsResult } from "@/modules/swap/application/swap-stats.service";
 import type { SwapPnlSummary } from "@/modules/swap/domain/swap-pnl.utils";
+import {
+  formatMoneyJetton,
+  formatMoneyTonFromNanoton,
+} from "@/modules/jetton/domain/money-format.utils";
 import type {
+  JettonCounterpartTotal,
+  JettonSwapBreakdownFormatted,
   SwapActionSnapshot,
   SwapDexBreakdown,
   SwapJettonRef,
@@ -47,13 +53,30 @@ interface SerializedTonTransferPnlSummary extends Omit<TonTransferPnlSummary, "w
   items: SerializedTonTransferPnlItem[];
 }
 
+interface SerializedJettonCounterpartTotal extends Omit<JettonCounterpartTotal, "amountRaw"> {
+  amountRaw: SerializedBigint;
+}
+
+interface SerializedJettonSwapBreakdown extends Omit<
+  JettonSwapBreakdownFormatted,
+  "spentRaw" | "receivedRaw" | "tonPaidNanoton" | "tonReceivedNanoton" | "counterpartsReceived" | "counterpartsPaid"
+> {
+  spentRaw: SerializedBigint;
+  receivedRaw: SerializedBigint;
+  tonPaidNanoton: SerializedBigint;
+  tonReceivedNanoton: SerializedBigint;
+  counterpartsReceived: SerializedJettonCounterpartTotal[];
+  counterpartsPaid: SerializedJettonCounterpartTotal[];
+}
+
 export interface SerializedWalletSwapStats extends Omit<
   WalletSwapStatsResult,
-  "pnl" | "swaps" | "aggregate" | "tonTransfers"
+  "pnl" | "swaps" | "aggregate" | "tonTransfers" | "byJetton"
 > {
   pnl: SerializedSwapPnlSummary;
   swaps: SerializedSwapSnapshot[];
   tonTransfers: SerializedTonTransferPnlSummary;
+  byJetton: SerializedJettonSwapBreakdown[];
   aggregate: Omit<WalletSwapAggregate, "tonSpentNanoton" | "tonReceivedNanoton" | "tonNetNanoton" | "byDex"> & {
     tonSpentNanoton: SerializedBigint;
     tonReceivedNanoton: SerializedBigint;
@@ -131,6 +154,33 @@ function revivePortfolioLine(
   };
 }
 
+function reviveJettonSwapBreakdown(row: SerializedJettonSwapBreakdown): JettonSwapBreakdownFormatted {
+  const spentRaw = reviveBigint(row.spentRaw);
+  const receivedRaw = reviveBigint(row.receivedRaw);
+  const tonPaidNanoton = reviveBigint(row.tonPaidNanoton);
+  const tonReceivedNanoton = reviveBigint(row.tonReceivedNanoton);
+
+  return {
+    ...row,
+    spentRaw,
+    receivedRaw,
+    tonPaidNanoton,
+    tonReceivedNanoton,
+    spent: formatMoneyJetton(spentRaw, row.jetton.decimals, row.jetton.symbol),
+    received: formatMoneyJetton(receivedRaw, row.jetton.decimals, row.jetton.symbol),
+    tonPaid: formatMoneyTonFromNanoton(tonPaidNanoton),
+    tonReceived: formatMoneyTonFromNanoton(tonReceivedNanoton),
+    counterpartsReceived: row.counterpartsReceived.map(item => ({
+      ...item,
+      amountRaw: reviveBigint(item.amountRaw),
+    })),
+    counterpartsPaid: row.counterpartsPaid.map(item => ({
+      ...item,
+      amountRaw: reviveBigint(item.amountRaw),
+    })),
+  };
+}
+
 function reviveTonTransferPnl(summary: SerializedTonTransferPnlSummary): TonTransferPnlSummary {
   return {
     ...summary,
@@ -147,6 +197,7 @@ export function reviveWalletSwapStats(stats: SerializedWalletSwapStats): WalletS
   return {
     ...stats,
     aggregate: reviveAggregate(stats.aggregate),
+    byJetton: stats.byJetton.map(reviveJettonSwapBreakdown),
     pnl: reviveSwapPnlSummary(stats.pnl),
     tonTransfers: reviveTonTransferPnl(stats.tonTransfers),
     tonPortfolio: stats.tonPortfolio ? revivePortfolioLine(stats.tonPortfolio) : null,

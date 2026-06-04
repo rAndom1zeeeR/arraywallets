@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { SyncButton } from "@/modules/wallet/presentation/components/SyncButton";
 import { SwapSummaryPanel } from "@/modules/swap/presentation/components/SwapSummaryPanel";
@@ -29,6 +30,7 @@ export interface WalletTransactionsPageProps {
   activeTab: WalletTabId;
   currentPage: number;
   swapsOnly: boolean;
+  autoStartSync?: boolean;
 }
 
 export function WalletTransactionsPage({
@@ -36,6 +38,7 @@ export function WalletTransactionsPage({
   activeTab,
   currentPage,
   swapsOnly,
+  autoStartSync = false,
 }: WalletTransactionsPageProps) {
   const summaryQuery = useQuery(walletSummaryQueryOptions(address));
   const eventsQuery = useQuery({
@@ -46,6 +49,7 @@ export function WalletTransactionsPage({
   const isSummaryLoading = summaryQuery.isPending;
   const isEventsLoading = activeTab === "events" && eventsQuery.isPending;
   const isLoading = isSummaryLoading || isEventsLoading;
+  const isSyncing = summaryQuery.data?.syncState?.status === ChainSyncStatus.SYNCING;
 
   const isError =
     summaryQuery.isError || (activeTab === "events" && eventsQuery.isError);
@@ -55,128 +59,131 @@ export function WalletTransactionsPage({
     (eventsQuery.error instanceof Error ? eventsQuery.error.message : null) ??
     "Failed to load wallet data";
 
-  if (isLoading) {
-    return (
-      <main className={pageStyles.main}>
-        <WalletTransactionsSkeleton />
-      </main>
-    );
-  }
-
-  if (isError || !summaryQuery.data) {
-    return (
-      <main className={pageStyles.main}>
-        <div className="rounded-lg border border-loss/30 bg-loss/10 px-4 py-3 text-loss">{errorMessage}</div>
-      </main>
-    );
-  }
-
-  if (activeTab === "events" && !eventsQuery.data) {
-    return (
-      <main className={pageStyles.main}>
-        <div className="rounded-lg border border-loss/30 bg-loss/10 px-4 py-3 text-loss">{errorMessage}</div>
-      </main>
-    );
-  }
-
-  const { stats, syncState, swapStats } = summaryQuery.data;
-  const isSyncing = syncState?.status === ChainSyncStatus.SYNCING;
+  const stats = summaryQuery.data?.stats;
+  const syncState = summaryQuery.data?.syncState;
+  const swapStats = summaryQuery.data?.swapStats;
 
   return (
     <main className={pageStyles.main}>
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
+          <Link href="/wallets" className="mb-2 inline-block text-sm text-primary hover:underline">
+            ← Все кошельки
+          </Link>
           <h1 className={pageStyles.pageTitle}>TON Wallet</h1>
           <p className="mt-1 text-sm text-muted-foreground">Portfolio tracker & transaction history</p>
         </div>
         <div className="flex items-center gap-3 self-end sm:self-auto">
           <ModeToggle />
-          <SyncButton address={address} isSyncing={isSyncing} incompleteEvents={stats.incompleteEvents} />
+          <SyncButton
+            address={address}
+            isSyncing={Boolean(isSyncing)}
+            incompleteEvents={stats?.incompleteEvents ?? 0}
+            historyComplete={syncState?.historyComplete ?? false}
+            autoStart={autoStartSync}
+          />
         </div>
       </div>
 
-      <div className={cn(pageStyles.infoCard, "mb-6")}>
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Address</span>
-            <code className="mt-1 block break-all font-mono text-sm text-foreground">{address}</code>
-          </div>
-        </div>
+      {isLoading && <WalletTransactionsSkeleton />}
 
-        <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-          <span>
-            DB: <strong className="text-foreground">{stats.events}</strong> events,{" "}
-            <strong className="text-foreground">{stats.actions}</strong> actions
-          </span>
-          {stats.incompleteEvents > 0 && (
-            <span className="text-loss">
-              Incomplete: {stats.incompleteEvents} — нажми <strong>Sync + repair</strong>
-            </span>
-          )}
-          {syncState && (
-            <>
-              <span>
-                Status:{" "}
-                <span
-                  className={cn(
-                    "font-medium",
-                    syncState.status === ChainSyncStatus.COMPLETED && "text-profit",
-                    syncState.status === ChainSyncStatus.ERROR && "text-loss",
-                    syncState.status === ChainSyncStatus.SYNCING && "text-primary",
-                    syncState.status !== ChainSyncStatus.COMPLETED &&
-                      syncState.status !== ChainSyncStatus.ERROR &&
-                      syncState.status !== ChainSyncStatus.SYNCING &&
-                      "text-muted-foreground"
-                  )}
-                >
-                  {syncState.status}
-                </span>
-              </span>
-              {syncState.actionsSynced !== undefined && (
-                <span>Last sync actions: {syncState.actionsSynced}</span>
-              )}
-              {syncState.lastTimestamp && (
-                <span>Last sync: {new Date(syncState.lastTimestamp).toLocaleString()}</span>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-
-      <WalletPageTabs
-        address={address}
-        activeTab={activeTab}
-        currentPage={currentPage}
-        swapsOnly={swapsOnly}
-      />
-
-      {activeTab === "events" && eventsQuery.data && (
-        <WalletEventsTable
-          address={address}
-          events={eventsQuery.data.events}
-          totalEvents={eventsQuery.data.totalEvents}
-          totalPages={eventsQuery.data.totalPages}
-          safePage={eventsQuery.data.safePage}
-          swapsOnly={swapsOnly}
-        />
+      {!isLoading && (isError || !summaryQuery.data) && (
+        <div className="rounded-lg border border-loss/30 bg-loss/10 px-4 py-3 text-loss">{errorMessage}</div>
       )}
 
-      {activeTab === "swaps" && <SwapSummaryPanel address={address} stats={swapStats} />}
+      {!isLoading && !isError && summaryQuery.data && activeTab === "events" && !eventsQuery.data && (
+        <div className="rounded-lg border border-loss/30 bg-loss/10 px-4 py-3 text-loss">{errorMessage}</div>
+      )}
 
-      {activeTab === "pnl" &&
-        (swapStats.aggregate.swapCount === 0 ? (
-          <section
-            id="wallet-tabpanel-pnl"
-            role="tabpanel"
-            aria-labelledby="wallet-tab-pnl"
-            className={cn(pageStyles.section, "border-dashed")}
-          >
-            <h2 className={pageStyles.sectionTitle}>Swap PnL</h2>
-            <p className={pageStyles.sectionSubtitle}>No swap actions in DB for this wallet yet.</p>
-          </section>
-        ) : (
-          <WalletPnlPanel address={address} currentPage={currentPage} stats={swapStats} />
-        ))}
+      {!isLoading && !isError && summaryQuery.data && stats && swapStats && (
+        <>
+          <div className={cn(pageStyles.infoCard, "mb-6")}>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Address</span>
+                <code className="mt-1 block break-all font-mono text-sm text-foreground">{address}</code>
+              </div>
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
+              <span>
+                DB: <strong className="text-foreground">{stats.events}</strong> events,{" "}
+                <strong className="text-foreground">{stats.actions}</strong> actions
+              </span>
+              {stats.incompleteEvents > 0 && (
+                <span className="text-loss">
+                  Incomplete: {stats.incompleteEvents} — нажми <strong>Sync + repair</strong>
+                </span>
+              )}
+              {syncState && (
+                <>
+                  <span>
+                    Status:{" "}
+                    <span
+                      className={cn(
+                        "font-medium",
+                        syncState.status === ChainSyncStatus.COMPLETED && "text-profit",
+                        syncState.status === ChainSyncStatus.ERROR && "text-loss",
+                        syncState.status === ChainSyncStatus.SYNCING && "text-primary",
+                        syncState.status !== ChainSyncStatus.COMPLETED &&
+                          syncState.status !== ChainSyncStatus.ERROR &&
+                          syncState.status !== ChainSyncStatus.SYNCING &&
+                          "text-muted-foreground"
+                      )}
+                    >
+                      {syncState.status}
+                    </span>
+                  </span>
+                  {syncState.actionsSynced !== undefined && (
+                    <span>Last sync actions: {syncState.actionsSynced}</span>
+                  )}
+                  {syncState.lastTimestamp && (
+                    <span>Last sync: {new Date(syncState.lastTimestamp).toLocaleString()}</span>
+                  )}
+                  {syncState.historyComplete && (
+                    <span className="text-profit">History complete — sync pulls new txs only</span>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+
+          <WalletPageTabs
+            address={address}
+            activeTab={activeTab}
+            currentPage={currentPage}
+            swapsOnly={swapsOnly}
+          />
+
+          {activeTab === "events" && eventsQuery.data && (
+            <WalletEventsTable
+              address={address}
+              events={eventsQuery.data.events}
+              totalEvents={eventsQuery.data.totalEvents}
+              totalPages={eventsQuery.data.totalPages}
+              safePage={eventsQuery.data.safePage}
+              swapsOnly={swapsOnly}
+            />
+          )}
+
+          {activeTab === "swaps" && <SwapSummaryPanel address={address} stats={swapStats} />}
+
+          {activeTab === "pnl" &&
+            (swapStats.aggregate.swapCount === 0 ? (
+              <section
+                id="wallet-tabpanel-pnl"
+                role="tabpanel"
+                aria-labelledby="wallet-tab-pnl"
+                className={cn(pageStyles.section, "border-dashed")}
+              >
+                <h2 className={pageStyles.sectionTitle}>Swap PnL</h2>
+                <p className={pageStyles.sectionSubtitle}>No swap actions in DB for this wallet yet.</p>
+              </section>
+            ) : (
+              <WalletPnlPanel address={address} currentPage={currentPage} stats={swapStats} />
+            ))}
+        </>
+      )}
     </main>
   );
 }

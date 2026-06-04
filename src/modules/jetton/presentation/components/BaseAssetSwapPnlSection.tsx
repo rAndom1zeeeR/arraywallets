@@ -1,14 +1,17 @@
 "use client";
 
 import type { JettonPortfolioPnlLine } from "@/modules/jetton/domain/jetton-portfolio-pnl.utils";
-import { formatTonAmount, formatUsd } from "@/modules/jetton/domain/money-format.utils";
+import {
+  formatMoneyJetton,
+  formatMoneyTonFromNanoton,
+  formatTonAmount,
+  formatUsd,
+} from "@/modules/jetton/domain/money-format.utils";
 import { pnlClassNameFromBigint } from "@/modules/jetton/domain/pnl-display.utils";
 import { PnlAmountStack } from "@/modules/jetton/presentation/components/PnlAmountStack";
-import type { TonPnlWithTransfers, TonTransferPnlSummary } from "@/modules/jetton/domain/ton-transfer-pnl.utils";
+import type { TonPnlWithTransfers } from "@/modules/jetton/domain/ton-transfer-pnl.utils";
 import type { AssetPnlFormatted } from "@/modules/swap/domain/swap-pnl.utils";
 import { JettonPortfolioPnlTable } from "@/modules/jetton/presentation/components/JettonPortfolioPnlTable";
-import { buildTonviewerTransactionUrl } from "@/shared/lib/tonviewer";
-import { tonapiBaseUrl } from "@/shared/config/env.config";
 import { pageStyles } from "@/shared/presentation/components/data-table/data-table.styles";
 import { cn } from "@/shared/lib/utils";
 
@@ -22,7 +25,6 @@ interface BaseAssetSwapPnlSectionProps {
   currency: BaseAssetPnlCurrency;
   swapCount: number;
   tonPnlWithTransfers?: TonPnlWithTransfers;
-  tonTransfers?: TonTransferPnlSummary;
 }
 
 interface FlowMetricProps {
@@ -79,7 +81,6 @@ export function BaseAssetSwapPnlSection({
   currency,
   swapCount,
   tonPnlWithTransfers,
-  tonTransfers,
 }: BaseAssetSwapPnlSectionProps) {
   const unitLabel = currency === "ton" ? "TON" : "USD";
   const hasFlow = flowPnl.spentRaw > 0n || flowPnl.receivedRaw > 0n;
@@ -125,6 +126,11 @@ export function BaseAssetSwapPnlSection({
   const hasIncomplete =
     currency === "ton" ? portfolioLine?.hasIncompleteTonBasis : portfolioLine?.hasIncompleteUsdBasis;
 
+  const formatFlowRaw = (raw: bigint): string =>
+    currency === "ton"
+      ? formatMoneyTonFromNanoton(raw)
+      : formatMoneyJetton(raw, portfolioLine?.jetton.decimals ?? 6, portfolioLine?.jetton.symbol ?? "USDT");
+
   return (
     <section className={pageStyles.section}>
       <h2 className={pageStyles.sectionTitle}>{title}</h2>
@@ -139,9 +145,9 @@ export function BaseAssetSwapPnlSection({
             Поток по свапам ({unitLabel})
           </div>
           <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
-            <FlowMetric label="Spent" value={flowPnl.spent} tone="spent" />
-            <FlowMetric label="Received" value={flowPnl.received} tone="received" />
-            <FlowMetric label="Net" value={flowPnl.net} tone="net" netRaw={flowPnl.netRaw} />
+            <FlowMetric label="Spent" value={formatFlowRaw(flowPnl.spentRaw)} tone="spent" />
+            <FlowMetric label="Received" value={formatFlowRaw(flowPnl.receivedRaw)} tone="received" />
+            <FlowMetric label="Net" value={formatFlowRaw(flowPnl.netRaw)} tone="net" netRaw={flowPnl.netRaw} />
           </div>
         </div>
       ) : (
@@ -195,55 +201,6 @@ export function BaseAssetSwapPnlSection({
         <p className="mt-3 text-xs text-amber-400">
           Часть сделок без оценки контрагента в {unitLabel} — cost basis и PnL могут быть неполными.
         </p>
-      )}
-
-      {currency === "ton" && tonTransfers && tonTransfers.items.length > 0 && (
-        <div className={cn(pageStyles.metricCard, "mt-4")}>
-          <div className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Чистые переводы TON ({tonTransfers.items.length})
-          </div>
-          <ul className="mt-3 space-y-2">
-            {tonTransfers.items.map(item => {
-              const tonviewerHref = buildTonviewerTransactionUrl(item.tonEventId, null, tonapiBaseUrl);
-              const directionLabel = item.direction === "OUTGOING" ? "вывод" : "ввод";
-              const counterpartyLabel = item.counterparty ? ` · ${item.counterparty}` : "";
-
-              return (
-                <li
-                  key={item.id}
-                  className="flex flex-wrap items-center justify-between gap-2 text-sm"
-                >
-                  <span className="tabular-nums text-muted-foreground">
-                    <span
-                      className={cn(
-                        "font-medium",
-                        item.direction === "OUTGOING" ? "text-loss" : "text-profit"
-                      )}
-                    >
-                      {item.direction === "OUTGOING" ? "−" : "+"}
-                      {formatTonAmount(item.amountTon)} TON
-                    </span>
-                    <span className="text-xs">
-                      {" "}
-                      ({directionLabel}
-                      {counterpartyLabel})
-                    </span>
-                  </span>
-                  {tonviewerHref && (
-                    <a
-                      href={tonviewerHref}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-medium text-primary hover:underline"
-                    >
-                      Tonviewer ↗
-                    </a>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </div>
       )}
 
       {portfolioLine && portfolioLine.trades.length > 0 && (

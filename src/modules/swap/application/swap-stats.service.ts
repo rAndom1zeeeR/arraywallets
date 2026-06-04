@@ -33,9 +33,9 @@ import {
   SWAP_AGGREGATE_ACTION_TYPES,
   type UnclassifiedSwapCluster,
 } from "@/modules/swap/domain/swap-inference.utils";
+import { hasLendingMarkerInAction } from "@/modules/swap/domain/lending-protocol.utils";
 import {
   getStoredWalletPnlSwapCount,
-  loadWalletPnlFromDb,
   recomputeWalletPnl,
 } from "@/modules/jetton/application/wallet-pnl.service";
 import { loadWalletTonTransferPnl } from "@/modules/jetton/application/wallet-ton-transfer-pnl.service";
@@ -222,6 +222,41 @@ async function loadEventRawDataById(eventIds: string[]): Promise<Map<string, unk
   return new Map(events.map(event => [event.id, event.rawData]));
 }
 
+async function loadLendingMarkerEventIds(eventIds: string[]): Promise<Set<string>> {
+  if (eventIds.length === 0) {
+    return new Set();
+  }
+
+  const actions = await prisma.chainAction.findMany({
+    where: {
+      eventId: { in: eventIds },
+      type: {
+        in: [
+          ChainActionType.TON_TRANSFER,
+          ChainActionType.JETTON_TRANSFER,
+          ChainActionType.SMART_CONTRACT_EXEC,
+          ChainActionType.FLAWED_JETTON_TRANSFER,
+        ],
+      },
+    },
+    select: {
+      eventId: true,
+      displayDetails: true,
+      metadata: true,
+    },
+  });
+
+  const lendingEventIds = new Set<string>();
+
+  for (const action of actions) {
+    if (hasLendingMarkerInAction(action)) {
+      lendingEventIds.add(action.eventId);
+    }
+  }
+
+  return lendingEventIds;
+}
+
 /**
  * Loads swap aggregate actions (native + inferred) and optional flawed heuristics for a wallet.
  * Fetches heavy `rawData` only for rows that need legacy-field enrichment.
@@ -256,8 +291,10 @@ export async function getWalletSwapStats(walletAddress: string): Promise<WalletS
 
   const eventIdsForRaw = [...new Set(rows.filter(actionNeedsRawEnrichment).map(row => row.eventId))];
   const rawByEventId = await loadEventRawDataById(eventIdsForRaw);
+  const lendingEventIds = await loadLendingMarkerEventIds([...new Set(rows.map(row => row.eventId))]);
+  const swapRows = rows.filter(row => !lendingEventIds.has(row.eventId));
 
-  const primarySwaps = rows.map(row => mapSwapRowToSnapshot(row, rawByEventId.get(row.eventId) ?? null));
+  const primarySwaps = swapRows.map(row => mapSwapRowToSnapshot(row, rawByEventId.get(row.eventId) ?? null));
   const flawedHeuristicSwaps = await loadFlawedHeuristicSwaps(walletVariants);
   const swaps = [...primarySwaps, ...flawedHeuristicSwaps].sort(
     (a, b) => b.timestamp.getTime() - a.timestamp.getTime()
@@ -276,16 +313,10 @@ export async function getWalletSwapStats(walletAddress: string): Promise<WalletS
     Promise.resolve(aggregate.swapCount),
   ]);
 
-  let pnl: SwapPnlSummary;
+  const pnl = buildSwapPnlSummary(aggregate, swaps);
 
-  if (storedSwapCount === currentSwapCount && currentSwapCount > 0) {
-    const cached = await loadWalletPnlFromDb(walletAddress);
-    pnl = cached ?? (await recomputeWalletPnl(walletAddress, aggregate, swaps));
-  } else if (currentSwapCount === 0) {
-    pnl = buildSwapPnlSummary(aggregate, swaps);
+  if (storedSwapCount !== currentSwapCount) {
     await recomputeWalletPnl(walletAddress, aggregate, swaps);
-  } else {
-    pnl = await recomputeWalletPnl(walletAddress, aggregate, swaps);
   }
 
   const byJetton = formatJettonSwapBreakdowns(aggregate.byJetton);
@@ -299,7 +330,7 @@ export async function getWalletSwapStats(walletAddress: string): Promise<WalletS
   };
 
   let tonPortfolio = buildTonNativePortfolioPnl(swaps, getJettonUsdAt);
-  const usdtPortfolio = buildUsdtNativePortfolioPnl(swaps, getJettonUsdAt);
+  const usdtPortfolio = buildUsdtNativePortfolioPnl(swaps, getJettonUsdAt, tonUsdLookup);
   const portfolio = buildJettonPortfolioPnl(swaps, byJetton, tonUsdLookup, getJettonUsdAt);
   const portfolioTotals = sumPortfolioPnl(portfolio);
 
@@ -416,6 +447,7 @@ type EventWithActionsRow = Prisma.ChainEventGetPayload<{
         tonIn: true;
         tonOut: true;
         displayAmount: true;
+        displayDetails: true;
         metadata: true;
         jettonIn: { select: { address: true; symbol: true; name: true; decimals: true; image: true } };
         jettonOut: { select: { address: true; symbol: true; name: true; decimals: true; image: true } };
@@ -452,6 +484,7 @@ async function loadEventsWithoutSwapActions(walletVariants: string[]): Promise<E
           tonIn: true,
           tonOut: true,
           displayAmount: true,
+          displayDetails: true,
           metadata: true,
           jettonIn: { select: { address: true, symbol: true, name: true, decimals: true, image: true } },
           jettonOut: { select: { address: true, symbol: true, name: true, decimals: true, image: true } },
@@ -470,6 +503,10 @@ async function loadFlawedHeuristicSwaps(walletVariants: string[]): Promise<SwapA
   const snapshots: SwapActionSnapshot[] = [];
 
   for (const event of events) {
+    if (event.actions.some(action => hasLendingMarkerInAction(action))) {
+      continue;
+    }
+
     const flawed = event.actions.find(action => action.type === ChainActionType.FLAWED_JETTON_TRANSFER);
     if (!flawed) {
       continue;

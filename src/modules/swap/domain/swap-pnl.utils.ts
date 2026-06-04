@@ -1,4 +1,6 @@
-import { formatJettonFromRaw, formatTonFromNanoton, parseNanoton } from "@/shared/lib/ton/ton-amount.utils";
+import { formatMoneyJetton, formatMoneyTonFromNanoton } from "@/modules/jetton/domain/money-format.utils";
+import { toRawTonAddress } from "@/shared/lib/ton/ton-address";
+import { parseNanoton } from "@/shared/lib/ton/ton-amount.utils";
 import type {
   JettonSwapBreakdown,
   SwapActionSnapshot,
@@ -8,6 +10,30 @@ import type {
 import { isPtonLikeJetton } from "@/modules/swap/domain/wrapped-ton.utils";
 
 const DEFAULT_USDT_DECIMALS = 6;
+
+/** Exact stablecoin symbols after {@link normalizeUsdtSymbol}. */
+const USDT_STABLECOIN_SYMBOLS = new Set(["USDT", "USDTT", "JUSDT"]);
+
+/**
+ * Known Tether USD jetton master on TON (USD₮, 6 decimals).
+ * Stored in raw form to avoid parse failures at module init.
+ */
+const USDT_MASTER_RAW_ADDRESSES = new Set<string>([
+  "0:b113a994b5024a16719f69139328eb759596c38a25f59028b146fecdc3621dfe",
+]);
+
+function normalizeUsdtSymbol(symbol: string): string {
+  return symbol.replace(/\s/g, "").toUpperCase().replace(/₮/g, "T");
+}
+
+/** LP / pool / vault tokens that embed "USDT" in the symbol but are not stablecoins. */
+function isUsdtDerivativeSymbol(normalized: string): boolean {
+  if (/[-/_]/.test(normalized)) {
+    return true;
+  }
+
+  return /(?:^USDT(?:SLP|LP|POOL|VAULT|WLP|PLP)|(?:SLP|LP|POOL|VAULT|WLP|PLP)USDT$)/.test(normalized);
+}
 
 export interface AssetPnlTotals {
   spentRaw: bigint;
@@ -42,19 +68,28 @@ export interface SwapPnlSummary {
 
 /**
  * Detects USD₮ / USDT / jUSDT jetton masters on TON.
+ * Excludes LP and pool tokens such as USDT-SLP (different decimals, not $1 peg).
  */
 export function isUsdtLikeJetton(jetton: SwapJettonRef): boolean {
-  const normalized = jetton.symbol.replace(/\s/g, "").toUpperCase();
-  return (
-    normalized.includes("USDT") ||
-    normalized === "USD₮" ||
-    normalized === "JUSDT" ||
-    (normalized.startsWith("USD") && normalized.endsWith("T"))
-  );
+  const normalized = normalizeUsdtSymbol(jetton.symbol);
+
+  if (isUsdtDerivativeSymbol(normalized)) {
+    return false;
+  }
+
+  if (USDT_STABLECOIN_SYMBOLS.has(normalized)) {
+    return true;
+  }
+
+  try {
+    return USDT_MASTER_RAW_ADDRESSES.has(toRawTonAddress(jetton.address));
+  } catch {
+    return false;
+  }
 }
 
 function formatUsdtRaw(raw: bigint, decimals: number): string {
-  return formatJettonFromRaw(raw, decimals, "USDT");
+  return formatMoneyJetton(raw, decimals, "USDT");
 }
 
 function buildAssetPnlFormatted(
@@ -73,6 +108,19 @@ function buildAssetPnlFormatted(
   };
 }
 
+/** Normalizes stablecoin raw units to 6-decimal USDT scale before aggregation. */
+function normalizeUsdtRaw(raw: bigint, decimals: number): bigint {
+  if (decimals === DEFAULT_USDT_DECIMALS) {
+    return raw;
+  }
+
+  if (decimals > DEFAULT_USDT_DECIMALS) {
+    return raw / 10n ** BigInt(decimals - DEFAULT_USDT_DECIMALS);
+  }
+
+  return raw * 10n ** BigInt(DEFAULT_USDT_DECIMALS - decimals);
+}
+
 function aggregateUsdtFromSwaps(swaps: SwapActionSnapshot[]): AssetPnlTotals {
   let spentRaw = 0n;
   let receivedRaw = 0n;
@@ -82,11 +130,11 @@ function aggregateUsdtFromSwaps(swaps: SwapActionSnapshot[]): AssetPnlTotals {
     const amountOut = parseNanoton(swap.amountOut);
 
     if (swap.jettonIn && isUsdtLikeJetton(swap.jettonIn) && amountIn > 0n) {
-      spentRaw += amountIn;
+      spentRaw += normalizeUsdtRaw(amountIn, swap.jettonIn.decimals);
     }
 
     if (swap.jettonOut && isUsdtLikeJetton(swap.jettonOut) && amountOut > 0n) {
-      receivedRaw += amountOut;
+      receivedRaw += normalizeUsdtRaw(amountOut, swap.jettonOut.decimals);
     }
   }
 
@@ -98,15 +146,7 @@ function aggregateUsdtFromSwaps(swaps: SwapActionSnapshot[]): AssetPnlTotals {
 }
 
 export function resolveUsdtDecimals(swaps: SwapActionSnapshot[]): number {
-  for (const swap of swaps) {
-    if (swap.jettonIn && isUsdtLikeJetton(swap.jettonIn)) {
-      return swap.jettonIn.decimals;
-    }
-    if (swap.jettonOut && isUsdtLikeJetton(swap.jettonOut)) {
-      return swap.jettonOut.decimals;
-    }
-  }
-
+  void swaps;
   return DEFAULT_USDT_DECIMALS;
 }
 
@@ -122,9 +162,9 @@ function buildJettonPnlLines(byJetton: JettonSwapBreakdown[]): JettonPnlLine[] {
 
       return {
         jetton: row.jetton,
-        spent: formatJettonFromRaw(row.spentRaw, row.jetton.decimals, row.jetton.symbol),
-        received: formatJettonFromRaw(row.receivedRaw, row.jetton.decimals, row.jetton.symbol),
-        net: formatJettonFromRaw(netRaw, row.jetton.decimals, row.jetton.symbol),
+        spent: formatMoneyJetton(row.spentRaw, row.jetton.decimals, row.jetton.symbol),
+        received: formatMoneyJetton(row.receivedRaw, row.jetton.decimals, row.jetton.symbol),
+        net: formatMoneyJetton(netRaw, row.jetton.decimals, row.jetton.symbol),
         spentRaw: row.spentRaw,
         receivedRaw: row.receivedRaw,
         netRaw,
@@ -153,9 +193,9 @@ export function buildSwapPnlSummary(aggregate: WalletSwapAggregate, swaps: SwapA
       receivedRaw: aggregate.tonReceivedNanoton,
       netRaw: aggregate.tonNetNanoton,
     },
-    formatTonFromNanoton,
-    formatTonFromNanoton,
-    formatTonFromNanoton
+    formatMoneyTonFromNanoton,
+    formatMoneyTonFromNanoton,
+    formatMoneyTonFromNanoton
   );
 
   const usdt = buildAssetPnlFormatted(

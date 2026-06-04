@@ -12,8 +12,7 @@ export const dataTableStyles = {
   headerCellRight: "text-right",
   tbody: "",
   bodyRow: "group transition-colors hover:bg-muted/40",
-  bodyCell:
-    "border-b border-border/60 px-3 py-4 align-top first:pl-0 last:pr-0 sm:px-4 sm:py-4",
+  bodyCell: "border-b border-border/60 px-3 py-4 align-top first:pl-0 last:pr-0 sm:px-4 sm:py-4",
   bodyCellRight: "text-right",
   subRow: "bg-muted/20",
   subRowCell: "px-3 py-4 sm:px-4",
@@ -42,7 +41,7 @@ export const pageStyles = {
 
 export const tabStyles = {
   nav: "border-b border-border",
-  list: "flex gap-0 overflow-x-auto scrollbar-thin-x",
+  list: "flex gap-0 overflow-y-hidden overflow-x-auto scrollbar-thin-x",
   tab: cn(
     "-mb-px shrink-0 border-b-2 px-4 py-3 text-sm font-medium transition-colors",
     "border-transparent text-muted-foreground hover:text-foreground"

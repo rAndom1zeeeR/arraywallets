@@ -1,10 +1,9 @@
 "use client";
 
-import { useCallback, useId, useMemo, useState } from "react";
+import { useCallback, useId, useMemo, useRef, useState } from "react";
 import {
   createColumnHelper,
   getCoreRowModel,
-  getExpandedRowModel,
   getSortedRowModel,
   type SortingState,
   useReactTable,
@@ -20,6 +19,7 @@ import {
   getJettonSwapRoleLabel,
   type JettonRelatedSwapItem,
 } from "@/modules/swap/domain/swap-transaction-list.utils";
+import { formatMoneyJetton, formatMoneyTonFromNanoton } from "@/modules/jetton/domain/money-format.utils";
 import { formatTonFromNanoton, parseNanoton } from "@/shared/lib/ton/ton-amount.utils";
 import type { JettonSwapBreakdownFormatted } from "@/modules/swap/domain/swap-stats.utils";
 import { buildTonviewerTransactionUrl } from "@/shared/lib/tonviewer";
@@ -130,22 +130,26 @@ interface SwapJettonTableRow extends JettonSwapBreakdownFormatted {
 
 const columnHelper = createColumnHelper<SwapJettonTableRow>();
 
-function resolveSortPriceUsd(
-  row: JettonSwapBreakdownFormatted,
-  rates: ReturnType<typeof useJettonRates>["data"]
-): number | null {
+function resolveSortPriceUsd(row: JettonSwapBreakdownFormatted): number | null {
   const dbUsd = row.jetton.price?.usd;
   if (dbUsd !== null && dbUsd !== undefined && dbUsd > 0) {
     return dbUsd;
   }
 
-  const rate = getJettonRateQuote(rates, row.jetton.address);
-  return rate?.usd ?? null;
+  return null;
 }
 
 export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps) {
   const panelIdPrefix = useId();
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [expandedRowIds, setExpandedRowIds] = useState<Record<string, boolean>>({});
+
+  const toggleExpandedRow = useCallback((rowId: string) => {
+    setExpandedRowIds(prev => ({
+      ...prev,
+      [rowId]: !prev[rowId],
+    }));
+  }, []);
   const addresses = useMemo(() => rows.map(row => row.jetton.address), [rows]);
   const needsLiveRates = useMemo(
     () => rows.some(row => !hasDisplayableJettonPrice(row.jetton.price)),
@@ -154,6 +158,11 @@ export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps)
   const { data: rates, isPending: isRatesLoading, isError: isRatesError } = useJettonRates(
     needsLiveRates ? addresses : []
   );
+
+  const ratesRef = useRef(rates);
+  const isRatesLoadingRef = useRef(isRatesLoading);
+  ratesRef.current = rates;
+  isRatesLoadingRef.current = isRatesLoading;
 
   const tableData = useMemo<SwapJettonTableRow[]>(
     () =>
@@ -171,7 +180,7 @@ export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps)
         header: ({ column }) => <DataTableSortHeader column={column} label="Asset" />,
         cell: ({ row }) => <JettonAssetCell jetton={row.original.jetton} />,
       }),
-      columnHelper.accessor(row => resolveSortPriceUsd(row, rates), {
+      columnHelper.accessor(row => resolveSortPriceUsd(row), {
         id: "price",
         header: ({ column }) => <DataTableSortHeader column={column} label="Price" />,
         sortingFn: createNullableNumberSortingFn("price"),
@@ -179,14 +188,15 @@ export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps)
         meta: { align: "right" },
         cell: ({ row }) => {
           const rate =
-            row.original.jetton.price ?? getJettonRateQuote(rates, row.original.jetton.address);
+            row.original.jetton.price ??
+            getJettonRateQuote(ratesRef.current, row.original.jetton.address);
           return (
             <JettonPriceCell
               rate={rate}
               isLoading={
                 needsLiveRates &&
                 !hasDisplayableJettonPrice(row.original.jetton.price) &&
-                isRatesLoading
+                isRatesLoadingRef.current
               }
             />
           );
@@ -197,14 +207,16 @@ export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps)
         header: ({ column }) => <DataTableSortHeader column={column} label="Sold" className="text-loss" />,
         sortingFn: createBigintSortingFn("sold"),
         meta: { align: "right", headerClassName: "text-loss", cellClassName: "text-loss tabular-nums" },
-        cell: ({ row }) => row.original.spent,
+        cell: ({ row }) =>
+          formatMoneyJetton(row.original.spentRaw, row.original.jetton.decimals, row.original.jetton.symbol),
       }),
       columnHelper.accessor("receivedRaw", {
         id: "bought",
         header: ({ column }) => <DataTableSortHeader column={column} label="Bought" className="text-profit" />,
         sortingFn: createBigintSortingFn("bought"),
         meta: { align: "right", headerClassName: "text-profit", cellClassName: "text-profit tabular-nums" },
-        cell: ({ row }) => row.original.received,
+        cell: ({ row }) =>
+          formatMoneyJetton(row.original.receivedRaw, row.original.jetton.decimals, row.original.jetton.symbol),
       }),
       columnHelper.accessor("tonReceivedNanoton", {
         id: "tonGot",
@@ -216,7 +228,7 @@ export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps)
           headerClassName: "text-profit",
           cellClassName: "text-profit tabular-nums",
         },
-        cell: ({ row }) => row.original.tonReceived,
+        cell: ({ row }) => formatMoneyTonFromNanoton(row.original.tonReceivedNanoton),
       }),
       columnHelper.accessor("tonPaidNanoton", {
         id: "tonPaid",
@@ -228,7 +240,7 @@ export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps)
           headerClassName: "text-loss",
           cellClassName: "text-loss tabular-nums",
         },
-        cell: ({ row }) => row.original.tonPaid,
+        cell: ({ row }) => formatMoneyTonFromNanoton(row.original.tonPaidNanoton),
       }),
       columnHelper.accessor(row => sumCounterpartAmounts(row.counterpartsReceived), {
         id: "otherGot",
@@ -269,42 +281,55 @@ export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps)
         header: " ",
         enableSorting: false,
         meta: { align: "right", headerClassName: "text-muted-foreground" },
-        cell: ({ row }) => {
+        cell: ({ row, table }) => {
           const swapCount = row.original.relatedSwaps.length;
           const panelId = `${panelIdPrefix}-${row.id}`;
+          const expandMeta = table.options.meta?.expand;
 
           if (swapCount === 0) {
             return <span className="text-xs text-muted-foreground">—</span>;
           }
 
+          if (!expandMeta) {
+            return null;
+          }
+
+          const isExpanded = expandMeta.expandedRowIds[row.id] ?? false;
+
           return (
             <div className="text-right">
               <button
                 type="button"
-                onClick={row.getToggleExpandedHandler()}
-                aria-expanded={row.getIsExpanded()}
+                onClick={() => expandMeta.toggleExpandedRow(row.id)}
+                aria-expanded={isExpanded}
                 aria-controls={panelId}
                 className={buttonStyles.ghost}
               >
-                {row.getIsExpanded() ? "Less" : `More (${swapCount})`}
+                {isExpanded ? "Less" : `More (${swapCount})`}
               </button>
             </div>
           );
         },
       }),
     ],
-    [rates, isRatesLoading, needsLiveRates, panelIdPrefix]
+    [needsLiveRates, panelIdPrefix]
   );
 
   const table = useReactTable({
     data: tableData,
     columns,
+    meta: {
+      expand: {
+        expandedRowIds,
+        toggleExpandedRow,
+      },
+    },
+    initialState: { sorting: [] },
     state: { sorting },
     onSortingChange: setSorting,
+    enableSorting: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getExpandedRowModel: getExpandedRowModel(),
-    getRowCanExpand: row => row.original.relatedSwaps.length > 0,
     getRowId: row => row.jetton.address,
   });
 
@@ -330,6 +355,7 @@ export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps)
       <DataTable
         table={table}
         tableClassName="min-w-[32rem] sm:min-w-[56rem]"
+        isRowExpanded={row => expandedRowIds[row.id] ?? false}
         renderSubComponent={renderSubComponent}
       />
     </div>

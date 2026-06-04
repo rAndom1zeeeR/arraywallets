@@ -1,5 +1,17 @@
 import type { Row, SortingFn } from "@tanstack/react-table";
 
+export function coerceBigint(value: unknown): bigint {
+  if (typeof value === "bigint") {
+    return value;
+  }
+
+  if (typeof value === "string" || typeof value === "number") {
+    return BigInt(value);
+  }
+
+  return 0n;
+}
+
 export function compareBigint(a: bigint, b: bigint): number {
   if (a === b) {
     return 0;
@@ -33,8 +45,8 @@ export function compareNullableNumber(a: number | null | undefined, b: number | 
 
 export function createBigintSortingFn<TData>(columnId: string): SortingFn<TData> {
   return (rowA: Row<TData>, rowB: Row<TData>) => {
-    const a = rowA.getValue(columnId) as bigint;
-    const b = rowB.getValue(columnId) as bigint;
+    const a = coerceBigint(rowA.getValue(columnId));
+    const b = coerceBigint(rowB.getValue(columnId));
     return compareBigint(a, b);
   };
 }

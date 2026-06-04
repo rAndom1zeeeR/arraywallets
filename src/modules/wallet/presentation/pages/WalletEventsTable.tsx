@@ -16,7 +16,10 @@ import { TonviewerAccountLink } from "@/modules/wallet/presentation/components/T
 import { TonviewerTransactionLink } from "@/modules/wallet/presentation/components/TonviewerTransactionLink";
 import { TransactionRawDetailsButton } from "@/modules/wallet/presentation/components/TransactionRawDetailsButton";
 import { buildTransactionRawDetailsPayload } from "@/modules/wallet/domain/raw-details.utils";
-import { formatTonFromNanoton, parseNanoton } from "@/shared/lib/ton/ton-amount.utils";
+import {
+  formatEventActionAmount,
+  formatTonLegIfNonZero,
+} from "@/modules/jetton/domain/money-format.utils";
 import type { WalletEventActionRow } from "@/modules/wallet/domain/wallet-events.types";
 import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
 import type { ChainActionDirectionValue } from "@/shared/constants/chain-prisma.enums";
@@ -126,7 +129,6 @@ export function WalletEventsTable({
   swapsOnly,
 }: WalletEventsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
-
   const tableData = useMemo(() => flattenEvents(events), [events]);
 
   const columns = useMemo(
@@ -216,9 +218,18 @@ export function WalletEventsTable({
         meta: { align: "right" },
         cell: ({ row }) => {
           const tx = row.original.action;
+          const amountText = formatEventActionAmount({
+            type: tx.type,
+            displayAmount: tx.displayAmount,
+            amount: tx.amount,
+            jetton: tx.jetton,
+          });
+          const tonInText = formatTonLegIfNonZero(tx.tonIn);
+          const tonOutText = formatTonLegIfNonZero(tx.tonOut);
+
           return (
             <>
-              {tx.displayAmount ? (
+              {amountText ? (
                 <span
                   className={cn(
                     "font-medium tabular-nums",
@@ -227,20 +238,16 @@ export function WalletEventsTable({
                   )}
                 >
                   {tx.direction === "INCOMING" ? "+" : tx.direction === "OUTGOING" ? "-" : ""}
-                  {tx.displayAmount}
+                  {amountText}
                 </span>
               ) : (
                 <span className="text-muted-foreground">—</span>
               )}
-              {(tx.type === "JETTON_SWAP" || tx.type === "INFERRED_SWAP") && (tx.tonIn || tx.tonOut) && (
+              {(tx.type === "JETTON_SWAP" || tx.type === "INFERRED_SWAP") && (tonInText || tonOutText) && (
                 <div className="mt-1 text-xs tabular-nums text-muted-foreground">
-                  {tx.tonIn && <span className="text-loss">TON in: {formatTonFromNanoton(parseNanoton(String(tx.tonIn)))}</span>}
-                  {tx.tonIn && tx.tonOut && " · "}
-                  {tx.tonOut && (
-                    <span className="text-profit">
-                      TON out: {formatTonFromNanoton(parseNanoton(String(tx.tonOut)))}
-                    </span>
-                  )}
+                  {tonInText && <span className="text-loss">TON in: {tonInText}</span>}
+                  {tonInText && tonOutText && " · "}
+                  {tonOutText && <span className="text-profit">TON out: {tonOutText}</span>}
                 </div>
               )}
             </>
@@ -283,8 +290,10 @@ export function WalletEventsTable({
   const table = useReactTable({
     data: tableData,
     columns,
+    initialState: { sorting: [] },
     state: { sorting },
     onSortingChange: setSorting,
+    enableSorting: true,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getRowId: row => row.rowKey,

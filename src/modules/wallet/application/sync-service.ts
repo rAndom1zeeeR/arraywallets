@@ -405,6 +405,7 @@ export async function clearWalletSyncData(walletAddress: string): Promise<ClearW
       error: null,
       eventsSynced: 0,
       actionsSynced: 0,
+      historyComplete: false,
       startedAt: null,
       completedAt: null,
     },
@@ -681,6 +682,21 @@ export async function syncAccountEvents(
   return { saved, skipped, repaired, errors, actionsSaved };
 }
 
+/**
+ * Lightweight incomplete check — events with zero actions only (no groupBy scan).
+ * Used before incremental sync to avoid heavy stats queries on remote DB.
+ */
+export async function countQuickIncompleteEvents(walletAddress: string): Promise<number> {
+  const walletVariants = getWalletAddressVariants(walletAddress);
+
+  return prisma.chainEvent.count({
+    where: {
+      walletAddress: { in: walletVariants },
+      actions: { none: {} },
+    },
+  });
+}
+
 export async function getWalletStats(walletAddress: string): Promise<{
   events: number;
   actions: number;
@@ -757,6 +773,7 @@ export async function updateSyncState(
     error?: string;
     eventsSynced?: number;
     actionsSynced?: number;
+    historyComplete?: boolean;
   }
 ) {
   const normalized = toRawTonAddress(walletAddress);

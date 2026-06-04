@@ -1,6 +1,7 @@
 import { ChainActionDirection, ChainActionStatus, ChainActionType } from "@/shared/infrastructure/api/prisma-client";
 import type { TransformedJetton, TransformedTransaction } from "@/modules/wallet/application/transformer";
 import { formatJettonFromRaw, formatTonFromNanoton, parseNanoton } from "@/shared/lib/ton/ton-amount.utils";
+import { hasLendingProtocolMarker } from "@/modules/swap/domain/lending-protocol.utils";
 
 /** Base order index for synthetic inferred swap rows (avoids collision with TonAPI action indices). */
 export const INFERRED_SWAP_ORDER_BASE = 10_000;
@@ -665,6 +666,10 @@ export function inferSwapsFromTransactions(
   accountRaw: string,
   jettonsByAddress: Map<string, TransformedJetton>
 ): SwapInferenceResult {
+  if (hasLendingProtocolMarker(transactions)) {
+    return { inferredTransactions: [], unclassifiedClusters: [] };
+  }
+
   const hasNativeSwap = transactions.some(tx => tx.type === ChainActionType.JETTON_SWAP);
   if (hasNativeSwap) {
     return { inferredTransactions: [], unclassifiedClusters: [] };
