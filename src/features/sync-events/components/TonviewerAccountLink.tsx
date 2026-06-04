@@ -15,13 +15,7 @@ export function TonviewerAccountLink({
   const href = buildTonviewerAccountUrl(address, tonapiBaseUrl);
 
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className={className}
-      title={address}
-    >
+    <a href={href} target="_blank" rel="noopener noreferrer" className={className} title={address}>
       {label}
     </a>
   );

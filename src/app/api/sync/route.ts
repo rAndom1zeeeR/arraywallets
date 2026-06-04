@@ -16,6 +16,7 @@ import {
   getSyncState,
   SYNC_BATCH_SIZE,
 } from "@/features/sync-events/model/sync-service";
+import { repairJettonSwapActionFields } from "@/features/sync-events/model/swap-stats.service";
 
 const API_PAGE_SIZE = SYNC_BATCH_SIZE;
 const DEFAULT_MAX_PAGES_PER_RUN = 30;
@@ -36,6 +37,7 @@ interface SyncTotals {
   saved: number;
   skipped: number;
   repaired: number;
+  swapsRepaired: number;
   errors: number;
   actionsSaved: number;
   eventsFetched: number;
@@ -46,6 +48,7 @@ function createTotals(): SyncTotals {
     saved: 0,
     skipped: 0,
     repaired: 0,
+    swapsRepaired: 0,
     errors: 0,
     actionsSaved: 0,
     eventsFetched: 0,
@@ -209,6 +212,7 @@ function buildSyncResponse(
     saved: totals.saved,
     skipped: totals.skipped,
     repaired: totals.repaired,
+    swapsRepaired: totals.swapsRepaired,
     errors: totals.errors,
     actionsSaved: totals.actionsSaved,
     hasMore,
@@ -257,7 +261,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       console.log(`Force resync: cleared ${cleared.eventsDeleted} events, ${cleared.rawEventsDeleted} raw`);
     } else if (shouldRepair) {
       const deleted = await repairIncompleteEvents(normalizedAddress);
-      console.log(`Repaired: deleted ${deleted} incomplete events`);
+      const swapsFixed = await repairJettonSwapActionFields(normalizedAddress);
+      totals.swapsRepaired = swapsFixed;
+      console.log(`Repaired: deleted ${deleted} incomplete events, fixed ${swapsFixed} swap rows`);
     }
 
     await updateSyncState(normalizedAddress, { status: ChainSyncStatus.SYNCING });

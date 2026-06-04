@@ -1,20 +1,18 @@
+import { cache } from "react";
 import { Address } from "@ton/core";
 import { prisma } from "@/shared/api/prisma";
 import { SyncButton } from "@/features/sync-events/components/SyncButton";
-import {
-  EventsPagination,
-  EVENTS_PAGE_SIZE,
-} from "@/features/sync-events/components/EventsPagination";
+import { EventsPagination, EVENTS_PAGE_SIZE } from "@/features/sync-events/components/EventsPagination";
 import { resolveDisplayDetails } from "@/features/sync-events/lib/display-details.utils";
 import { TonviewerAccountLink } from "@/features/sync-events/components/TonviewerAccountLink";
 import { TonviewerTransactionLink } from "@/features/sync-events/components/TonviewerTransactionLink";
 import { TransactionRawDetailsButton } from "@/features/sync-events/components/TransactionRawDetailsButton";
 import { buildTransactionRawDetailsPayload } from "@/features/sync-events/lib/raw-details.utils";
+import { formatTonFromNanoton, parseNanoton } from "@/features/sync-events/lib/ton-amount.utils";
 import { getWalletStats } from "@/features/sync-events/model/sync-service";
-import {
-  normalizeWalletAddress,
-  getWalletAddressVariants,
-} from "@/shared/lib/ton-address";
+import { getWalletSwapStats } from "@/features/sync-events/model/swap-stats.service";
+import { SwapSummaryPanel } from "@/features/sync-events/components/SwapSummaryPanel";
+import { normalizeWalletAddress, getWalletAddressVariants } from "@/shared/lib/ton-address";
 import {
   ChainSyncStatus,
   type ChainEvent,
@@ -28,6 +26,9 @@ interface PageProps {
 }
 
 const DEFAULT_ADDRESS = "EQD_VOCkZZxBqRlHgqVXzKpoW_29kR-S0t02VN4VxiDTr7Bl";
+
+const getWalletStatsCached = cache(getWalletStats);
+const getWalletSwapStatsCached = cache(getWalletSwapStats);
 
 type EventWithActions = ChainEvent & {
   actions: (ChainAction & {
@@ -69,10 +70,7 @@ async function getEventsCount(address: string): Promise<number> {
   });
 }
 
-async function getEvents(
-  address: string,
-  page: number
-): Promise<EventWithActions[]> {
+async function getEvents(address: string, page: number): Promise<EventWithActions[]> {
   const walletVariants = getWalletAddressVariants(address);
   const skip = (page - 1) * EVENTS_PAGE_SIZE;
 
@@ -135,7 +133,7 @@ function getDirectionBadge(direction: string | null | undefined) {
   };
 
   return (
-    <span className={`px-2 py-0.5 rounded text-xs font-medium ${styles[direction] ?? styles.unknown}`}>
+    <span className={`rounded px-2 py-0.5 text-xs font-medium ${styles[direction] ?? styles.unknown}`}>
       {labels[direction] ?? direction}
     </span>
   );
@@ -151,8 +149,8 @@ export default async function Home({ searchParams }: PageProps) {
   } catch {
     return (
       <main className="p-4">
-        <h1 className="text-2xl font-bold mb-4">TON Wallet Transactions</h1>
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+        <h1 className="mb-4 text-2xl font-bold">TON Wallet Transactions</h1>
+        <div className="rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700">
           Invalid TON address: {addressParam}
         </div>
       </main>
@@ -161,67 +159,86 @@ export default async function Home({ searchParams }: PageProps) {
 
   const addressString = normalizeWalletAddress(address.toString());
   const currentPage = parsePageParam(params.page);
+  const swapsOnly = params.swaps === "1";
 
-  const [totalEvents, syncState, stats] = await Promise.all([
+  const [totalEvents, syncState, stats, swapStats] = await Promise.all([
     getEventsCount(addressString),
     getSyncState(addressString),
-    getWalletStats(addressString),
+    getWalletStatsCached(addressString),
+    getWalletSwapStatsCached(addressString),
   ]);
 
   const totalPages = Math.max(1, Math.ceil(totalEvents / EVENTS_PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
   const events = await getEvents(addressString, safePage);
+  const visibleEvents = swapsOnly
+    ? events
+        .map(event => ({
+          ...event,
+          actions: event.actions.filter(action => action.type === "JETTON_SWAP"),
+        }))
+        .filter(event => event.actions.length > 0)
+    : events;
 
   const isSyncing = syncState?.status === ChainSyncStatus.SYNCING;
 
   return (
     <main className="p-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold">TON Wallet Transactions</h1>
         <SyncButton address={addressString} isSyncing={isSyncing} />
       </div>
 
-      <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+      <div className="mb-4 rounded-lg bg-gray-50 p-4 dark:bg-gray-900">
         <div className="flex items-center gap-4">
           <div>
             <span className="text-sm text-gray-500">Address:</span>
-            <code className="ml-2 text-sm font-mono">{addressString}</code>
+            <code className="ml-2 font-mono text-sm">{addressString}</code>
           </div>
         </div>
 
-        <div className="mt-2 text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-gray-600">
           <span>
             DB: <strong>{stats.events}</strong> events, <strong>{stats.actions}</strong> actions
           </span>
           {stats.incompleteEvents > 0 && (
-            <span className="text-red-600">
-              Incomplete: {stats.incompleteEvents} (нажми Sync с repair)
-            </span>
+            <span className="text-red-600">Incomplete: {stats.incompleteEvents} (нажми Sync с repair)</span>
           )}
           {syncState && (
             <>
               <span>
                 Status:{" "}
-                <span className={`font-medium ${syncState.status === ChainSyncStatus.COMPLETED ? "text-green-600" :
-                  syncState.status === ChainSyncStatus.ERROR ? "text-red-600" :
-                    syncState.status === ChainSyncStatus.SYNCING ? "text-blue-600" :
-                      "text-gray-600"
-                  }`}>
+                <span
+                  className={`font-medium ${
+                    syncState.status === ChainSyncStatus.COMPLETED
+                      ? "text-green-600"
+                      : syncState.status === ChainSyncStatus.ERROR
+                        ? "text-red-600"
+                        : syncState.status === ChainSyncStatus.SYNCING
+                          ? "text-blue-600"
+                          : "text-gray-600"
+                  }`}
+                >
                   {syncState.status}
                 </span>
               </span>
-              {syncState.actionsSynced !== undefined && (
-                <span>Last sync actions: {syncState.actionsSynced}</span>
-              )}
-              {syncState.lastTimestamp && (
-                <span>
-                  Last sync: {new Date(syncState.lastTimestamp).toLocaleString()}
-                </span>
-              )}
+              {syncState.actionsSynced !== undefined && <span>Last sync actions: {syncState.actionsSynced}</span>}
+              {syncState.lastTimestamp && <span>Last sync: {new Date(syncState.lastTimestamp).toLocaleString()}</span>}
             </>
           )}
         </div>
       </div>
+
+      <SwapSummaryPanel address={addressString} stats={swapStats} />
+
+      {swapsOnly && (
+        <p className="mb-3 text-sm text-orange-700 dark:text-orange-300">
+          Filter: only <strong>JETTON_SWAP</strong> on this page.{" "}
+          <a href={`?address=${encodeURIComponent(addressString)}`} className="text-sky-600 underline">
+            Show all
+          </a>
+        </p>
+      )}
 
       {totalEvents > 0 && (
         <EventsPagination
@@ -232,11 +249,15 @@ export default async function Home({ searchParams }: PageProps) {
         />
       )}
 
-      {events.length === 0 ? (
-        <div className="text-center py-8">
-          <p className="text-gray-500 mb-4">No events found in database.</p>
+      {visibleEvents.length === 0 ? (
+        <div className="py-8 text-center">
+          <p className="mb-4 text-gray-500">
+            {swapsOnly ? "No JETTON_SWAP on this page." : "No events found in database."}
+          </p>
           <p className="text-sm text-gray-400">
-            Click &quot;Sync&quot; to fetch transactions from TON API.
+            {swapsOnly
+              ? "Try another page or disable the swap filter."
+              : 'Click "Sync" to fetch transactions from TON API.'}
           </p>
         </div>
       ) : (
@@ -250,54 +271,58 @@ export default async function Home({ searchParams }: PageProps) {
                 <th className="px-3 py-2 text-left text-sm font-medium">From / To</th>
                 <th className="px-3 py-2 text-left text-sm font-medium">Amount</th>
                 <th className="px-3 py-2 text-left text-sm font-medium">Details</th>
-                <th className="px-3 py-2 text-left text-sm font-medium w-24">Raw</th>
+                <th className="w-24 px-3 py-2 text-left text-sm font-medium">Raw</th>
               </tr>
             </thead>
             <tbody>
-              {events.map((event: EventWithActions) => (
+              {visibleEvents.map((event: EventWithActions) =>
                 event.actions.map((tx: EventActionRow, txIndex: number) => {
                   const detailsText = getActionDetailsText(tx);
 
                   return (
                     <tr
                       key={`${event.id}-${tx.id}`}
-                      className={`border-b hover:bg-gray-50 dark:hover:bg-gray-900 ${txIndex === 0 ? "" : "border-t border-dashed"
-                        }`}
+                      className={`border-b hover:bg-gray-50 dark:hover:bg-gray-900 ${
+                        txIndex === 0 ? "" : "border-t border-dashed"
+                      }`}
                     >
                       {txIndex === 0 && (
                         <td className="px-3 py-2 text-sm" rowSpan={event.actions.length}>
-                          <div className="font-medium">
-                            {new Date(event.timestamp).toLocaleDateString()}
-                          </div>
-                          <div className="text-xs text-gray-500">
-                            {new Date(event.timestamp).toLocaleTimeString()}
-                          </div>
+                          <div className="font-medium">{new Date(event.timestamp).toLocaleDateString()}</div>
+                          <div className="text-xs text-gray-500">{new Date(event.timestamp).toLocaleTimeString()}</div>
                           <div className="mt-1">
-                            <TonviewerTransactionLink
-                              tonEventId={event.tonEventId}
-                              rawData={event.rawData}
-                            />
+                            <TonviewerTransactionLink tonEventId={event.tonEventId} rawData={event.rawData} />
                           </div>
                         </td>
                       )}
                       <td className="px-3 py-2 text-sm">
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${tx.type === "TON_TRANSFER" ? "bg-blue-100 text-blue-800" :
-                          tx.type === "JETTON_TRANSFER" ? "bg-purple-100 text-purple-800" :
-                            tx.type === "FLAWED_JETTON_TRANSFER" ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200" :
-                              tx.type === "JETTON_SWAP" ? "bg-orange-100 text-orange-800" :
-                                tx.type === "JETTON_BURN" ? "bg-red-100 text-red-800" :
-                                  tx.type === "JETTON_MINT" ? "bg-green-100 text-green-800" :
-                                    tx.type === "DEPOSIT_STAKE" ? "bg-teal-100 text-teal-800" :
-                                      tx.type === "WITHDRAW_STAKE" ? "bg-cyan-100 text-cyan-800" :
-                                        tx.type === "SMART_CONTRACT_EXEC" ? "bg-gray-100 text-gray-800" :
-                                          "bg-gray-100 text-gray-800"
-                          }`}>
+                        <span
+                          className={`rounded px-2 py-0.5 text-xs font-medium ${
+                            tx.type === "TON_TRANSFER"
+                              ? "bg-blue-100 text-blue-800"
+                              : tx.type === "JETTON_TRANSFER"
+                                ? "bg-purple-100 text-purple-800"
+                                : tx.type === "FLAWED_JETTON_TRANSFER"
+                                  ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+                                  : tx.type === "JETTON_SWAP"
+                                    ? "bg-orange-100 text-orange-800"
+                                    : tx.type === "JETTON_BURN"
+                                      ? "bg-red-100 text-red-800"
+                                      : tx.type === "JETTON_MINT"
+                                        ? "bg-green-100 text-green-800"
+                                        : tx.type === "DEPOSIT_STAKE"
+                                          ? "bg-teal-100 text-teal-800"
+                                          : tx.type === "WITHDRAW_STAKE"
+                                            ? "bg-cyan-100 text-cyan-800"
+                                            : tx.type === "SMART_CONTRACT_EXEC"
+                                              ? "bg-gray-100 text-gray-800"
+                                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
                           {tx.type.replace(/_/g, " ")}
                         </span>
                       </td>
-                      <td className="px-3 py-2 text-sm">
-                        {getDirectionBadge(tx.direction)}
-                      </td>
+                      <td className="px-3 py-2 text-sm">{getDirectionBadge(tx.direction)}</td>
                       <td className="px-3 py-2 text-sm">
                         <div className="space-y-1">
                           {tx.from && (
@@ -307,9 +332,7 @@ export default async function Home({ searchParams }: PageProps) {
                                 address={tx.from.rawAddress}
                                 label={formatAddress(tx.from.rawAddress, 12)}
                               />
-                              {tx.from.name && (
-                                <span className="ml-1 text-gray-600">({tx.from.name})</span>
-                              )}
+                              {tx.from.name && <span className="ml-1 text-gray-600">({tx.from.name})</span>}
                             </div>
                           )}
                           {tx.to && (
@@ -319,24 +342,42 @@ export default async function Home({ searchParams }: PageProps) {
                                 address={tx.to.rawAddress}
                                 label={formatAddress(tx.to.rawAddress, 12)}
                               />
-                              {tx.to.name && (
-                                <span className="ml-1 text-gray-600">({tx.to.name})</span>
-                              )}
+                              {tx.to.name && <span className="ml-1 text-gray-600">({tx.to.name})</span>}
                             </div>
                           )}
                         </div>
                       </td>
                       <td className="px-3 py-2 text-sm">
                         {tx.displayAmount ? (
-                          <span className={`font-medium ${tx.direction === "INCOMING" ? "text-green-600" :
-                            tx.direction === "OUTGOING" ? "text-red-600" :
-                              ""
-                            }`}>
+                          <span
+                            className={`font-medium ${
+                              tx.direction === "INCOMING"
+                                ? "text-green-600"
+                                : tx.direction === "OUTGOING"
+                                  ? "text-red-600"
+                                  : ""
+                            }`}
+                          >
                             {tx.direction === "INCOMING" ? "+" : tx.direction === "OUTGOING" ? "-" : ""}
                             {tx.displayAmount}
                           </span>
                         ) : (
                           <span className="text-gray-400">—</span>
+                        )}
+                        {tx.type === "JETTON_SWAP" && (tx.tonIn || tx.tonOut) && (
+                          <div className="mt-1 text-xs text-gray-500">
+                            {tx.tonIn && (
+                              <span className="text-red-600 dark:text-red-400">
+                                TON in: {formatTonFromNanoton(parseNanoton(tx.tonIn.toString()))}
+                              </span>
+                            )}
+                            {tx.tonIn && tx.tonOut && " · "}
+                            {tx.tonOut && (
+                              <span className="text-green-600 dark:text-green-400">
+                                TON out: {formatTonFromNanoton(parseNanoton(tx.tonOut.toString()))}
+                              </span>
+                            )}
+                          </div>
                         )}
                       </td>
                       <td className="px-3 py-2 text-sm">
@@ -362,7 +403,7 @@ export default async function Home({ searchParams }: PageProps) {
                     </tr>
                   );
                 })
-              ))}
+              )}
             </tbody>
           </table>
         </div>

@@ -25,7 +25,7 @@ export function abortableDelay(ms: number, signal?: AbortSignal): Promise<void> 
   throwIfAborted(signal);
 
   if (!signal || ms <= 0) {
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       setTimeout(resolve, Math.max(0, ms));
     });
   }

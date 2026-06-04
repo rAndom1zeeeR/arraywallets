@@ -25,17 +25,8 @@ function jsonReplacer(_key: string, value: unknown): unknown {
     return value.toString("hex");
   }
 
-  if (
-    value !== null &&
-    typeof value === "object" &&
-    !isPlainObject(value) &&
-  !(value instanceof Date)
-  ) {
-    if (
-      "workChain" in value &&
-      "hash" in value &&
-      typeof (value as Address).toString === "function"
-    ) {
+  if (value !== null && typeof value === "object" && !isPlainObject(value) && !(value instanceof Date)) {
+    if ("workChain" in value && "hash" in value && typeof (value as Address).toString === "function") {
       try {
         return (value as Address).toString();
       } catch {

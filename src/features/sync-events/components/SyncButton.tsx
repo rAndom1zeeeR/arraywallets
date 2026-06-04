@@ -137,9 +137,7 @@ export function SyncButton({ address, isSyncing: initialSyncing }: SyncButtonPro
       {result && (
         <div className="text-right text-sm text-gray-600 dark:text-gray-400">
           {result.cancelled && (
-            <p className="mb-1 font-medium text-amber-600 dark:text-amber-500">
-              Синхронизация остановлена
-            </p>
+            <p className="mb-1 font-medium text-amber-600 dark:text-amber-500">Синхронизация остановлена</p>
           )}
           {result.force && !result.cancelled && (
             <p className="mb-1 font-medium text-orange-600 dark:text-orange-400">
@@ -151,20 +149,17 @@ export function SyncButton({ address, isSyncing: initialSyncing }: SyncButtonPro
           </span>
           {result.repaired > 0 && (
             <span>
-              , Repaired:{" "}
-              <span className="font-medium text-orange-600">{result.repaired}</span>
+              , Repaired: <span className="font-medium text-orange-600">{result.repaired}</span>
             </span>
           )}
           {result.skipped > 0 && (
             <span>
-              , Skipped:{" "}
-              <span className="font-medium text-gray-600">{result.skipped}</span>
+              , Skipped: <span className="font-medium text-gray-600">{result.skipped}</span>
             </span>
           )}
           {result.errors > 0 && (
             <span>
-              , Errors:{" "}
-              <span className="font-medium text-red-600">{result.errors}</span>
+              , Errors: <span className="font-medium text-red-600">{result.errors}</span>
             </span>
           )}
           {result.stats && (
@@ -172,21 +167,15 @@ export function SyncButton({ address, isSyncing: initialSyncing }: SyncButtonPro
               {" "}
               | DB: {result.stats.events} events, {result.stats.actions} actions
               {result.stats.incompleteEvents > 0 && (
-                <span className="text-red-600">
-                  , {result.stats.incompleteEvents} incomplete
-                </span>
+                <span className="text-red-600">, {result.stats.incompleteEvents} incomplete</span>
               )}
             </span>
           )}
           {result.hasMore && !result.cancelled && (
-            <p className="mt-1 text-sky-600 dark:text-sky-400">
-              Есть ещё история — нажми Sync ещё раз для продолжения
-            </p>
+            <p className="mt-1 text-sky-600 dark:text-sky-400">Есть ещё история — нажми Sync ещё раз для продолжения</p>
           )}
           {result.cancelled && result.hasMore && (
-            <p className="mt-1 text-sky-600 dark:text-sky-400">
-              Прогресс сохранён — можно продолжить синхронизацию
-            </p>
+            <p className="mt-1 text-sky-600 dark:text-sky-400">Прогресс сохранён — можно продолжить синхронизацию</p>
           )}
         </div>
       )}

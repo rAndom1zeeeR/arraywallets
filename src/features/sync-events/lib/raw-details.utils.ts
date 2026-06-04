@@ -85,9 +85,7 @@ function extractRawAction(rawData: unknown, orderIndex: number): unknown | null 
 /**
  * Builds a JSON-safe payload for displaying raw transaction details in the UI.
  */
-export function buildTransactionRawDetailsPayload(
-  params: BuildRawDetailsParams
-): TransactionRawDetailsPayload {
+export function buildTransactionRawDetailsPayload(params: BuildRawDetailsParams): TransactionRawDetailsPayload {
   const { event, action } = params;
 
   return serializeForJson({
@@ -113,9 +111,7 @@ export function buildTransactionRawDetailsPayload(
       displayAmount: action.displayAmount,
       displayDetails: action.displayDetails,
       metadata: action.metadata,
-      from: action.from
-        ? { rawAddress: action.from.rawAddress, name: action.from.name }
-        : null,
+      from: action.from ? { rawAddress: action.from.rawAddress, name: action.from.name } : null,
       to: action.to ? { rawAddress: action.to.rawAddress, name: action.to.name } : null,
       jetton: action.jetton
         ? {

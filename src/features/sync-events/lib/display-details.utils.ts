@@ -84,10 +84,7 @@ function parseAmountLabel(text: string): ParsedAmountLabel | null {
 /**
  * TonAPI simplePreview often rounds: "188 USD₮" for Amount "188.42171 USDT".
  */
-function isRoundedAmountDuplicate(
-  preview: ParsedAmountLabel,
-  display: ParsedAmountLabel
-): boolean {
+function isRoundedAmountDuplicate(preview: ParsedAmountLabel, display: ParsedAmountLabel): boolean {
   if (!currencySymbolsMatch(preview.symbol, display.symbol)) {
     return false;
   }
@@ -138,13 +135,7 @@ export function isAmountLabelEquivalent(
     return true;
   }
 
-  const signedAmounts = [
-    amountNorm,
-    `+${amountCore}`,
-    `-${amountCore}`,
-    `+${amountNorm}`,
-    `-${amountNorm}`,
-  ];
+  const signedAmounts = [amountNorm, `+${amountCore}`, `-${amountCore}`, `+${amountNorm}`, `-${amountNorm}`];
 
   if (signedAmounts.includes(previewNorm)) {
     return true;

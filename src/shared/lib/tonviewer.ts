@@ -45,10 +45,7 @@ function readExtMsgHash(rawData: unknown): string | null {
 /**
  * Resolves explorer hash from stored event (`tonEventId` or `rawData.ext_msg_hash`).
  */
-export function resolveEventTransactionHash(
-  tonEventId: string,
-  rawData: unknown
-): string | null {
+export function resolveEventTransactionHash(tonEventId: string, rawData: unknown): string | null {
   const fromEventId = normalizeTransactionHash(tonEventId);
   if (fromEventId) {
     return fromEventId;
@@ -76,9 +73,6 @@ export function buildTonviewerTransactionUrl(
 /**
  * https://tonviewer.com/{address}
  */
-export function buildTonviewerAccountUrl(
-  address: string,
-  tonapiBaseUrl?: string
-): string {
+export function buildTonviewerAccountUrl(address: string, tonapiBaseUrl?: string): string {
   return `${resolveTonviewerBaseUrl(tonapiBaseUrl)}/${encodeURIComponent(address)}`;
 }

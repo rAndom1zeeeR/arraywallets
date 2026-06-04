@@ -16,8 +16,6 @@ export interface ChainActionIngestInput {
  */
 export function assertChainActionIngestValid(input: ChainActionIngestInput): void {
   if (TRANSFER_TYPES.has(input.type) && input.direction == null) {
-    throw new Error(
-      `direction is required for ${input.type} actions (wallet=${input.walletAddress})`,
-    );
+    throw new Error(`direction is required for ${input.type} actions (wallet=${input.walletAddress})`);
   }
 }

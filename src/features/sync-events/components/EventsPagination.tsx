@@ -21,12 +21,7 @@ function buildPageHref(address: string, page: number): string {
   return query ? `/?${query}` : "/";
 }
 
-export function EventsPagination({
-  currentPage,
-  totalPages,
-  totalEvents,
-  address,
-}: EventsPaginationProps) {
+export function EventsPagination({ currentPage, totalPages, totalEvents, address }: EventsPaginationProps) {
   if (totalPages <= 1) {
     return (
       <p className="mt-4 text-sm text-gray-500">
@@ -60,11 +55,7 @@ export function EventsPagination({
 
         {pageNumbers.map((item, index) =>
           item === "ellipsis" ? (
-            <span
-              key={`ellipsis-${index}`}
-              className="px-2 text-sm text-gray-400"
-              aria-hidden
-            >
+            <span key={`ellipsis-${index}`} className="px-2 text-sm text-gray-400" aria-hidden>
               …
             </span>
           ) : (

@@ -159,8 +159,9 @@ function buildActionCreateData(
   return transformed.transactions.map(action => {
     const fromId = action.fromRaw ? addressIdMap.get(action.fromRaw.toLowerCase()) : undefined;
     const toId = action.toRaw ? addressIdMap.get(action.toRaw.toLowerCase()) : undefined;
-    const jettonId = action.jettonAddress ? jettonIdMap.get(action.jettonAddress.toLowerCase()) : undefined;
-    const jettonInId = action.jetton2Address ? jettonIdMap.get(action.jetton2Address.toLowerCase()) : undefined;
+    const jettonInId = action.jettonAddress ? jettonIdMap.get(action.jettonAddress.toLowerCase()) : undefined;
+    const jettonOutId = action.jetton2Address ? jettonIdMap.get(action.jetton2Address.toLowerCase()) : undefined;
+    const jettonId = jettonInId ?? jettonOutId;
 
     return {
       eventId,
@@ -172,12 +173,13 @@ function buildActionCreateData(
       toId,
       direction: action.direction,
       amount: action.amount,
-      amountIn: action.amount2,
-      amountOut: action.tonOut,
+      amountIn: action.amount,
+      amountOut: action.amount2,
       tonIn: action.tonIn,
       tonOut: action.tonOut,
       jettonId,
       jettonInId,
+      jettonOutId,
       metadata: serializeForJson(action.details) as never,
       displayAmount: action.displayAmount,
       displayDetails: action.description,
@@ -571,39 +573,40 @@ export async function getWalletStats(walletAddress: string): Promise<{
   incompleteEvents: number;
 }> {
   const walletVariants = getWalletAddressVariants(walletAddress);
+  const walletFilter = { walletAddress: { in: walletVariants } };
 
-  const events = await prisma.chainEvent.findMany({
-    where: { walletAddress: { in: walletVariants } },
-    select: {
-      id: true,
-      rawData: true,
-      _count: { select: { actions: true } },
-    },
-  });
+  const [events, actions, emptyActionEvents, actionGroups] = await Promise.all([
+    prisma.chainEvent.count({ where: walletFilter }),
+    prisma.chainAction.count({ where: walletFilter }),
+    prisma.chainEvent.count({
+      where: { ...walletFilter, actions: { none: {} } },
+    }),
+    prisma.chainAction.groupBy({
+      by: ["eventId"],
+      where: walletFilter,
+      _count: { _all: true },
+      _max: { orderIndex: true },
+    }),
+  ]);
 
-  const actions = await prisma.chainAction.count({
-    where: { event: { walletAddress: { in: walletVariants } } },
-  });
+  let gapIncompleteEvents = 0;
 
-  let incompleteEvents = 0;
-
-  for (const event of events) {
-    const expectedFromRaw = getExpectedActionCountFromRaw(event.rawData);
-
-    if (event._count.actions === 0) {
-      incompleteEvents++;
+  for (const group of actionGroups) {
+    const maxIndex = group._max.orderIndex;
+    if (maxIndex === null) {
       continue;
     }
 
-    if (expectedFromRaw > 0 && event._count.actions < expectedFromRaw) {
-      incompleteEvents++;
+    const expectedAtLeast = maxIndex + 1;
+    if (group._count._all < expectedAtLeast) {
+      gapIncompleteEvents++;
     }
   }
 
   return {
-    events: events.length,
+    events,
     actions,
-    incompleteEvents,
+    incompleteEvents: emptyActionEvents + gapIncompleteEvents,
   };
 }
 

@@ -13,10 +13,7 @@ function formatJson(payload: TransactionRawDetailsPayload): string {
   return JSON.stringify(payload, null, 2);
 }
 
-export function TransactionRawDetailsButton({
-  details,
-  className,
-}: TransactionRawDetailsButtonProps) {
+export function TransactionRawDetailsButton({ details, className }: TransactionRawDetailsButtonProps) {
   const dialogTitleId = useId();
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -82,16 +79,8 @@ export function TransactionRawDetailsButton({
       </button>
 
       {isOpen && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          role="presentation"
-        >
-          <button
-            type="button"
-            className="absolute inset-0 bg-black/50"
-            aria-label="Закрыть"
-            onClick={handleClose}
-          />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="presentation">
+          <button type="button" className="absolute inset-0 bg-black/50" aria-label="Закрыть" onClick={handleClose} />
 
           <div
             role="dialog"
@@ -136,7 +125,7 @@ export function TransactionRawDetailsButton({
             </div>
 
             <div className="overflow-auto p-4">
-              <pre className="whitespace-pre-wrap break-all rounded bg-gray-50 p-3 font-mono text-xs leading-relaxed text-gray-800 dark:bg-gray-950 dark:text-gray-200">
+              <pre className="rounded bg-gray-50 p-3 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap text-gray-800 dark:bg-gray-950 dark:text-gray-200">
                 {formattedJson}
               </pre>
             </div>

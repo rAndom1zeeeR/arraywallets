@@ -7,8 +7,7 @@ const RAW_TON_ADDRESS_PATTERN = /^-?\d+:[0-9a-fA-F]+$/;
  * Use before every DB write for `wallet_address`, `raw_address`, and on-chain `address` fields.
  */
 export function toRawTonAddress(input: string | Address): string {
-  const address =
-    typeof input === "string" ? Address.parse(input.trim()) : input;
+  const address = typeof input === "string" ? Address.parse(input.trim()) : input;
   return address.toRawString();
 }
 
@@ -66,10 +65,7 @@ export function isSameWalletAddress(stored: string, target: string): boolean {
 /**
  * Every `wallet_address` value in DB that belongs to the given wallet (any format).
  */
-export function collectMatchingWalletAddressKeys(
-  storedAddresses: string[],
-  targetAddress: string
-): string[] {
+export function collectMatchingWalletAddressKeys(storedAddresses: string[], targetAddress: string): string[] {
   const keys = new Set(getWalletAddressVariants(targetAddress));
 
   for (const stored of storedAddresses) {
