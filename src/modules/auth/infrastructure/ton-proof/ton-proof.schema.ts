@@ -20,4 +20,5 @@ export const tonConnectProofRequestSchema = z.object({
   proof: tonProofSignatureSchema,
 });
 
+export type TonProofSignature = z.infer<typeof tonProofSignatureSchema>;
 export type TonConnectProofRequest = z.infer<typeof tonConnectProofRequestSchema>;

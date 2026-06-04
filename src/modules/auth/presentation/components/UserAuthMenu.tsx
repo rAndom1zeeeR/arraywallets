@@ -1,16 +1,22 @@
 "use client";
 
+import { useTonConnectUI } from "@tonconnect/ui-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { LogOut } from "lucide-react";
 import { Button } from "@/shared/components/ui/button";
 
-const handleSignOut = () => {
-  void signOut({ callbackUrl: "/" });
-};
-
 export const UserAuthMenu = () => {
   const { data: session, status } = useSession();
+  const [tonConnectUI] = useTonConnectUI();
+
+  const handleSignOut = async () => {
+    if (tonConnectUI?.connected) {
+      await tonConnectUI.disconnect();
+    }
+
+    await signOut({ callbackUrl: "/" });
+  };
 
   if (status === "loading") {
     return (
@@ -43,7 +49,7 @@ export const UserAuthMenu = () => {
         type="button"
         variant="ghost"
         size="sm"
-        onClick={handleSignOut}
+        onClick={() => void handleSignOut()}
         aria-label="Sign out"
       >
         <LogOut className="size-4" aria-hidden />

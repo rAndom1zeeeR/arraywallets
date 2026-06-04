@@ -1,13 +1,14 @@
+import { TON_CONNECT_ACCOUNT_PROVIDER } from "@/modules/auth/domain/ton-connect.constants";
+import { resolveUserRole } from "@/modules/auth/domain/resolve-user-role";
 import { consumeTonProofChallenge } from "@/modules/auth/infrastructure/ton-proof/ton-proof-challenge.service";
 import { TonProofService } from "@/modules/auth/infrastructure/ton-proof/ton-proof.service";
 import {
   tonConnectProofRequestSchema,
   type TonConnectProofRequest,
 } from "@/modules/auth/infrastructure/ton-proof/ton-proof.schema";
-import { resolveUserRole } from "@/modules/auth/domain/resolve-user-role";
 import { prisma } from "@/shared/infrastructure/api/prisma";
-import { toRawTonAddress } from "@/shared/lib/ton/ton-address";
 import type { UserRole } from "@/shared/infrastructure/api/prisma-client";
+import { toRawTonAddress } from "@/shared/lib/ton/ton-address";
 
 const tonProofService = new TonProofService();
 
@@ -20,40 +21,30 @@ export interface AuthenticatedTonUser {
   walletAddress: string;
 }
 
-function parseProofRequest(raw: string): TonConnectProofRequest | null {
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-
-  const result = tonConnectProofRequestSchema.safeParse(parsed);
-  return result.success ? result.data : null;
-}
-
 /**
  * Verifies ton_proof and returns (or creates) the Auth.js user for the wallet.
  */
 export async function authenticateTonWallet(
-  proofRequestRaw: string
+  input: TonConnectProofRequest
 ): Promise<AuthenticatedTonUser | null> {
-  const proofRequest = parseProofRequest(proofRequestRaw);
-  if (!proofRequest) {
+  const proofRequest = tonConnectProofRequestSchema.safeParse(input);
+  if (!proofRequest.success) {
     return null;
   }
 
-  const isValidProof = await tonProofService.checkProof(proofRequest);
+  const request = proofRequest.data;
+
+  const isValidProof = await tonProofService.checkProof(request);
   if (!isValidProof) {
     return null;
   }
 
-  const challengeValid = await consumeTonProofChallenge(proofRequest.proof.payload);
+  const challengeValid = await consumeTonProofChallenge(request.proof.payload);
   if (!challengeValid) {
     return null;
   }
 
-  const walletAddress = toRawTonAddress(proofRequest.address);
+  const walletAddress = toRawTonAddress(request.address);
   const role = resolveUserRole(undefined, walletAddress);
 
   const existing = await prisma.user.findUnique({
@@ -71,7 +62,7 @@ export async function authenticateTonWallet(
     await prisma.account.upsert({
       where: {
         provider_providerAccountId: {
-          provider: "ton-connect",
+          provider: TON_CONNECT_ACCOUNT_PROVIDER,
           providerAccountId: walletAddress,
         },
       },
@@ -79,7 +70,7 @@ export async function authenticateTonWallet(
       create: {
         userId: existing.id,
         type: "oauth",
-        provider: "ton-connect",
+        provider: TON_CONNECT_ACCOUNT_PROVIDER,
         providerAccountId: walletAddress,
       },
     });
@@ -106,7 +97,7 @@ export async function authenticateTonWallet(
     data: {
       userId: created.id,
       type: "oauth",
-      provider: "ton-connect",
+      provider: TON_CONNECT_ACCOUNT_PROVIDER,
       providerAccountId: walletAddress,
     },
   });

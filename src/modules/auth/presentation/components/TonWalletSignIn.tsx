@@ -1,152 +1,194 @@
 "use client";
 
 import type { Wallet } from "@tonconnect/sdk";
-import { useTonConnectUI, useTonWallet } from "@tonconnect/ui-react";
-import { signIn } from "next-auth/react";
+import { CHAIN, useTonConnectUI } from "@tonconnect/ui-react";
 import { useRouter } from "next/navigation";
+import { getSession, signIn, useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { TON_CREDENTIALS_PROVIDER_ID } from "@/modules/auth/domain/ton-connect.constants";
 import { Button } from "@/shared/components/ui/button";
+import { TON_PROOF_PAYLOAD_REFRESH_MS } from "@/shared/config/ton-connect.config";
 import { apiClient } from "@/shared/infrastructure/api/client";
 
 interface TonWalletSignInProps {
   callbackUrl?: string;
+  initialTonProofPayload?: string | null;
 }
 
 interface TonProofPayloadResponse {
   payload: string;
 }
 
-interface TonProofSignature {
-  timestamp: number;
-  domain: { lengthBytes: number; value: string };
-  payload: string;
-  signature: string;
+interface TonAddressItemReplyFields {
+  publicKey?: string;
+  walletStateInit?: string;
 }
 
-const getTonProof = (connectedWallet: Wallet): TonProofSignature | null => {
-  const tonProofItem = connectedWallet.connectItems?.tonProof;
-  if (tonProofItem && "proof" in tonProofItem) {
-    return tonProofItem.proof;
+interface ConnectItemsWithTonAddr {
+  ton_addr?: TonAddressItemReplyFields;
+}
+
+const mapSignInError = (code: string | undefined): string => {
+  if (code === "CredentialsSignin") {
+    return "TON proof verification failed";
   }
 
-  return null;
+  if (code === "MissingSecret") {
+    return "Auth is misconfigured (AUTH_SECRET missing)";
+  }
+
+  return code ? `Sign-in failed (${code})` : "Sign-in failed";
 };
 
-export const TonWalletSignIn = ({ callbackUrl = "/" }: TonWalletSignInProps) => {
+/**
+ * TON Connect sign-in (ArrayTonV16 auth-button flow, Next.js API routes).
+ */
+export const TonWalletSignIn = ({
+  callbackUrl = "/",
+  initialTonProofPayload = null,
+}: TonWalletSignInProps) => {
   const router = useRouter();
+  const { data: session } = useSession();
   const [tonConnectUI] = useTonConnectUI();
-  const wallet = useTonWallet();
-  const [isLoading, setIsLoading] = useState(false);
+  const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const isAuthenticatingRef = useRef(false);
-  const pendingSignInRef = useRef(false);
+  const initialPayloadApplied = useRef(false);
 
-  const authenticateWallet = useCallback(
-    async (connectedWallet: Wallet) => {
-      if (isAuthenticatingRef.current) {
-        return;
-      }
-
-      const proof = getTonProof(connectedWallet);
-      if (!proof) {
-        setError("Wallet did not return ton_proof");
-        pendingSignInRef.current = false;
-        return;
-      }
-
-      const publicKey = connectedWallet.account.publicKey;
-      if (!publicKey) {
-        setError("Wallet public key is missing");
-        pendingSignInRef.current = false;
-        return;
-      }
-
-      isAuthenticatingRef.current = true;
-      setIsLoading(true);
-      setError(null);
-
-      const proofRequest = {
-        address: connectedWallet.account.address,
-        network: connectedWallet.account.chain,
-        publicKey,
-        walletStateInit: connectedWallet.account.walletStateInit,
-        proof,
-      };
-
-      const result = await signIn("ton-connect", {
-        proofRequest: JSON.stringify(proofRequest),
-        redirect: false,
-        callbackUrl,
-      });
-
-      isAuthenticatingRef.current = false;
-      pendingSignInRef.current = false;
-      setIsLoading(false);
-
-      if (result?.error) {
-        setError("TON proof verification failed");
-        return;
-      }
-
-      if (result?.ok) {
-        router.push(callbackUrl);
-        router.refresh();
-      }
-    },
-    [callbackUrl, router]
-  );
-
-  useEffect(() => {
-    if (!wallet || !pendingSignInRef.current) {
+  const setTonProofParams = useCallback(async () => {
+    if (!tonConnectUI) {
       return;
     }
 
-    void authenticateWallet(wallet);
-  }, [wallet, authenticateWallet]);
-
-  useEffect(() => {
-    const unsubscribe = tonConnectUI.onModalStateChange(state => {
-      if (state.status === "closed" && !wallet) {
-        pendingSignInRef.current = false;
-        tonConnectUI.setConnectRequestParameters(null);
-        setIsLoading(false);
-      }
-    });
-
-    return unsubscribe;
-  }, [tonConnectUI, wallet]);
-
-  const handleConnectWallet = async () => {
-    setError(null);
-    setIsLoading(true);
-    pendingSignInRef.current = true;
+    tonConnectUI.setConnectRequestParameters({ state: "loading" });
 
     try {
-      tonConnectUI.setConnectRequestParameters({ state: "loading" });
-
       const response = await apiClient<TonProofPayloadResponse>("/api/auth/ton-proof/payload");
       const payload = response.payload;
 
-      if (!payload) {
+      if (payload) {
+        tonConnectUI.setConnectRequestParameters({
+          state: "ready",
+          value: { tonProof: payload },
+        });
+      } else {
         tonConnectUI.setConnectRequestParameters(null);
-        setError("Failed to load ton_proof payload");
-        pendingSignInRef.current = false;
-        setIsLoading(false);
+      }
+    } catch {
+      tonConnectUI.setConnectRequestParameters(null);
+    }
+  }, [tonConnectUI]);
+
+  useEffect(() => {
+    if (initialTonProofPayload && !initialPayloadApplied.current && tonConnectUI) {
+      initialPayloadApplied.current = true;
+      tonConnectUI.setConnectRequestParameters({
+        state: "ready",
+        value: { tonProof: initialTonProofPayload },
+      });
+    }
+
+    void setTonProofParams();
+    const intervalId = window.setInterval(() => {
+      void setTonProofParams();
+    }, TON_PROOF_PAYLOAD_REFRESH_MS);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [setTonProofParams, initialTonProofPayload, tonConnectUI]);
+
+  const handleTonConnectAuth = useCallback(
+    async (wallet: Wallet) => {
+      const tonProof = wallet.connectItems?.tonProof;
+      const connectItemsExt = wallet.connectItems as ConnectItemsWithTonAddr | undefined;
+      const accountExt = wallet.account as TonAddressItemReplyFields;
+      const publicKey = accountExt.publicKey ?? connectItemsExt?.ton_addr?.publicKey;
+      const walletStateInit = accountExt.walletStateInit ?? connectItemsExt?.ton_addr?.walletStateInit;
+
+      if (!tonProof || !("proof" in tonProof)) {
+        try {
+          if (tonConnectUI.connected) {
+            await tonConnectUI.disconnect();
+          }
+        } catch {
+          // bridge may already be closed
+        }
+        setError("Reconnect the wallet to sign in (ton_proof required)");
         return;
       }
 
-      tonConnectUI.setConnectRequestParameters({
-        state: "ready",
-        value: { tonProof: payload },
-      });
+      if (!publicKey || !walletStateInit) {
+        setError("Wallet did not return publicKey or walletStateInit");
+        return;
+      }
 
+      setIsConnecting(true);
+      setError(null);
+
+      try {
+        const network = wallet.account.chain === CHAIN.TESTNET ? "-3" : "-239";
+        const result = await signIn(TON_CREDENTIALS_PROVIDER_ID, {
+          address: wallet.account.address,
+          proof: JSON.stringify(tonProof.proof),
+          public_key: publicKey,
+          wallet_state_init: walletStateInit,
+          network,
+          redirect: false,
+          callbackUrl,
+        });
+
+        if (result?.error) {
+          setError(mapSignInError(result.error));
+          return;
+        }
+
+        if (result?.ok) {
+          await new Promise(resolve => setTimeout(resolve, 150));
+          await getSession();
+          router.push(callbackUrl);
+          router.refresh();
+        }
+      } finally {
+        setIsConnecting(false);
+      }
+    },
+    [callbackUrl, router, tonConnectUI]
+  );
+
+  useEffect(() => {
+    if (!tonConnectUI) {
+      return;
+    }
+
+    const unsubscribe = tonConnectUI.onStatusChange(async wallet => {
+      if (!wallet || session?.user) {
+        return;
+      }
+
+      await handleTonConnectAuth(wallet);
+    });
+
+    return unsubscribe;
+  }, [tonConnectUI, session?.user, handleTonConnectAuth]);
+
+  const handleConnectWallet = async () => {
+    if (!tonConnectUI) {
+      return;
+    }
+
+    setError(null);
+    setIsConnecting(true);
+
+    try {
+      await setTonProofParams();
+      if (tonConnectUI.connected) {
+        await tonConnectUI.disconnect();
+      }
       await tonConnectUI.openModal();
     } catch {
-      tonConnectUI.setConnectRequestParameters(null);
-      setError("Failed to start wallet connection");
-      pendingSignInRef.current = false;
+      setError("Failed to open wallet connection");
     } finally {
-      setIsLoading(false);
+      setIsConnecting(false);
     }
   };
 
@@ -156,10 +198,10 @@ export const TonWalletSignIn = ({ callbackUrl = "/" }: TonWalletSignInProps) => 
         type="button"
         className="w-full"
         onClick={() => void handleConnectWallet()}
-        disabled={isLoading}
+        disabled={isConnecting}
         aria-label="Sign in with TON wallet"
       >
-        {isLoading ? "Connecting…" : "TON Wallet"}
+        {isConnecting ? "Connecting…" : "TON Wallet"}
       </Button>
       {error ? (
         <p className="text-destructive text-center text-sm" role="alert">

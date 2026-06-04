@@ -35,10 +35,33 @@ export function getAuthAdminWallets(): string[] {
 /**
  * Domains allowed in ton_proof signatures (host only, no protocol).
  */
-export function getTonProofAllowedDomains(): string[] {
-  const fromEnv = process.env.AUTH_TON_PROOF_DOMAINS;
-  const domains = new Set<string>(["localhost:3000", "wallets.arrayton.com"]);
+function getPrimaryTonConnectDomain(): string {
+  const fromEnv = process.env.AUTH_TON_CONNECT_DOMAIN?.trim();
+  if (fromEnv) {
+    return fromEnv;
+  }
 
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  if (appUrl) {
+    try {
+      return new URL(appUrl.startsWith("http") ? appUrl : `https://${appUrl}`).host;
+    } catch {
+      // ignore invalid URL
+    }
+  }
+
+  return "wallets.arrayton.com";
+}
+
+/**
+ * Domains allowed in ton_proof signatures (host only, no protocol).
+ * Mirrors ArrayTonV16: primary prod domain + localhost variants for local dev with prod manifest.
+ */
+export function getTonProofAllowedDomains(): string[] {
+  const primary = getPrimaryTonConnectDomain();
+  const domains = new Set<string>([primary]);
+
+  const fromEnv = process.env.AUTH_TON_PROOF_DOMAINS;
   if (fromEnv?.trim()) {
     for (const domain of fromEnv.split(",")) {
       const trimmed = domain.trim();
@@ -48,13 +71,11 @@ export function getTonProofAllowedDomains(): string[] {
     }
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
-  if (appUrl) {
-    try {
-      domains.add(new URL(appUrl).host);
-    } catch {
-      // ignore invalid URL
-    }
+  if (primary === "wallets.arrayton.com" || primary === "arrayton.com") {
+    domains.add("localhost");
+    domains.add("localhost:3000");
+    domains.add("127.0.0.1");
+    domains.add("127.0.0.1:3000");
   }
 
   return [...domains];

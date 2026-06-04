@@ -6,6 +6,7 @@ import { getAuthConfigError } from "@/shared/config/auth-env";
 export function register() {
   const authError = getAuthConfigError();
   if (authError) {
-    console.error(`[auth] ${authError}`);
+    const log = process.env.NODE_ENV === "production" ? console.error : console.warn;
+    log(`[auth] ${authError}`);
   }
 }

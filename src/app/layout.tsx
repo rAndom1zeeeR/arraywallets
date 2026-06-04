@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { AuthAppHeader, AuthSessionProvider, TonConnectAuthProvider } from "@/modules/auth";
+import { AuthAppHeader, AuthProvider } from "@/modules/auth";
 import { QueryProvider } from "@/shared/providers/QueryProvider";
 import { ThemeProvider } from "@/shared/components/theme-provider";
 import { cn } from "@/shared/lib/utils";
@@ -47,14 +47,12 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={cn(inter.variable, "font-inter antialiased")}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <TonConnectAuthProvider>
-            <AuthSessionProvider>
-              <QueryProvider>
-                <AuthAppHeader />
-                {children}
-              </QueryProvider>
-            </AuthSessionProvider>
-          </TonConnectAuthProvider>
+          <AuthProvider>
+            <QueryProvider>
+              <AuthAppHeader />
+              {children}
+            </QueryProvider>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

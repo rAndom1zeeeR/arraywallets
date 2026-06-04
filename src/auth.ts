@@ -2,6 +2,7 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import NextAuth from "next-auth";
 import { cookies } from "next/headers";
 import type { UserRole } from "@/shared/infrastructure/api/prisma-client";
+import { TON_CREDENTIALS_PROVIDER_ID } from "@/modules/auth/domain/ton-connect.constants";
 import { resolveUserRole } from "@/modules/auth/domain/resolve-user-role";
 import {
   AUTH_ACCESS_MAX_AGE_SECONDS,
@@ -38,7 +39,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       const walletAddress = user.walletAddress ?? undefined;
       const role = resolveUserRole(email, walletAddress);
 
-      if (user.id && account?.provider !== "ton-connect") {
+      if (user.id && account?.provider !== TON_CREDENTIALS_PROVIDER_ID) {
         await prisma.user.update({
           where: { id: user.id },
           data: { role },
@@ -48,8 +49,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return true;
     },
     async jwt({ token, user, trigger }) {
-      if (user?.id) {
-        const dbUser = await prisma.user.findUnique({ where: { id: user.id } });
+      if (user) {
+        const dbUser = user.id
+          ? await prisma.user.findUnique({ where: { id: user.id } })
+          : null;
 
         token.sub = user.id;
         token.role = dbUser?.role ?? user.role;

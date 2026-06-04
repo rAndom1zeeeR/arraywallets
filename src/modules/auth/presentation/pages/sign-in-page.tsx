@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { auth } from "@/auth";
 import { SignInButtons } from "@/modules/auth/presentation/components/SignInButtons";
-import { TonWalletSignIn } from "@/modules/auth/presentation/components/TonWalletSignIn";
+import { TonWalletSignInServer } from "@/modules/auth/presentation/components/TonWalletSignInServer";
 import { redirect } from "next/navigation";
 import { getOAuthProviderAvailability } from "@/shared/config/auth-providers";
 
@@ -29,7 +29,7 @@ export const SignInPage = async ({ callbackUrl }: SignInPageProps) => {
             : "Sign in with your TON wallet."}
         </p>
       </div>
-      <TonWalletSignIn callbackUrl={redirectTo} />
+      <TonWalletSignInServer callbackUrl={redirectTo} />
       {hasOAuth ? (
         <div className="relative w-full max-w-sm">
           <div className="border-border absolute inset-x-0 top-1/2 border-t" />
