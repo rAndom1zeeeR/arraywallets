@@ -14,47 +14,55 @@ datasource db {
 
 model ChainAddress {
   id          String   @id @default(uuid()) @db.Uuid
+  /// Canonical raw TON address (`workchain:hex`). Normalize with `toRawTonAddress()` before write.
   rawAddress  String   @unique @map("raw_address")
   name        String?
   isScam      Boolean  @default(false) @map("is_scam")
   icon        String?
   isWallet    Boolean  @default(false) @map("is_wallet")
 
-  firstSeenAt DateTime @default(now()) @map("first_seen_at")
-  lastSeenAt  DateTime @updatedAt @map("last_seen_at")
+  firstSeenAt DateTime @default(now()) @map("first_seen_at") @db.Timestamptz(3)
+  lastSeenAt  DateTime @updatedAt @map("last_seen_at") @db.Timestamptz(3)
 
-  // Счетчики для аналитики
   eventsCount  Int @default(0) @map("events_count")
   actionsCount Int @default(0) @map("actions_count")
 
-  // Связи
   fromActions ChainAction[] @relation("ActionFrom")
   toActions   ChainAction[] @relation("ActionTo")
 
-  @@index([rawAddress])
   @@map("chain_address")
 }
 
 model ChainJetton {
   id          String   @id @default(uuid()) @db.Uuid
+  /// Jetton master contract address in raw `workchain:hex` form.
   address     String   @unique
   name        String
   symbol      String
   decimals    Int
   image       String?
-  verification String   @default("none")
+  /// Matches TON API `JettonVerificationType`.
+  verification ChainJettonVerification @default(NONE)
   score       Int      @default(0)
 
-  firstSeenAt DateTime @default(now()) @map("first_seen_at")
+  firstSeenAt DateTime @default(now()) @map("first_seen_at") @db.Timestamptz(3)
 
-  // Связи
   actions     ChainAction[] @relation("ActionJetton")
   actionsIn   ChainAction[] @relation("ActionJettonIn")
   actionsOut  ChainAction[] @relation("ActionJettonOut")
 
   @@index([address])
   @@index([symbol])
+  @@index([verification])
   @@map("chain_jetton")
+}
+
+/// TON API `JettonVerificationType` (tonapi.io).
+enum ChainJettonVerification {
+  NONE       @map("none")
+  WHITELIST  @map("whitelist")
+  GRAYLIST   @map("graylist")
+  BLACKLIST  @map("blacklist")
 }
 
 // ==================== СОБЫТИЯ TON API ====================
@@ -63,22 +71,22 @@ model ChainEvent {
   id          String   @id @default(uuid()) @db.Uuid
   tonEventId  String   @unique @map("ton_event_id")
 
-  // Адрес аккаунта в формате TON (0:...)
+  /// Wallet account address in raw `workchain:hex` form (never EQ/UQ). Use `toRawTonAddress()`.
   walletAddress String   @map("wallet_address")
 
-  timestamp   DateTime
+  timestamp   DateTime @db.Timestamptz(3)
   lt          Decimal  @db.Decimal(78, 0)
   isScam      Boolean  @default(false) @map("is_scam")
   inProgress  Boolean  @default(false) @map("in_progress")
   extra       BigInt   @db.BigInt
 
-  // Сырые данные для дебага/повторной обработки
   rawData     Json?    @map("raw_data")
 
-  // Связи
   actions     ChainAction[]
+  rawEvents   ChainRawEvent[]
+  syncStates  ChainSyncState[] @relation("SyncLastEvent")
 
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
   @@index([walletAddress, timestamp])
   @@index([lt])
@@ -87,21 +95,20 @@ model ChainEvent {
   @@map("chain_event")
 }
 
-// Сырые ответы от TON API (для дебага и ре-обработки)
 model ChainRawEvent {
   id          String   @id @default(uuid()) @db.Uuid
 
-  // TON API event ID (hash string, not UUID)
   tonEventId  String   @unique @map("ton_event_id")
 
-  // Optional link to processed ChainEvent
   chainEventId String?   @map("chain_event_id") @db.Uuid
+  chainEvent   ChainEvent? @relation(fields: [chainEventId], references: [id], onDelete: SetNull)
 
+  /// Wallet account address in raw `workchain:hex` form. Use `toRawTonAddress()`.
   walletAddress String   @map("wallet_address")
-  payload     Json       // Полный ответ от TON API
+  payload     Json
 
-  fetchedAt   DateTime   @default(now()) @map("fetched_at")
-  processedAt DateTime?  @map("processed_at")
+  fetchedAt   DateTime   @default(now()) @map("fetched_at") @db.Timestamptz(3)
+  processedAt DateTime?  @map("processed_at") @db.Timestamptz(3)
   processError String?   @map("process_error")
 
   @@index([walletAddress])
@@ -117,27 +124,26 @@ model ChainAction {
   eventId     String   @map("event_id") @db.Uuid
   event       ChainEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
 
+  /// Denormalized from `ChainEvent.walletAddress` for feed queries without join.
+  walletAddress String @map("wallet_address")
+
   orderIndex  Int      @map("order_index")
   type        ChainActionType
-  status      ChainActionStatus @default(success)
+  status      ChainActionStatus @default(SUCCESS)
 
-  // Адреса (нормализованы через ChainAddress)
   fromId      String?  @map("from_id") @db.Uuid
-  from        ChainAddress? @relation("ActionFrom", fields: [fromId], references: [id])
+  from        ChainAddress? @relation("ActionFrom", fields: [fromId], references: [id], onDelete: Restrict)
   toId        String?  @map("to_id") @db.Uuid
-  to          ChainAddress? @relation("ActionTo", fields: [toId], references: [id])
+  to          ChainAddress? @relation("ActionTo", fields: [toId], references: [id], onDelete: Restrict)
 
-  // Направление для transfer-операций (относительно walletAddress из ChainEvent)
   direction   ChainActionDirection? @map("direction")
 
-  // Суммы (в базовых единицах)
   amount      Decimal? @db.Decimal(78, 0)
   amountIn    Decimal? @map("amount_in") @db.Decimal(78, 0)
   amountOut   Decimal? @map("amount_out") @db.Decimal(78, 0)
   tonIn       Decimal? @map("ton_in") @db.Decimal(78, 0)
   tonOut      Decimal? @map("ton_out") @db.Decimal(78, 0)
 
-  // Жетоны (нормализованы через ChainJetton)
   jettonId    String?  @map("jetton_id") @db.Uuid
   jetton      ChainJetton? @relation("ActionJetton", fields: [jettonId], references: [id])
   jettonInId  String?  @map("jetton_in_id") @db.Uuid
@@ -145,34 +151,28 @@ model ChainAction {
   jettonOutId String?  @map("jetton_out_id") @db.Uuid
   jettonOut   ChainJetton? @relation("ActionJettonOut", fields: [jettonOutId], references: [id])
 
-  // Детали в JSON (зависит от type):
-  // - TON_TRANSFER: { comment?, encrypted?, refund? }
-  // - JETTON_TRANSFER: { comment?, encrypted?, wallet: "0:..." }
-  // - JETTON_SWAP: { dex: "stonfi", router: "0:..." }
-  // - SMART_CONTRACT_EXEC: { operation: "NftTransfer", payload?, contract: "0:..." }
-  // - DEPOSIT_STAKE: { poolName?, poolAddress: "0:...", implementation? }
-  // - JETTON_BURN/JETTON_MINT: { wallet: "0:..." }
   metadata    Json?
 
-  // UI-оптимизация (кэшированные строки для отображения)
   displayAmount   String? @map("display_amount")
   displayDetails  String? @map("display_details")
 
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
 
+  @@unique([eventId, orderIndex])
   @@index([eventId])
-  @@index([type])
   @@index([fromId])
   @@index([toId])
   @@index([jettonId])
-  @@index([direction])
-  @@index([createdAt])
+  @@index([walletAddress, createdAt(sort: Desc)])
+  @@index([walletAddress, type, direction, createdAt(sort: Desc)])
+  @@index([direction, type, createdAt(sort: Desc)])
   @@map("chain_action")
 }
 
 enum ChainActionType {
   TON_TRANSFER
   JETTON_TRANSFER
+  FLAWED_JETTON_TRANSFER
   JETTON_SWAP
   JETTON_BURN
   JETTON_MINT
@@ -190,9 +190,9 @@ enum ChainActionType {
 }
 
 enum ChainActionStatus {
-  success
-  failed
-  pending
+  SUCCESS @map("success")
+  FAILED  @map("failed")
+  PENDING @map("pending")
 }
 
 enum ChainActionDirection {
@@ -204,37 +204,37 @@ enum ChainActionDirection {
 
 // ==================== СИНХРОНИЗАЦИЯ ====================
 
-// Статус синхронизации по адресу кошелька
 model ChainSyncState {
   id          String   @id @default(uuid()) @db.Uuid
+  /// Wallet account address in raw `workchain:hex` form. Use `toRawTonAddress()`.
   walletAddress String @unique @map("wallet_address")
 
-  // Последний обработанный lt (для пагинации вперед)
   lastLt      Decimal? @map("last_lt") @db.Decimal(78, 0)
-  lastTimestamp DateTime? @map("last_timestamp")
-  lastEventId String?  @map("last_event_id")
+  lastTimestamp DateTime? @map("last_timestamp") @db.Timestamptz(3)
+  /// Last processed TON API event id (hash). Not `ChainEvent.id` UUID.
+  lastTonEventId String?  @map("last_ton_event_id")
+  lastEvent      ChainEvent? @relation("SyncLastEvent", fields: [lastTonEventId], references: [tonEventId], onDelete: SetNull)
 
-  // Статус
-  status      ChainSyncStatus @default(idle)
+  status      ChainSyncStatus @default(IDLE)
   error       String?
 
-  // Статистика
   eventsSynced Int     @default(0) @map("events_synced")
   actionsSynced Int    @default(0) @map("actions_synced")
 
-  startedAt   DateTime? @map("started_at")
-  completedAt DateTime? @map("completed_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
+  startedAt   DateTime? @map("started_at") @db.Timestamptz(3)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([status])
   @@index([updatedAt])
+  @@index([lastTonEventId])
   @@map("chain_sync_state")
 }
 
 enum ChainSyncStatus {
-  idle
-  syncing
-  paused
-  error
-  completed
+  IDLE       @map("idle")
+  SYNCING    @map("syncing")
+  PAUSED     @map("paused")
+  ERROR      @map("error")
+  COMPLETED  @map("completed")
 }

@@ -1,3 +1,5 @@
+import { abortableDelay, throwIfAborted } from "@/shared/lib/sync-abort";
+
 export class RateLimiter {
   private lastRequestTime = 0;
 
@@ -5,14 +7,17 @@ export class RateLimiter {
     this.minIntervalMs = minIntervalMs;
   }
 
-  async throttle<T>(fn: () => Promise<T>): Promise<T> {
+  async throttle<T>(fn: () => Promise<T>, signal?: AbortSignal): Promise<T> {
+    throwIfAborted(signal);
+
     const now = Date.now();
     const elapsed = now - this.lastRequestTime;
 
     if (elapsed < this.minIntervalMs) {
-      await new Promise(r => setTimeout(r, this.minIntervalMs - elapsed));
+      await abortableDelay(this.minIntervalMs - elapsed, signal);
     }
 
+    throwIfAborted(signal);
     this.lastRequestTime = Date.now();
     return fn();
   }

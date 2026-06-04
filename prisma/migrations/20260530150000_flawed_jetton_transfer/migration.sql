@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "ChainActionType" ADD VALUE 'FLAWED_JETTON_TRANSFER';

@@ -1,64 +1,369 @@
-import { Suspense } from "react";
-import { accountEventFromJson } from "@/entities/chain-events/chain-raw-event.dto";
-import { findChainRawEventsPage } from "@/entities/chain-events/chain-raw-event.repository";
+import { Address } from "@ton/core";
+import { prisma } from "@/shared/api/prisma";
+import { SyncButton } from "@/features/sync-events/components/SyncButton";
 import {
-  CHAIN_EVENTS_PAGE_SIZE,
-  DEFAULT_WALLET_FRIENDLY,
-} from "@/entities/chain-events/wallet.constants";
-import { SyncWalletButton } from "@/features/wallet-sync/ui/SyncWalletButton";
-import { TransactionsPagination } from "@/widgets/wallet-transactions/TransactionsPagination";
-import { WalletTransactionsTable } from "@/widgets/wallet-transactions/WalletTransactionsTable";
-import { toRawTonAddress } from "@/shared/lib/ton-address";
+  EventsPagination,
+  EVENTS_PAGE_SIZE,
+} from "@/features/sync-events/components/EventsPagination";
+import { resolveDisplayDetails } from "@/features/sync-events/lib/display-details.utils";
+import { TonviewerAccountLink } from "@/features/sync-events/components/TonviewerAccountLink";
+import { TonviewerTransactionLink } from "@/features/sync-events/components/TonviewerTransactionLink";
+import { getWalletStats } from "@/features/sync-events/model/sync-service";
+import {
+  normalizeWalletAddress,
+  getWalletAddressVariants,
+} from "@/shared/lib/ton-address";
+import {
+  ChainSyncStatus,
+  type ChainEvent,
+  type ChainAction,
+  type ChainAddress,
+  type ChainJetton,
+} from "@generated/prisma/client";
 
-interface HomePageProps {
-  searchParams: Promise<{ page?: string }>;
+interface PageProps {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
-const parsePage = (value: string | undefined): number => {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed) || parsed < 1) {
-    return 1;
-  }
-  return Math.floor(parsed);
+const DEFAULT_ADDRESS = "EQD_VOCkZZxBqRlHgqVXzKpoW_29kR-S0t02VN4VxiDTr7Bl";
+
+type EventWithActions = ChainEvent & {
+  actions: (ChainAction & {
+    from: ChainAddress | null;
+    to: ChainAddress | null;
+    jetton: ChainJetton | null;
+    jettonIn: ChainJetton | null;
+    jettonOut: ChainJetton | null;
+  })[];
 };
 
-export default async function Home({ searchParams }: HomePageProps) {
-  const { page: pageParam } = await searchParams;
-  const page = parsePage(pageParam);
-  const walletRaw = toRawTonAddress(DEFAULT_WALLET_FRIENDLY);
+function parsePageParam(value: string | string[] | undefined): number {
+  const raw = typeof value === "string" ? value : undefined;
+  if (!raw) {
+    return 1;
+  }
 
-  const eventsPage = await findChainRawEventsPage(walletRaw, page, CHAIN_EVENTS_PAGE_SIZE);
-  const events = eventsPage.items.map(row => accountEventFromJson(row.payload));
-  const rowOffset = (eventsPage.page - 1) * eventsPage.pageSize;
+  const page = Number.parseInt(raw, 10);
+  if (!Number.isFinite(page) || page < 1) {
+    return 1;
+  }
+
+  return page;
+}
+
+type EventActionRow = EventWithActions["actions"][number];
+
+function getActionDetailsText(action: EventActionRow): string | undefined {
+  return resolveDisplayDetails(action.displayDetails, action.displayAmount, action.direction);
+}
+
+async function getEventsCount(address: string): Promise<number> {
+  const walletVariants = getWalletAddressVariants(address);
+
+  return prisma.chainEvent.count({
+    where: {
+      walletAddress: { in: walletVariants },
+    },
+  });
+}
+
+async function getEvents(
+  address: string,
+  page: number
+): Promise<EventWithActions[]> {
+  const walletVariants = getWalletAddressVariants(address);
+  const skip = (page - 1) * EVENTS_PAGE_SIZE;
+
+  return prisma.chainEvent.findMany({
+    where: {
+      walletAddress: { in: walletVariants },
+    },
+    include: {
+      actions: {
+        include: {
+          from: true,
+          to: true,
+          jetton: true,
+          jettonIn: true,
+          jettonOut: true,
+        },
+        orderBy: {
+          orderIndex: "asc",
+        },
+      },
+    },
+    orderBy: {
+      timestamp: "desc",
+    },
+    take: EVENTS_PAGE_SIZE,
+    skip,
+  });
+}
+
+async function getSyncState(address: string) {
+  const walletVariants = getWalletAddressVariants(address);
+
+  return prisma.chainSyncState.findFirst({
+    where: { walletAddress: { in: walletVariants } },
+  });
+}
+
+function formatAddress(addr: string | null | undefined, maxLength: number = 16): string {
+  if (!addr) return "—";
+  if (addr.length <= maxLength) return addr;
+  const half = Math.floor(maxLength / 2) - 1;
+  return `${addr.slice(0, half)}…${addr.slice(-half)}`;
+}
+
+function getDirectionBadge(direction: string | null | undefined) {
+  if (!direction) return null;
+
+  const styles: Record<string, string> = {
+    INCOMING: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+    OUTGOING: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
+    SELF: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
+    UNKNOWN: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  };
+
+  const labels: Record<string, string> = {
+    INCOMING: "← In",
+    OUTGOING: "→ Out",
+    SELF: "↻ Self",
+    UNKNOWN: "?",
+  };
+
+  return (
+    <span className={`px-2 py-0.5 rounded text-xs font-medium ${styles[direction] ?? styles.unknown}`}>
+      {labels[direction] ?? direction}
+    </span>
+  );
+}
+
+export default async function Home({ searchParams }: PageProps) {
+  const params = await searchParams;
+  const addressParam = typeof params.address === "string" ? params.address : DEFAULT_ADDRESS;
+
+  let address: Address;
+  try {
+    address = Address.parse(addressParam);
+  } catch {
+    return (
+      <main className="p-4">
+        <h1 className="text-2xl font-bold mb-4">TON Wallet Transactions</h1>
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          Invalid TON address: {addressParam}
+        </div>
+      </main>
+    );
+  }
+
+  const addressString = normalizeWalletAddress(address.toString());
+  const currentPage = parsePageParam(params.page);
+
+  const [totalEvents, syncState, stats] = await Promise.all([
+    getEventsCount(addressString),
+    getSyncState(addressString),
+    getWalletStats(addressString),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalEvents / EVENTS_PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const events = await getEvents(addressString, safePage);
+
+  const isSyncing = syncState?.status === ChainSyncStatus.SYNCING;
 
   return (
     <main className="p-4">
-      <h1 className="mb-4 text-2xl font-bold">TON Wallet Transactions</h1>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold">TON Wallet Transactions</h1>
+        <SyncButton address={addressString} isSyncing={isSyncing} />
+      </div>
 
-      <Suspense fallback={<p className="mb-4 text-sm text-gray-500">Загрузка…</p>}>
-        <SyncWalletButton walletAddress={DEFAULT_WALLET_FRIENDLY} />
-      </Suspense>
+      <div className="mb-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+        <div className="flex items-center gap-4">
+          <div>
+            <span className="text-sm text-gray-500">Address:</span>
+            <code className="ml-2 text-sm font-mono">{addressString}</code>
+          </div>
+        </div>
 
-      {eventsPage.total === 0 ? (
-        <p className="mb-4 text-sm text-gray-600 dark:text-gray-400">
-          Нет событий. Нажми «Синхронизация».
-        </p>
+        <div className="mt-2 text-sm text-gray-600 flex flex-wrap gap-x-4 gap-y-1">
+          <span>
+            DB: <strong>{stats.events}</strong> events, <strong>{stats.actions}</strong> actions
+          </span>
+          {stats.incompleteEvents > 0 && (
+            <span className="text-red-600">
+              Incomplete: {stats.incompleteEvents} (нажми Sync с repair)
+            </span>
+          )}
+          {syncState && (
+            <>
+              <span>
+                Status:{" "}
+                <span className={`font-medium ${syncState.status === ChainSyncStatus.COMPLETED ? "text-green-600" :
+                    syncState.status === ChainSyncStatus.ERROR ? "text-red-600" :
+                      syncState.status === ChainSyncStatus.SYNCING ? "text-blue-600" :
+                        "text-gray-600"
+                  }`}>
+                  {syncState.status}
+                </span>
+              </span>
+              {syncState.actionsSynced !== undefined && (
+                <span>Last sync actions: {syncState.actionsSynced}</span>
+              )}
+              {syncState.lastTimestamp && (
+                <span>
+                  Last sync: {new Date(syncState.lastTimestamp).toLocaleString()}
+                </span>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+
+      {totalEvents > 0 && (
+        <EventsPagination
+          currentPage={safePage}
+          totalPages={totalPages}
+          totalEvents={totalEvents}
+          address={addressString}
+        />
+      )}
+
+      {events.length === 0 ? (
+        <div className="text-center py-8">
+          <p className="text-gray-500 mb-4">No events found in database.</p>
+          <p className="text-sm text-gray-400">
+            Click &quot;Sync&quot; to fetch transactions from TON API.
+          </p>
+        </div>
       ) : (
-        <>
-          <TransactionsPagination
-            page={eventsPage.page}
-            totalPages={eventsPage.totalPages}
-            total={eventsPage.total}
-            pageSize={eventsPage.pageSize}
-          />
-          <WalletTransactionsTable events={events} rowOffset={rowOffset} />
-          <TransactionsPagination
-            page={eventsPage.page}
-            totalPages={eventsPage.totalPages}
-            total={eventsPage.total}
-            pageSize={eventsPage.pageSize}
-          />
-        </>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-100 dark:bg-gray-800">
+                <th className="px-3 py-2 text-left text-sm font-medium">Date / Tx</th>
+                <th className="px-3 py-2 text-left text-sm font-medium">Type</th>
+                <th className="px-3 py-2 text-left text-sm font-medium">Direction</th>
+                <th className="px-3 py-2 text-left text-sm font-medium">From / To</th>
+                <th className="px-3 py-2 text-left text-sm font-medium">Amount</th>
+                <th className="px-3 py-2 text-left text-sm font-medium">Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((event: EventWithActions) => (
+                event.actions.map((tx: EventActionRow, txIndex: number) => {
+                  const detailsText = getActionDetailsText(tx);
+
+                  return (
+                  <tr
+                    key={`${event.id}-${tx.id}`}
+                    className={`border-b hover:bg-gray-50 dark:hover:bg-gray-900 ${txIndex === 0 ? "" : "border-t border-dashed"
+                      }`}
+                  >
+                    {txIndex === 0 && (
+                      <td className="px-3 py-2 text-sm" rowSpan={event.actions.length}>
+                        <div className="font-medium">
+                          {new Date(event.timestamp).toLocaleDateString()}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {new Date(event.timestamp).toLocaleTimeString()}
+                        </div>
+                        <div className="mt-1">
+                          <TonviewerTransactionLink
+                            tonEventId={event.tonEventId}
+                            rawData={event.rawData}
+                          />
+                        </div>
+                      </td>
+                    )}
+                    <td className="px-3 py-2 text-sm">
+                      <span className={`px-2 py-0.5 rounded text-xs font-medium ${tx.type === "TON_TRANSFER" ? "bg-blue-100 text-blue-800" :
+                          tx.type === "JETTON_TRANSFER" ? "bg-purple-100 text-purple-800" :
+                            tx.type === "FLAWED_JETTON_TRANSFER" ? "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200" :
+                            tx.type === "JETTON_SWAP" ? "bg-orange-100 text-orange-800" :
+                              tx.type === "JETTON_BURN" ? "bg-red-100 text-red-800" :
+                                tx.type === "JETTON_MINT" ? "bg-green-100 text-green-800" :
+                                  tx.type === "DEPOSIT_STAKE" ? "bg-teal-100 text-teal-800" :
+                                    tx.type === "WITHDRAW_STAKE" ? "bg-cyan-100 text-cyan-800" :
+                                      tx.type === "SMART_CONTRACT_EXEC" ? "bg-gray-100 text-gray-800" :
+                                        "bg-gray-100 text-gray-800"
+                        }`}>
+                        {tx.type.replace(/_/g, " ")}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2 text-sm">
+                      {getDirectionBadge(tx.direction)}
+                    </td>
+                    <td className="px-3 py-2 text-sm">
+                      <div className="space-y-1">
+                        {tx.from && (
+                          <div className="text-xs">
+                            <span className="text-gray-500">From: </span>
+                            <TonviewerAccountLink
+                              address={tx.from.rawAddress}
+                              label={formatAddress(tx.from.rawAddress, 12)}
+                            />
+                            {tx.from.name && (
+                              <span className="ml-1 text-gray-600">({tx.from.name})</span>
+                            )}
+                          </div>
+                        )}
+                        {tx.to && (
+                          <div className="text-xs">
+                            <span className="text-gray-500">To: </span>
+                            <TonviewerAccountLink
+                              address={tx.to.rawAddress}
+                              label={formatAddress(tx.to.rawAddress, 12)}
+                            />
+                            {tx.to.name && (
+                              <span className="ml-1 text-gray-600">({tx.to.name})</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2 text-sm">
+                      {tx.displayAmount ? (
+                        <span className={`font-medium ${tx.direction === "INCOMING" ? "text-green-600" :
+                            tx.direction === "OUTGOING" ? "text-red-600" :
+                              ""
+                          }`}>
+                          {tx.direction === "INCOMING" ? "+" : tx.direction === "OUTGOING" ? "-" : ""}
+                          {tx.displayAmount}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2 text-sm">
+                      {detailsText ? (
+                        <div
+                          className="max-w-xs truncate text-xs text-gray-600 dark:text-gray-400"
+                          title={detailsText}
+                        >
+                          {detailsText}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">—</span>
+                      )}
+                    </td>
+                  </tr>
+                  );
+                })
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {totalEvents > 0 && (
+        <EventsPagination
+          currentPage={safePage}
+          totalPages={totalPages}
+          totalEvents={totalEvents}
+          address={addressString}
+        />
       )}
     </main>
   );
