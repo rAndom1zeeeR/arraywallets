@@ -31,19 +31,14 @@ import {
   createNullableNumberSortingFn,
   sumCounterpartAmounts,
 } from "@/shared/presentation/components/data-table/sorting.utils";
+import { buttonStyles } from "@/shared/presentation/components/data-table/data-table.styles";
 import "@/shared/presentation/components/data-table/data-table.types";
 import { cn } from "@/shared/lib/utils";
 
 interface SwapJettonTableProps {
   rows: JettonSwapBreakdownFormatted[];
   relatedByJetton: Record<string, JettonRelatedSwapItem[]>;
-  variant?: "swaps" | "pnl";
 }
-
-const rowHoverClass = {
-  swaps: "border-orange-100/80 hover:bg-white/80 dark:border-orange-900/50 dark:hover:bg-gray-900/60",
-  pnl: "border-sky-100/80 hover:bg-white/80 dark:border-sky-900/50 dark:hover:bg-gray-900/60",
-} as const;
 
 function formatSwapTonLine(tonIn: string | null, tonOut: string | null): string | null {
   const parts: string[] = [];
@@ -67,7 +62,7 @@ interface RelatedSwapsPanelProps {
 function RelatedSwapsPanel({ jettonSymbol, relatedSwaps }: RelatedSwapsPanelProps) {
   return (
     <>
-      <p className="mb-2 text-xs font-medium text-gray-600 dark:text-gray-400">
+      <p className="mb-2 text-xs font-medium text-muted-foreground">
         Related swaps for {jettonSymbol} ({relatedSwaps.length})
       </p>
       <ul className="max-h-72 space-y-2 overflow-y-auto text-sm">
@@ -78,42 +73,40 @@ function RelatedSwapsPanel({ jettonSymbol, relatedSwaps }: RelatedSwapsPanelProp
           return (
             <li
               key={swap.id}
-              className="rounded border border-gray-200 bg-white px-2 py-2 dark:border-gray-700 dark:bg-gray-900"
+              className="rounded-lg border border-border bg-secondary/40 px-3 py-2.5"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <time className="text-xs text-gray-500" dateTime={swap.timestampIso}>
+                <time className="text-xs text-muted-foreground" dateTime={swap.timestampIso}>
                   {new Date(swap.timestampIso).toLocaleString()}
                 </time>
                 <div className="flex flex-wrap items-center gap-2">
                   <span
                     className={cn(
-                      "rounded px-1.5 py-0.5 text-xs font-medium",
-                      swap.role === "sold" && "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200",
-                      swap.role === "bought" &&
-                        "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-200",
-                      swap.role === "both" &&
-                        "bg-purple-100 text-purple-800 dark:bg-purple-950 dark:text-purple-200"
+                      "rounded-md px-1.5 py-0.5 text-xs font-medium",
+                      swap.role === "sold" && "bg-loss/10 text-loss",
+                      swap.role === "bought" && "bg-profit/10 text-profit",
+                      swap.role === "both" && "bg-primary/10 text-primary"
                     )}
                   >
                     {getJettonSwapRoleLabel(swap.role)}
                   </span>
                   {swap.dex && (
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-800">{swap.dex}</span>
+                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{swap.dex}</span>
                   )}
                   {tonviewerHref && (
                     <a
                       href={tonviewerHref}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs font-medium text-sky-600 hover:underline dark:text-sky-400"
+                      className="text-xs font-medium text-primary hover:underline"
                     >
                       Tonviewer ↗
                     </a>
                   )}
                 </div>
               </div>
-              <div className="mt-1 font-medium">{swap.displayAmount ?? "—"}</div>
-              <div className="mt-0.5 text-xs text-gray-500">
+              <div className="mt-1 font-medium text-foreground">{swap.displayAmount ?? "—"}</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
                 {swap.legKindLabel}
                 {swap.jettonInSymbol && swap.jettonOutSymbol && (
                   <>
@@ -150,7 +143,7 @@ function resolveSortPriceUsd(
   return rate?.usd ?? null;
 }
 
-export function SwapJettonTable({ rows, relatedByJetton, variant = "swaps" }: SwapJettonTableProps) {
+export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps) {
   const panelIdPrefix = useId();
   const [sorting, setSorting] = useState<SortingState>([]);
   const addresses = useMemo(() => rows.map(row => row.jetton.address), [rows]);
@@ -183,6 +176,7 @@ export function SwapJettonTable({ rows, relatedByJetton, variant = "swaps" }: Sw
         header: ({ column }) => <DataTableSortHeader column={column} label="Price" />,
         sortingFn: createNullableNumberSortingFn("price"),
         sortUndefined: "last",
+        meta: { align: "right" },
         cell: ({ row }) => {
           const rate =
             row.original.jetton.price ?? getJettonRateQuote(rates, row.original.jetton.address);
@@ -200,73 +194,72 @@ export function SwapJettonTable({ rows, relatedByJetton, variant = "swaps" }: Sw
       }),
       columnHelper.accessor("spentRaw", {
         id: "sold",
-        header: ({ column }) => (
-          <DataTableSortHeader column={column} label="Sold" className="text-red-600 dark:text-red-400" />
-        ),
+        header: ({ column }) => <DataTableSortHeader column={column} label="Sold" className="text-loss" />,
         sortingFn: createBigintSortingFn("sold"),
-        meta: { headerClassName: "text-red-600 dark:text-red-400", cellClassName: "text-red-600 dark:text-red-400" },
+        meta: { align: "right", headerClassName: "text-loss", cellClassName: "text-loss tabular-nums" },
         cell: ({ row }) => row.original.spent,
       }),
       columnHelper.accessor("receivedRaw", {
         id: "bought",
-        header: ({ column }) => (
-          <DataTableSortHeader column={column} label="Bought" className="text-green-600 dark:text-green-400" />
-        ),
+        header: ({ column }) => <DataTableSortHeader column={column} label="Bought" className="text-profit" />,
         sortingFn: createBigintSortingFn("bought"),
-        meta: {
-          headerClassName: "text-green-600 dark:text-green-400",
-          cellClassName: "text-green-600 dark:text-green-400",
-        },
+        meta: { align: "right", headerClassName: "text-profit", cellClassName: "text-profit tabular-nums" },
         cell: ({ row }) => row.original.received,
       }),
       columnHelper.accessor("tonReceivedNanoton", {
         id: "tonGot",
-        header: ({ column }) => (
-          <DataTableSortHeader column={column} label="TON got" className="text-green-600 dark:text-green-400" />
-        ),
+        header: ({ column }) => <DataTableSortHeader column={column} label="TON got" className="text-profit" />,
         sortingFn: createBigintSortingFn("tonGot"),
         meta: {
-          headerClassName: "text-green-600 dark:text-green-400",
-          cellClassName: "text-green-600 dark:text-green-400",
+          align: "right",
+          hideBelow: "md",
+          headerClassName: "text-profit",
+          cellClassName: "text-profit tabular-nums",
         },
         cell: ({ row }) => row.original.tonReceived,
       }),
       columnHelper.accessor("tonPaidNanoton", {
         id: "tonPaid",
-        header: ({ column }) => (
-          <DataTableSortHeader column={column} label="TON paid" className="text-red-600 dark:text-red-400" />
-        ),
+        header: ({ column }) => <DataTableSortHeader column={column} label="TON paid" className="text-loss" />,
         sortingFn: createBigintSortingFn("tonPaid"),
-        meta: { headerClassName: "text-red-600 dark:text-red-400", cellClassName: "text-red-600 dark:text-red-400" },
+        meta: {
+          align: "right",
+          hideBelow: "md",
+          headerClassName: "text-loss",
+          cellClassName: "text-loss tabular-nums",
+        },
         cell: ({ row }) => row.original.tonPaid,
       }),
       columnHelper.accessor(row => sumCounterpartAmounts(row.counterpartsReceived), {
         id: "otherGot",
-        header: ({ column }) => (
-          <DataTableSortHeader column={column} label="Other got" className="text-green-600 dark:text-green-400" />
-        ),
+        header: ({ column }) => <DataTableSortHeader column={column} label="Other got" className="text-profit" />,
         sortingFn: createBigintSortingFn("otherGot"),
         meta: {
-          headerClassName: "text-green-600 dark:text-green-400",
-          cellClassName: "text-green-600 dark:text-green-400",
+          align: "right",
+          hideBelow: "lg",
+          headerClassName: "text-profit",
+          cellClassName: "text-profit tabular-nums",
         },
         cell: ({ row }) => row.original.counterpartsReceivedText,
       }),
       columnHelper.accessor(row => sumCounterpartAmounts(row.counterpartsPaid), {
         id: "otherPaid",
-        header: ({ column }) => (
-          <DataTableSortHeader column={column} label="Other paid" className="text-red-600 dark:text-red-400" />
-        ),
+        header: ({ column }) => <DataTableSortHeader column={column} label="Other paid" className="text-loss" />,
         sortingFn: createBigintSortingFn("otherPaid"),
-        meta: { headerClassName: "text-red-600 dark:text-red-400", cellClassName: "text-red-600 dark:text-red-400" },
+        meta: {
+          align: "right",
+          hideBelow: "lg",
+          headerClassName: "text-loss",
+          cellClassName: "text-loss tabular-nums",
+        },
         cell: ({ row }) => row.original.counterpartsPaidText,
       }),
       columnHelper.accessor(row => row.legsIn + row.legsOut, {
         id: "swaps",
-        header: ({ column }) => <DataTableSortHeader column={column} label="Swaps" className="text-gray-400" />,
-        meta: { headerClassName: "text-gray-400" },
+        header: ({ column }) => <DataTableSortHeader column={column} label="Swaps" />,
+        meta: { align: "right", hideBelow: "sm" },
         cell: ({ row }) => (
-          <span className="text-xs text-gray-500">
+          <span className="text-xs tabular-nums text-muted-foreground">
             sell {row.original.legsIn} · buy {row.original.legsOut}
           </span>
         ),
@@ -275,13 +268,13 @@ export function SwapJettonTable({ rows, relatedByJetton, variant = "swaps" }: Sw
         id: "expand",
         header: " ",
         enableSorting: false,
-        meta: { headerClassName: "text-right text-gray-400" },
+        meta: { align: "right", headerClassName: "text-muted-foreground" },
         cell: ({ row }) => {
           const swapCount = row.original.relatedSwaps.length;
           const panelId = `${panelIdPrefix}-${row.id}`;
 
           if (swapCount === 0) {
-            return <span className="text-xs text-gray-400">—</span>;
+            return <span className="text-xs text-muted-foreground">—</span>;
           }
 
           return (
@@ -291,7 +284,7 @@ export function SwapJettonTable({ rows, relatedByJetton, variant = "swaps" }: Sw
                 onClick={row.getToggleExpandedHandler()}
                 aria-expanded={row.getIsExpanded()}
                 aria-controls={panelId}
-                className="rounded-md border border-sky-200 bg-white px-2 py-1 text-xs font-medium text-sky-700 hover:bg-sky-50 dark:border-sky-800 dark:bg-gray-900 dark:text-sky-300 dark:hover:bg-sky-950"
+                className={buttonStyles.ghost}
               >
                 {row.getIsExpanded() ? "Less" : `More (${swapCount})`}
               </button>
@@ -328,23 +321,15 @@ export function SwapJettonTable({ rows, relatedByJetton, variant = "swaps" }: Sw
   );
 
   return (
-    <div className="mt-3 overflow-hidden rounded-xl border border-gray-200 dark:border-gray-800">
+    <div>
       {needsLiveRates && isRatesError && (
-        <p className="border-b border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+        <p className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
           Не удалось обновить цены — показаны данные из кэша БД (если есть).
         </p>
       )}
       <DataTable
         table={table}
-        tableClassName="min-w-[56rem] text-sm"
-        theadClassName="bg-gray-50 text-left text-xs tracking-wide text-gray-500 uppercase dark:bg-gray-900/80"
-        headerRowClassName="border-b border-gray-200 dark:border-gray-800"
-        headerCellClassName="px-3 py-2.5 font-medium text-gray-700 dark:text-gray-300"
-        tbodyClassName="divide-y divide-gray-100 bg-white dark:divide-gray-800 dark:bg-gray-950/40"
-        getRowClassName={() => cn("border-b transition-colors", rowHoverClass[variant])}
-        bodyCellClassName="px-3 py-3"
-        subRowClassName="bg-sky-50/50 dark:bg-sky-950/20"
-        subRowCellClassName="px-3 py-3"
+        tableClassName="min-w-[32rem] sm:min-w-[56rem]"
         renderSubComponent={renderSubComponent}
       />
     </div>

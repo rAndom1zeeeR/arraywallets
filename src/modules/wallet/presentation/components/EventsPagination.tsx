@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
+import { buttonStyles } from "@/shared/presentation/components/data-table/data-table.styles";
 import { cn } from "@/shared/lib/utils";
 
 export const EVENTS_PAGE_SIZE = 100;
@@ -30,7 +31,7 @@ export function EventsPagination({
 }: EventsPaginationProps) {
   if (totalPages <= 1) {
     return (
-      <p className="mt-4 text-sm text-gray-500">
+      <p className="text-sm text-muted-foreground">
         {totalEvents} event{totalEvents === 1 ? "" : "s"}
       </p>
     );
@@ -43,10 +44,10 @@ export function EventsPagination({
 
   return (
     <nav
-      className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+      className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
       aria-label="Events pagination"
     >
-      <p className="text-sm text-gray-600 dark:text-gray-400">
+      <p className="text-sm text-muted-foreground">
         Events {from}–{to} of {totalEvents} · page {currentPage} of {totalPages}
       </p>
 
@@ -61,7 +62,7 @@ export function EventsPagination({
 
         {pageNumbers.map((item, index) =>
           item === "ellipsis" ? (
-            <span key={`ellipsis-${index}`} className="px-2 text-sm text-gray-400" aria-hidden>
+            <span key={`ellipsis-${index}`} className="px-2 text-sm text-muted-foreground" aria-hidden>
               …
             </span>
           ) : (
@@ -109,7 +110,7 @@ function PaginationLink({
   if (disabled) {
     return (
       <span
-        className="inline-flex min-w-9 items-center justify-center rounded-md border border-gray-200 px-3 py-1.5 text-sm text-gray-300 dark:border-gray-700 dark:text-gray-600"
+        className="inline-flex min-w-9 items-center justify-center rounded-lg border border-border/60 px-3 py-1.5 text-sm text-muted-foreground/40"
         aria-disabled="true"
       >
         {children}
@@ -123,10 +124,9 @@ function PaginationLink({
       aria-label={ariaLabel}
       aria-current={ariaCurrent}
       className={cn(
-        "inline-flex min-w-9 items-center justify-center rounded-md border px-3 py-1.5 text-sm transition-colors",
-        active
-          ? "border-sky-500 bg-sky-500 text-white"
-          : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 dark:hover:bg-gray-800"
+        buttonStyles.secondary,
+        "min-w-9 px-3 py-1.5",
+        active && "border-primary bg-primary text-primary-foreground hover:bg-primary/90"
       )}
     >
       {children}

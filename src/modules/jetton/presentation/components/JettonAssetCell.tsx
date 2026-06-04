@@ -16,8 +16,8 @@ function JettonAvatar({ jetton }: JettonAssetCellProps) {
   return (
     <div
       className={cn(
-        "flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-gray-100 dark:border-gray-700 dark:bg-gray-800",
-        !showImage && "text-xs font-semibold text-gray-600 dark:text-gray-300"
+        "flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-secondary sm:h-9 sm:w-9",
+        !showImage && "text-[10px] font-semibold text-muted-foreground sm:text-xs"
       )}
       aria-hidden={showImage}
     >
@@ -41,10 +41,10 @@ export function JettonAssetCell({ jetton }: JettonAssetCellProps) {
   const isTonNative = jetton.address === TON_PORTFOLIO_ASSET_KEY;
 
   return (
-    <div className="flex min-w-[10rem] items-center gap-3">
+    <div className="flex min-w-[8.5rem] items-center gap-2.5 sm:min-w-[10rem] sm:gap-3">
       {isTonNative ? (
         <div
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-500 text-xs font-bold text-white"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground sm:h-9 sm:w-9 sm:text-xs"
           aria-hidden
         >
           T
@@ -53,8 +53,8 @@ export function JettonAssetCell({ jetton }: JettonAssetCellProps) {
         <JettonAvatar jetton={jetton} />
       )}
       <div className="min-w-0">
-        <div className="truncate font-semibold text-gray-900 dark:text-gray-100">{jetton.symbol}</div>
-        <div className="truncate text-xs text-gray-500 dark:text-gray-400">{jetton.name}</div>
+        <div className="truncate text-sm font-semibold text-foreground">{jetton.symbol}</div>
+        <div className="truncate text-xs text-muted-foreground">{jetton.name}</div>
       </div>
     </div>
   );

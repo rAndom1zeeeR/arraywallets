@@ -8,6 +8,9 @@ import {
 import { BaseAssetSwapPnlSection } from "@/modules/jetton/presentation/components/BaseAssetSwapPnlSection";
 import { JettonPortfolioPnlTable } from "@/modules/jetton/presentation/components/JettonPortfolioPnlTable";
 import type { WalletSwapStatsResult } from "@/modules/swap/application/swap-stats.service";
+import { DataTableShell } from "@/shared/presentation/components/data-table/data-table-shell";
+import { pageStyles } from "@/shared/presentation/components/data-table/data-table.styles";
+import { cn } from "@/shared/lib/utils";
 
 export interface WalletPnlPanelProps {
   address: string;
@@ -34,7 +37,7 @@ export function WalletPnlPanel({ address, currentPage, stats }: WalletPnlPanelPr
       id="wallet-tabpanel-pnl"
       role="tabpanel"
       aria-labelledby="wallet-tab-pnl"
-      className="space-y-4"
+      className="space-y-6"
     >
       <BaseAssetSwapPnlSection
         title="PnL TON (incl. pTON)"
@@ -57,22 +60,19 @@ export function WalletPnlPanel({ address, currentPage, stats }: WalletPnlPanelPr
           swapCount={aggregate.swapCount}
         />
       ) : (
-        <section className="rounded-lg border border-dashed border-gray-300 bg-white/50 p-4 dark:border-gray-600 dark:bg-gray-900/50">
-          <h2 className="text-lg font-semibold text-gray-700 dark:text-gray-200">PnL USDT</h2>
-          <p className="mt-2 text-sm text-gray-500">Нет свапов с USDT / jUSDT / USD₮ в данных кошелька.</p>
+        <section className={cn(pageStyles.section, "border-dashed")}>
+          <h2 className={pageStyles.sectionTitle}>PnL USDT</h2>
+          <p className={pageStyles.sectionSubtitle}>Нет свапов с USDT / jUSDT / USD₮ в данных кошелька.</p>
         </section>
       )}
 
       {portfolio.length > 0 && (
-        <section className="rounded-lg border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-900 dark:bg-sky-950/30">
-          <h2 className="text-lg font-semibold text-sky-900 dark:text-sky-100">Другие jetton</h2>
-          <p className="mt-0.5 text-xs text-gray-600 dark:text-gray-400">
-            TON-ноги и USD-ноги в таблице показываются отдельно, без суммирования в одну валюту · {totalJettons}{" "}
-            tokens
-          </p>
-
+        <DataTableShell
+          title="Your Assets"
+          subtitle={`TON-ноги и USD-ноги отдельно · ${totalJettons} tokens`}
+        >
           {totalJettons > JETTON_PNL_PAGE_SIZE && (
-            <div className="mt-3">
+            <div className="mb-4">
               <JettonPnlPagination
                 address={address}
                 currentPage={safePage}
@@ -82,14 +82,12 @@ export function WalletPnlPanel({ address, currentPage, stats }: WalletPnlPanelPr
             </div>
           )}
 
-          <Suspense fallback={<p className="mt-3 text-sm text-gray-500">Загрузка…</p>}>
-            <div className="mt-3">
-              <JettonPortfolioPnlTable rows={visibleRows} />
-            </div>
+          <Suspense fallback={<p className="text-sm text-muted-foreground">Загрузка…</p>}>
+            <JettonPortfolioPnlTable rows={visibleRows} />
           </Suspense>
 
           {totalJettons > JETTON_PNL_PAGE_SIZE && (
-            <div className="mt-3">
+            <div className="mt-4">
               <JettonPnlPagination
                 address={address}
                 currentPage={safePage}
@@ -98,7 +96,7 @@ export function WalletPnlPanel({ address, currentPage, stats }: WalletPnlPanelPr
               />
             </div>
           )}
-        </section>
+        </DataTableShell>
       )}
     </div>
   );

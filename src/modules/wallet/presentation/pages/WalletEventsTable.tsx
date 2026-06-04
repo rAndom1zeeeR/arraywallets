@@ -21,6 +21,10 @@ import type { WalletEventActionRow } from "@/modules/wallet/domain/wallet-events
 import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
 import type { ChainActionDirectionValue } from "@/shared/constants/chain-prisma.enums";
 import { DataTable } from "@/shared/presentation/components/data-table/data-table";
+import {
+  dataTableStyles,
+  getResponsiveHideClass,
+} from "@/shared/presentation/components/data-table/data-table.styles";
 import { DataTableSortHeader } from "@/shared/presentation/components/data-table/sortable-header";
 import {
   buildEventRowSpanMeta,
@@ -60,10 +64,10 @@ function getDirectionBadge(direction: string | null | undefined) {
   if (!direction) return null;
 
   const styles: Record<string, string> = {
-    INCOMING: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
-    OUTGOING: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    SELF: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
-    UNKNOWN: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+    INCOMING: "bg-profit/10 text-profit",
+    OUTGOING: "bg-loss/10 text-loss",
+    SELF: "bg-muted text-muted-foreground",
+    UNKNOWN: "bg-amber-500/10 text-amber-400",
   };
 
   const labels: Record<string, string> = {
@@ -74,28 +78,41 @@ function getDirectionBadge(direction: string | null | undefined) {
   };
 
   return (
-    <span className={`rounded px-2 py-0.5 text-xs font-medium ${styles[direction] ?? styles.UNKNOWN}`}>
+    <span className={cn("rounded-md px-2 py-0.5 text-xs font-medium", styles[direction] ?? styles.UNKNOWN)}>
       {labels[direction] ?? direction}
     </span>
   );
 }
 
 function getActionTypeBadgeClass(type: string): string {
-  if (type === "TON_TRANSFER") return "bg-blue-100 text-blue-800";
-  if (type === "JETTON_TRANSFER") return "bg-purple-100 text-purple-800";
-  if (type === "FLAWED_JETTON_TRANSFER") return "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200";
-  if (type === "JETTON_SWAP") return "bg-orange-100 text-orange-800";
-  if (type === "INFERRED_SWAP") return "bg-violet-100 text-violet-900 dark:bg-violet-950 dark:text-violet-200";
-  if (type === "JETTON_BURN") return "bg-red-100 text-red-800";
-  if (type === "JETTON_MINT") return "bg-green-100 text-green-800";
-  if (type === "DEPOSIT_STAKE") return "bg-teal-100 text-teal-800";
-  if (type === "WITHDRAW_STAKE") return "bg-cyan-100 text-cyan-800";
-  if (type === "SMART_CONTRACT_EXEC") return "bg-gray-100 text-gray-800";
-  return "bg-gray-100 text-gray-800";
+  if (type === "TON_TRANSFER") return "bg-primary/10 text-primary";
+  if (type === "JETTON_TRANSFER") return "bg-purple-500/10 text-purple-400";
+  if (type === "FLAWED_JETTON_TRANSFER") return "bg-amber-500/10 text-amber-400";
+  if (type === "JETTON_SWAP") return "bg-orange-500/10 text-orange-400";
+  if (type === "INFERRED_SWAP") return "bg-violet-500/10 text-violet-400";
+  if (type === "JETTON_BURN") return "bg-loss/10 text-loss";
+  if (type === "JETTON_MINT") return "bg-profit/10 text-profit";
+  if (type === "DEPOSIT_STAKE") return "bg-teal-500/10 text-teal-400";
+  if (type === "WITHDRAW_STAKE") return "bg-cyan-500/10 text-cyan-400";
+  if (type === "SMART_CONTRACT_EXEC") return "bg-muted text-muted-foreground";
+  return "bg-muted text-muted-foreground";
 }
 
 function getEventTimestampMs(event: WalletEventFlatRow["event"]): number {
   return new Date(event.timestamp).getTime();
+}
+
+function resolveEventCellClassName(
+  meta: { align?: "left" | "right"; hideBelow?: "sm" | "md" | "lg"; cellClassName?: string } | undefined,
+  extra?: string
+): string {
+  return cn(
+    dataTableStyles.bodyCell,
+    meta?.align === "right" && dataTableStyles.bodyCellRight,
+    getResponsiveHideClass(meta?.hideBelow),
+    meta?.cellClassName,
+    extra
+  );
 }
 
 const columnHelper = createColumnHelper<WalletEventFlatRow>();
@@ -131,8 +148,8 @@ export function WalletEventsTable({
 
           return (
             <>
-              <div className="font-medium">{new Date(event.timestamp).toLocaleDateString()}</div>
-              <div className="text-xs text-gray-500">{new Date(event.timestamp).toLocaleTimeString()}</div>
+              <div className="font-medium text-foreground">{new Date(event.timestamp).toLocaleDateString()}</div>
+              <div className="text-xs text-muted-foreground">{new Date(event.timestamp).toLocaleTimeString()}</div>
               <div className="mt-1">
                 <TonviewerTransactionLink tonEventId={event.tonEventId} rawData={event.rawData} />
               </div>
@@ -146,7 +163,7 @@ export function WalletEventsTable({
         cell: ({ row }) => {
           const tx = row.original.action;
           return (
-            <span className={cn("rounded px-2 py-0.5 text-xs font-medium", getActionTypeBadgeClass(tx.type))}>
+            <span className={cn("rounded-md px-2 py-0.5 text-xs font-medium", getActionTypeBadgeClass(tx.type))}>
               {tx.type.replace(/_/g, " ")}
             </span>
           );
@@ -155,6 +172,7 @@ export function WalletEventsTable({
       columnHelper.accessor(row => row.action.direction ?? "", {
         id: "direction",
         header: ({ column }) => <DataTableSortHeader column={column} label="Direction" />,
+        meta: { hideBelow: "md" },
         cell: ({ row }) => getDirectionBadge(row.original.action.direction),
       }),
       columnHelper.accessor(
@@ -165,25 +183,26 @@ export function WalletEventsTable({
         {
           id: "parties",
           header: ({ column }) => <DataTableSortHeader column={column} label="From / To" />,
+          meta: { hideBelow: "lg" },
           cell: ({ row }) => {
             const tx = row.original.action;
             return (
               <div className="space-y-1">
                 {tx.from && (
                   <div className="text-xs">
-                    <span className="text-gray-500">From: </span>
+                    <span className="text-muted-foreground">From: </span>
                     <TonviewerAccountLink
                       address={tx.from.rawAddress}
                       label={formatAddress(tx.from.rawAddress, 12)}
                     />
-                    {tx.from.name && <span className="ml-1 text-gray-600">({tx.from.name})</span>}
+                    {tx.from.name && <span className="ml-1 text-muted-foreground">({tx.from.name})</span>}
                   </div>
                 )}
                 {tx.to && (
                   <div className="text-xs">
-                    <span className="text-gray-500">To: </span>
+                    <span className="text-muted-foreground">To: </span>
                     <TonviewerAccountLink address={tx.to.rawAddress} label={formatAddress(tx.to.rawAddress, 12)} />
-                    {tx.to.name && <span className="ml-1 text-gray-600">({tx.to.name})</span>}
+                    {tx.to.name && <span className="ml-1 text-muted-foreground">({tx.to.name})</span>}
                   </div>
                 )}
               </div>
@@ -194,6 +213,7 @@ export function WalletEventsTable({
       columnHelper.accessor(row => row.action.displayAmount ?? "", {
         id: "amount",
         header: ({ column }) => <DataTableSortHeader column={column} label="Amount" />,
+        meta: { align: "right" },
         cell: ({ row }) => {
           const tx = row.original.action;
           return (
@@ -201,27 +221,23 @@ export function WalletEventsTable({
               {tx.displayAmount ? (
                 <span
                   className={cn(
-                    "font-medium",
-                    tx.direction === "INCOMING" && "text-green-600",
-                    tx.direction === "OUTGOING" && "text-red-600"
+                    "font-medium tabular-nums",
+                    tx.direction === "INCOMING" && "text-profit",
+                    tx.direction === "OUTGOING" && "text-loss"
                   )}
                 >
                   {tx.direction === "INCOMING" ? "+" : tx.direction === "OUTGOING" ? "-" : ""}
                   {tx.displayAmount}
                 </span>
               ) : (
-                <span className="text-gray-400">—</span>
+                <span className="text-muted-foreground">—</span>
               )}
               {(tx.type === "JETTON_SWAP" || tx.type === "INFERRED_SWAP") && (tx.tonIn || tx.tonOut) && (
-                <div className="mt-1 text-xs text-gray-500">
-                  {tx.tonIn && (
-                    <span className="text-red-600 dark:text-red-400">
-                      TON in: {formatTonFromNanoton(parseNanoton(String(tx.tonIn)))}
-                    </span>
-                  )}
+                <div className="mt-1 text-xs tabular-nums text-muted-foreground">
+                  {tx.tonIn && <span className="text-loss">TON in: {formatTonFromNanoton(parseNanoton(String(tx.tonIn)))}</span>}
                   {tx.tonIn && tx.tonOut && " · "}
                   {tx.tonOut && (
-                    <span className="text-green-600 dark:text-green-400">
+                    <span className="text-profit">
                       TON out: {formatTonFromNanoton(parseNanoton(String(tx.tonOut)))}
                     </span>
                   )}
@@ -234,14 +250,15 @@ export function WalletEventsTable({
       columnHelper.accessor(row => getActionDetailsText(row.action) ?? "", {
         id: "comments",
         header: ({ column }) => <DataTableSortHeader column={column} label="Comments" />,
+        meta: { hideBelow: "md" },
         cell: ({ row }) => {
           const detailsText = getActionDetailsText(row.original.action);
           return detailsText ? (
-            <div className="max-w-xs truncate text-xs text-gray-600 dark:text-gray-400" title={detailsText}>
+            <div className="max-w-xs truncate text-xs text-muted-foreground" title={detailsText}>
               {detailsText}
             </div>
           ) : (
-            <span className="text-gray-400">—</span>
+            <span className="text-muted-foreground">—</span>
           );
         },
       }),
@@ -249,7 +266,7 @@ export function WalletEventsTable({
         id: "details",
         header: "Details",
         enableSorting: false,
-        meta: { headerClassName: "w-24" },
+        meta: { align: "right", headerClassName: "w-20" },
         cell: ({ row }) => (
           <TransactionRawDetailsButton
             details={buildTransactionRawDetailsPayload({
@@ -285,11 +302,11 @@ export function WalletEventsTable({
       className="space-y-4"
     >
       {swapsOnly && (
-        <p className="text-sm text-orange-700 dark:text-orange-300">
+        <p className="text-sm text-orange-400">
           Filter: <strong>JETTON_SWAP</strong>, <strong>INFERRED_SWAP</strong> on this page.{" "}
           <Link
             href={getWalletPagePath(address, { tab: "events" })}
-            className="text-sky-600 underline dark:text-sky-400"
+            className="text-primary underline"
           >
             Show all events
           </Link>
@@ -308,63 +325,66 @@ export function WalletEventsTable({
 
       {events.length === 0 ? (
         <div className="py-8 text-center">
-          <p className="mb-4 text-gray-500">
+          <p className="mb-4 text-muted-foreground">
             {swapsOnly ? "No swap actions on this page." : "No events found in database."}
           </p>
-          <p className="text-sm text-gray-400">
+          <p className="text-sm text-muted-foreground">
             {swapsOnly
               ? "Try another page or disable the swap filter."
               : 'Click "Sync" to fetch transactions from TON API.'}
           </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-800">
-          <DataTable
-            table={table}
-            theadClassName="bg-gray-100 dark:bg-gray-800"
-            headerCellClassName="px-3 py-2 text-left text-sm font-medium"
-            getRowClassName={row => {
-              const span = rowSpanMeta.get(row.original.rowKey);
-              return cn(
-                "border-b hover:bg-gray-50 dark:hover:bg-gray-900",
-                useRowSpan && span && !span.isFirst && "border-t border-dashed"
-              );
-            }}
-            bodyCellClassName="px-3 py-2 text-sm"
-            renderRow={(row, cells) => {
-              const flat = row.original;
-              const span = rowSpanMeta.get(flat.rowKey);
-              const isFirst = useRowSpan ? (span?.isFirst ?? flat.isFirstActionInEvent) : true;
-              const eventActionCount = useRowSpan ? (span?.count ?? flat.eventActionCount) : 1;
+        <DataTable
+          table={table}
+          tableClassName="min-w-[36rem] sm:min-w-full"
+          renderRow={row => {
+            const flat = row.original;
+            const span = rowSpanMeta.get(flat.rowKey);
+            const isFirst = useRowSpan ? (span?.isFirst ?? flat.isFirstActionInEvent) : true;
+            const eventActionCount = useRowSpan ? (span?.count ?? flat.eventActionCount) : 1;
+            const isEventContinuation = useRowSpan && span !== undefined && !span.isFirst;
 
-              return (
-                <tr
-                  key={row.id}
-                  className={cn(
-                    "border-b hover:bg-gray-50 dark:hover:bg-gray-900",
-                    useRowSpan && span && !span.isFirst && "border-t border-dashed"
-                  )}
-                >
-                  {row.getVisibleCells().map((cell, cellIndex) => {
-                    if (cell.column.id === "date" && useRowSpan && !isFirst) {
-                      return null;
-                    }
+            return (
+              <tr key={row.id} className={dataTableStyles.bodyRow}>
+                {row.getVisibleCells().map(cell => {
+                  const meta = cell.column.columnDef.meta;
+                  const isDateColumn = cell.column.id === "date";
 
-                    if (cell.column.id === "date" && useRowSpan && isFirst) {
-                      return (
-                        <td key={cell.id} className="px-3 py-2 text-sm" rowSpan={eventActionCount}>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </td>
-                      );
-                    }
+                  if (isDateColumn && useRowSpan && !isFirst) {
+                    return null;
+                  }
 
-                    return cells[cellIndex];
-                  })}
-                </tr>
-              );
-            }}
-          />
-        </div>
+                  if (isDateColumn && useRowSpan && isFirst) {
+                    return (
+                      <td
+                        key={cell.id}
+                        rowSpan={eventActionCount}
+                        className={resolveEventCellClassName(meta)}
+                      >
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </td>
+                    );
+                  }
+
+                  return (
+                    <td
+                      key={cell.id}
+                      className={resolveEventCellClassName(
+                        meta,
+                        isEventContinuation && cell.column.id === "type"
+                          ? "border-t border-dashed border-border/60"
+                          : undefined
+                      )}
+                    >
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  );
+                })}
+              </tr>
+            );
+          }}
+        />
       )}
 
       {totalEvents > 0 && (

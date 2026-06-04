@@ -24,13 +24,13 @@ export function PnlAmountStack({
   const hasPercent = Boolean(pctTonText || pctUsdText);
 
   if (!hasTon && !hasUsd) {
-    return <span className="text-gray-400">—</span>;
+    return <span className="text-muted-foreground">—</span>;
   }
 
   const amountClass = size === "lg" ? "text-lg font-semibold tabular-nums" : "font-medium tabular-nums text-sm";
 
   return (
-    <div>
+    <div className="text-right">
       {hasTon && <div className={cn(amountClass, pnlClassNameFromNumber(ton))}>{formatTonAmount(ton)}</div>}
       {hasUsd && (
         <div className={cn(amountClass, hasTon && "mt-0.5", pnlClassNameFromNumber(usd))}>{formatUsd(usd)}</div>

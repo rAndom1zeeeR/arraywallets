@@ -24,20 +24,21 @@ export function SwapJettonPnlLinesTable({ lines }: SwapJettonPnlLinesTableProps)
       columnHelper.accessor(row => row.jetton.symbol, {
         id: "jetton",
         header: "Jetton",
-        cell: info => <span className="font-medium">{info.getValue()}</span>,
+        cell: info => <span className="font-semibold text-foreground">{info.getValue()}</span>,
       }),
       columnHelper.accessor("spent", {
         header: "Spent",
-        meta: { headerClassName: "text-red-600", cellClassName: "text-red-600 dark:text-red-400" },
+        meta: { align: "right", headerClassName: "text-loss", cellClassName: "text-loss tabular-nums" },
       }),
       columnHelper.accessor("received", {
         header: "Received",
-        meta: { headerClassName: "text-green-600", cellClassName: "text-green-600 dark:text-green-400" },
+        meta: { align: "right", headerClassName: "text-profit", cellClassName: "text-profit tabular-nums" },
       }),
       columnHelper.accessor("net", {
         header: "Net",
+        meta: { align: "right" },
         cell: info => (
-          <span className={cn("font-medium", pnlClassNameFromBigint(info.row.original.netRaw))}>
+          <span className={cn("font-medium tabular-nums", pnlClassNameFromBigint(info.row.original.netRaw))}>
             {info.getValue()}
           </span>
         ),
@@ -53,15 +54,5 @@ export function SwapJettonPnlLinesTable({ lines }: SwapJettonPnlLinesTableProps)
     getRowId: row => row.jetton.address,
   });
 
-  return (
-    <DataTable
-      table={table}
-      tableClassName="min-w-[28rem] text-sm"
-      theadClassName="bg-sky-50 dark:bg-sky-950"
-      headerRowClassName="border-b border-sky-200 text-left text-xs text-gray-500 uppercase dark:border-sky-900"
-      headerCellClassName="px-2 py-1.5"
-      getRowClassName={() => "border-b border-sky-100/80 dark:border-sky-900/50"}
-      bodyCellClassName="px-2 py-1.5"
-    />
-  );
+  return <DataTable table={table} tableClassName="min-w-[20rem]" />;
 }

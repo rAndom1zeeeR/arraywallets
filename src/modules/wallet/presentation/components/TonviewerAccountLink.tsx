@@ -10,7 +10,7 @@ interface TonviewerAccountLinkProps {
 export function TonviewerAccountLink({
   address,
   label,
-  className = "font-mono text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300",
+  className = "font-mono text-primary hover:underline",
 }: TonviewerAccountLinkProps) {
   const href = buildTonviewerAccountUrl(address, tonapiBaseUrl);
 

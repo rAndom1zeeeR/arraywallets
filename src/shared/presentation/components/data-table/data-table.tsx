@@ -2,6 +2,10 @@
 
 import { Fragment, type ReactNode } from "react";
 import { flexRender, type Row, type Table as TanStackTable } from "@tanstack/react-table";
+import {
+  dataTableStyles,
+  getResponsiveHideClass,
+} from "@/shared/presentation/components/data-table/data-table.styles";
 import { cn } from "@/shared/lib/utils";
 
 export interface DataTableProps<TData> {
@@ -21,8 +25,16 @@ export interface DataTableProps<TData> {
   emptyMessage?: ReactNode;
 }
 
+function resolveAlignClass(align?: "left" | "right"): string {
+  return align === "right" ? dataTableStyles.bodyCellRight : "";
+}
+
+function resolveHeaderAlignClass(align?: "left" | "right"): string {
+  return align === "right" ? dataTableStyles.headerCellRight : "";
+}
+
 /**
- * Generic TanStack Table renderer with optional expandable sub-rows and custom row rendering.
+ * Generic TanStack Table renderer with DropsTab styling and responsive columns.
  */
 export function DataTable<TData>({
   table,
@@ -41,58 +53,82 @@ export function DataTable<TData>({
   emptyMessage,
 }: DataTableProps<TData>) {
   const rows = table.getRowModel().rows;
+  const visibleColumns = table.getVisibleLeafColumns();
 
   return (
-    <div className={cn("overflow-x-auto", className)}>
-      <table className={cn("w-full border-collapse", tableClassName)}>
-        <thead className={theadClassName}>
+    <div className={cn(dataTableStyles.scroll, className)}>
+      <table className={cn(dataTableStyles.table, tableClassName)}>
+        <thead className={cn(dataTableStyles.thead, theadClassName)}>
           {table.getHeaderGroups().map(headerGroup => (
-            <tr key={headerGroup.id} className={headerRowClassName}>
-              {headerGroup.headers.map(header => (
-                <th
-                  key={header.id}
-                  className={cn(headerCellClassName, header.column.columnDef.meta?.headerClassName)}
-                  colSpan={header.colSpan}
-                  aria-sort={
-                    header.column.getIsSorted() === "asc"
-                      ? "ascending"
-                      : header.column.getIsSorted() === "desc"
-                        ? "descending"
-                        : header.column.getCanSort()
-                          ? "none"
-                          : undefined
-                  }
-                >
-                  {header.isPlaceholder
-                    ? null
-                    : flexRender(header.column.columnDef.header, header.getContext())}
-                </th>
-              ))}
+            <tr key={headerGroup.id} className={cn(dataTableStyles.headerRow, headerRowClassName)}>
+              {headerGroup.headers.map(header => {
+                const meta = header.column.columnDef.meta;
+
+                return (
+                  <th
+                    key={header.id}
+                    className={cn(
+                      dataTableStyles.headerCell,
+                      resolveHeaderAlignClass(meta?.align),
+                      getResponsiveHideClass(meta?.hideBelow),
+                      headerCellClassName,
+                      meta?.headerClassName
+                    )}
+                    colSpan={header.colSpan}
+                    aria-sort={
+                      header.column.getIsSorted() === "asc"
+                        ? "ascending"
+                        : header.column.getIsSorted() === "desc"
+                          ? "descending"
+                          : header.column.getCanSort()
+                            ? "none"
+                            : undefined
+                    }
+                  >
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(header.column.columnDef.header, header.getContext())}
+                  </th>
+                );
+              })}
             </tr>
           ))}
         </thead>
-        <tbody className={tbodyClassName}>
+        <tbody className={cn(dataTableStyles.tbody, tbodyClassName)}>
           {rows.length === 0 && emptyMessage ? (
             <tr>
-              <td colSpan={table.getAllColumns().length} className={bodyCellClassName}>
+              <td
+                colSpan={visibleColumns.length}
+                className={cn(dataTableStyles.emptyCell, bodyCellClassName)}
+              >
                 {emptyMessage}
               </td>
             </tr>
           ) : (
             rows.map(row => {
-              const cells = row.getVisibleCells().map(cell => (
-                <td
-                  key={cell.id}
-                  className={cn(bodyCellClassName, cell.column.columnDef.meta?.cellClassName)}
-                >
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ));
+              const cells = row.getVisibleCells().map(cell => {
+                const meta = cell.column.columnDef.meta;
+
+                return (
+                  <td
+                    key={cell.id}
+                    className={cn(
+                      dataTableStyles.bodyCell,
+                      resolveAlignClass(meta?.align),
+                      getResponsiveHideClass(meta?.hideBelow),
+                      bodyCellClassName,
+                      meta?.cellClassName
+                    )}
+                  >
+                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                  </td>
+                );
+              });
 
               const mainRow = renderRow ? (
                 renderRow(row, cells)
               ) : (
-                <tr key={row.id} className={getRowClassName?.(row)}>
+                <tr key={row.id} className={cn(dataTableStyles.bodyRow, getRowClassName?.(row))}>
                   {cells}
                 </tr>
               );
@@ -101,10 +137,10 @@ export function DataTable<TData>({
                 <Fragment key={row.id}>
                   {mainRow}
                   {row.getIsExpanded() && renderSubComponent && (
-                    <tr className={subRowClassName}>
+                    <tr className={cn(dataTableStyles.subRow, subRowClassName)}>
                       <td
                         colSpan={row.getVisibleCells().length}
-                        className={subRowCellClassName}
+                        className={cn(dataTableStyles.subRowCell, subRowCellClassName)}
                       >
                         {renderSubComponent(row)}
                       </td>

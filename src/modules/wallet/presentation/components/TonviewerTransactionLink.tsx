@@ -10,7 +10,7 @@ interface TonviewerTransactionLinkProps {
 export function TonviewerTransactionLink({
   tonEventId,
   rawData,
-  className = "text-xs font-medium text-sky-600 hover:text-sky-800 dark:text-sky-400 dark:hover:text-sky-300",
+  className = "text-xs font-medium text-primary hover:underline",
 }: TonviewerTransactionLinkProps) {
   const href = buildTonviewerTransactionUrl(tonEventId, rawData, tonapiBaseUrl);
 

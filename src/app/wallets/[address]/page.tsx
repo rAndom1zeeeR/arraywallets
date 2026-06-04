@@ -20,9 +20,9 @@ export default async function WalletPage({ params, searchParams }: WalletPagePro
     address = Address.parse(decodedAddress);
   } catch {
     return (
-      <main className="p-4">
-        <h1 className="mb-4 text-2xl font-bold">TON Wallet Transactions</h1>
-        <div className="rounded border border-red-400 bg-red-100 px-4 py-3 text-red-700">
+      <main className="mx-auto min-h-screen max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        <h1 className="mb-4 text-2xl font-bold text-foreground">TON Wallet Transactions</h1>
+        <div className="rounded-lg border border-loss/30 bg-loss/10 px-4 py-3 text-loss">
           Invalid TON address: {decodedAddress}
         </div>
       </main>
@@ -35,7 +35,7 @@ export default async function WalletPage({ params, searchParams }: WalletPagePro
   const swapsOnly = query.swaps === "1";
 
   return (
-    <Suspense fallback={<main className="p-4 text-sm text-gray-500">Loading wallet…</main>}>
+    <Suspense fallback={<main className="mx-auto max-w-7xl px-4 py-6 text-sm text-muted-foreground">Loading wallet…</main>}>
       <WalletTransactionsPage
         address={addressString}
         activeTab={activeTab}

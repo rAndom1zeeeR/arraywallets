@@ -6,6 +6,9 @@ import { TonviewerTransactionLink } from "@/modules/wallet/presentation/componen
 import { getRelatedSwapsForJetton } from "@/modules/swap/domain/swap-transaction-list.utils";
 import { formatTonFromNanoton, parseNanoton } from "@/shared/lib/ton/ton-amount.utils";
 import type { WalletSwapStatsResult } from "@/modules/swap/application/swap-stats.service";
+import { DataTableShell } from "@/shared/presentation/components/data-table/data-table-shell";
+import { pageStyles } from "@/shared/presentation/components/data-table/data-table.styles";
+import { cn } from "@/shared/lib/utils";
 
 interface SwapSummaryPanelProps {
   address: string;
@@ -51,9 +54,9 @@ export function SwapSummaryPanel({ address, stats }: SwapSummaryPanelProps) {
 
   if (aggregate.swapCount === 0 && unclassified.length === 0) {
     return (
-      <section className="rounded-lg border border-dashed border-gray-300 p-4 dark:border-gray-700">
-        <h2 className="text-lg font-semibold">Jetton swaps</h2>
-        <p className="mt-1 text-sm text-gray-500">No swap actions in DB for this wallet yet.</p>
+      <section className={cn(pageStyles.section, "border-dashed")}>
+        <h2 className={pageStyles.sectionTitle}>Jetton swaps</h2>
+        <p className={pageStyles.sectionSubtitle}>No swap actions in DB for this wallet yet.</p>
       </section>
     );
   }
@@ -63,77 +66,75 @@ export function SwapSummaryPanel({ address, stats }: SwapSummaryPanelProps) {
       id="wallet-tabpanel-swaps"
       role="tabpanel"
       aria-labelledby="wallet-tab-swaps"
-      className="rounded-lg border border-orange-200 bg-orange-50/50 p-4 dark:border-orange-900 dark:bg-orange-950/30"
+      className="space-y-6"
     >
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <h2 className="text-lg font-semibold text-orange-900 dark:text-orange-100">Jetton swaps</h2>
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            Aggregated swaps ({aggregate.swapCount} total)
-            {nativeSwapCount > 0 && (
-              <>
-                {" "}
-                · <code className="text-xs">JETTON_SWAP</code> {nativeSwapCount}
-              </>
-            )}
-            {inferredSwapCount > 0 && (
-              <>
-                {" "}
-                · <code className="text-xs">INFERRED_SWAP</code> {inferredSwapCount}
-              </>
-            )}
-            {flawedHeuristicCount > 0 && (
-              <>
-                {" "}
-                · flawed heuristic {flawedHeuristicCount}
-              </>
-            )}
-          </p>
+      <div className={pageStyles.section}>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h2 className={pageStyles.sectionTitle}>Jetton swaps</h2>
+            <p className={pageStyles.sectionSubtitle}>
+              Aggregated swaps ({aggregate.swapCount} total)
+              {nativeSwapCount > 0 && (
+                <>
+                  {" "}
+                  · <code className="text-xs">JETTON_SWAP</code> {nativeSwapCount}
+                </>
+              )}
+              {inferredSwapCount > 0 && (
+                <>
+                  {" "}
+                  · <code className="text-xs">INFERRED_SWAP</code> {inferredSwapCount}
+                </>
+              )}
+              {flawedHeuristicCount > 0 && (
+                <>
+                  {" "}
+                  · flawed heuristic {flawedHeuristicCount}
+                </>
+              )}
+            </p>
+          </div>
+          <Link
+            href={getWalletPagePath(address, { tab: "events", swaps: true })}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Show in Events ↓
+          </Link>
         </div>
-        <Link
-          href={getWalletPagePath(address, { tab: "events", swaps: true })}
-          className="text-sm font-medium text-sky-600 hover:underline dark:text-sky-400"
-        >
-          Show in Events ↓
-        </Link>
+
+        {legCounts.length > 0 && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {legCounts.map(({ kind, count }) => (
+              <span key={kind} className={pageStyles.pill}>
+                {kind}: {count}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
-      {legCounts.length > 0 && (
-        <div className="mt-3 flex flex-wrap gap-2">
-          {legCounts.map(({ kind, count }) => (
-            <span
-              key={kind}
-              className="rounded-full bg-orange-100 px-2.5 py-1 text-xs font-medium text-orange-900 dark:bg-orange-900/50 dark:text-orange-100"
-            >
-              {kind}: {count}
-            </span>
-          ))}
-        </div>
-      )}
-
       {byJetton.length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">By jetton</h3>
-          <p className="mt-0.5 text-xs text-gray-500">
-            Asset + Price (TonAPI) · Sold/Bought = jetton отдан/получен · TON got/paid · Other = USDT и др.
-          </p>
-          <Suspense fallback={<p className="mt-2 text-sm text-gray-500">Loading jetton table…</p>}>
+        <DataTableShell
+          title="By jetton"
+          subtitle="Asset + Price · Sold/Bought · TON got/paid · Other = USDT и др."
+        >
+          <Suspense fallback={<p className="text-sm text-muted-foreground">Loading jetton table…</p>}>
             <SwapJettonTable rows={byJetton} relatedByJetton={relatedByJetton} />
           </Suspense>
-        </div>
+        </DataTableShell>
       )}
 
       {aggregate.byDex.length > 0 && (
-        <div className="mt-4">
-          <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300">By DEX</h3>
-          <ul className="mt-2 space-y-1 text-sm">
+        <div className={pageStyles.section}>
+          <h3 className="text-sm font-medium text-foreground">By DEX</h3>
+          <ul className="mt-3 space-y-1 text-sm">
             {aggregate.byDex.map(row => (
               <li
                 key={row.dex}
-                className="flex flex-wrap justify-between gap-x-4 gap-y-1 rounded border border-orange-100 bg-white/60 px-2 py-1 dark:border-orange-900 dark:bg-gray-900/40"
+                className="flex flex-wrap justify-between gap-x-4 gap-y-1 rounded-lg border border-border/60 bg-secondary/30 px-3 py-2"
               >
-                <span className="font-medium">{row.dex}</span>
-                <span className="text-gray-600 dark:text-gray-400">
+                <span className="font-medium text-foreground">{row.dex}</span>
+                <span className="tabular-nums text-muted-foreground">
                   {row.count} swaps · −{formatTonFromNanoton(row.tonInNanoton)} · +
                   {formatTonFromNanoton(row.tonOutNanoton)}
                 </span>
@@ -144,31 +145,31 @@ export function SwapSummaryPanel({ address, stats }: SwapSummaryPanelProps) {
       )}
 
       {unclassified.length > 0 && (
-        <div className="mt-4 rounded-lg border border-amber-300 bg-amber-50/80 p-3 dark:border-amber-800 dark:bg-amber-950/40">
-          <h3 className="text-sm font-medium text-amber-900 dark:text-amber-100">
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-4">
+          <h3 className="text-sm font-medium text-amber-400">
             Unclassified swap-like events ({unclassified.length})
           </h3>
-          <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-200">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             Transfer clusters that look like swaps but could not be inferred automatically. Нажми{" "}
-            <strong>Sync + repair</strong> в шапке страницы.
+            <strong className="text-foreground">Sync + repair</strong> в шапке страницы.
           </p>
-          <ul className="mt-2 max-h-48 space-y-2 overflow-y-auto text-sm">
+          <ul className="mt-3 max-h-48 space-y-2 overflow-y-auto text-sm">
             {unclassified.map(cluster => (
               <li
                 key={`${cluster.tonEventId}-${cluster.reason}`}
-                className="rounded border border-amber-200 bg-white/70 px-2 py-1.5 dark:border-amber-900 dark:bg-gray-900/50"
+                className="rounded-lg border border-border/60 bg-secondary/30 px-3 py-2"
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <time className="text-xs text-gray-500">{cluster.timestamp.toLocaleString()}</time>
+                  <time className="text-xs text-muted-foreground">{cluster.timestamp.toLocaleString()}</time>
                   <div className="flex flex-wrap items-center gap-2">
                     <TonviewerTransactionLink tonEventId={cluster.tonEventId} rawData={null} />
-                    <span className="rounded bg-amber-100 px-1.5 py-0.5 text-xs dark:bg-amber-900/60">
+                    <span className="rounded-md bg-amber-500/10 px-1.5 py-0.5 text-xs text-amber-400">
                       {cluster.reason}
                     </span>
                   </div>
                 </div>
-                <p className="mt-1 text-xs text-gray-600 dark:text-gray-400">{cluster.hint}</p>
-                <p className="mt-0.5 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-muted-foreground">{cluster.hint}</p>
+                <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
                   {cluster.jettonOutSymbol && <>out: {cluster.jettonOutSymbol} · </>}
                   {cluster.jettonInSymbol && <>in: {cluster.jettonInSymbol} · </>}
                   TON in: {formatTonFromNanoton(cluster.tonInNanoton)} · out:{" "}
@@ -180,31 +181,31 @@ export function SwapSummaryPanel({ address, stats }: SwapSummaryPanelProps) {
         </div>
       )}
 
-      <details className="mt-4">
-        <summary className="cursor-pointer text-sm font-medium text-sky-600 dark:text-sky-400">
+      <details className={pageStyles.section}>
+        <summary className="cursor-pointer text-sm font-medium text-primary">
           Recent swaps ({recentSwaps.length} of {swaps.length})
         </summary>
-        <ul className="mt-2 max-h-64 space-y-2 overflow-y-auto text-sm">
+        <ul className="mt-3 max-h-64 space-y-2 overflow-y-auto text-sm">
           {recentSwaps.map(swap => (
             <li
               key={swap.id}
-              className="rounded border border-gray-200 bg-white px-2 py-1.5 dark:border-gray-700 dark:bg-gray-900"
+              className="rounded-lg border border-border/60 bg-secondary/30 px-3 py-2"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <time className="text-xs text-gray-500">{swap.timestamp.toLocaleString()}</time>
+                <time className="text-xs text-muted-foreground">{swap.timestamp.toLocaleString()}</time>
                 <div className="flex flex-wrap gap-1">
                   {swap.isInferred && (
-                    <span className="rounded bg-violet-100 px-1.5 py-0.5 text-xs text-violet-900 dark:bg-violet-900/50 dark:text-violet-100">
+                    <span className="rounded-md bg-violet-500/10 px-1.5 py-0.5 text-xs text-violet-400">
                       inferred
                     </span>
                   )}
                   {swap.dex && (
-                    <span className="rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-800">{swap.dex}</span>
+                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">{swap.dex}</span>
                   )}
                 </div>
               </div>
-              <div className="mt-1 font-medium">{swap.displayAmount ?? "—"}</div>
-              <div className="mt-0.5 text-xs text-gray-500">
+              <div className="mt-1 font-medium text-foreground">{swap.displayAmount ?? "—"}</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
                 {LEG_KIND_LABELS[swap.legKind] ?? swap.legKind}
                 {swap.inferenceReason && <> · {swap.inferenceReason}</>}
                 {(swap.tonIn || swap.tonOut) && (

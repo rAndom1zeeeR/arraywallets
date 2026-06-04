@@ -69,7 +69,7 @@ export function TransactionRawDetailsButton({ details, className }: TransactionR
         type="button"
         onClick={handleOpen}
         className={cn(
-          "rounded border border-gray-300 px-2 py-0.5 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-100 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800",
+          "rounded-lg border border-border px-2 py-0.5 text-xs font-medium text-muted-foreground transition-colors hover:border-border hover:text-foreground",
           className
         )}
         aria-haspopup="dialog"
@@ -86,14 +86,14 @@ export function TransactionRawDetailsButton({ details, className }: TransactionR
             role="dialog"
             aria-modal="true"
             aria-labelledby={dialogTitleId}
-            className="relative z-10 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900"
+            className="relative z-10 flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-border bg-card shadow-xl"
           >
-            <div className="flex items-center justify-between gap-3 border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+            <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
               <div>
-                <h2 id={dialogTitleId} className="text-sm font-semibold">
+                <h2 id={dialogTitleId} className="text-sm font-semibold text-foreground">
                   Сырые данные транзакции
                 </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
+                <p className="text-xs text-muted-foreground">
                   {details.action.type.replace(/_/g, " ")} · event {details.event.tonEventId.slice(0, 8)}…
                 </p>
               </div>
@@ -104,7 +104,7 @@ export function TransactionRawDetailsButton({ details, className }: TransactionR
                   onClick={() => {
                     void handleCopy();
                   }}
-                  className="rounded border border-gray-300 px-2 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+                  className="rounded-lg border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
                 >
                   {copyState === "copied"
                     ? "Скопировано"
@@ -116,7 +116,7 @@ export function TransactionRawDetailsButton({ details, className }: TransactionR
                   ref={closeButtonRef}
                   type="button"
                   onClick={handleClose}
-                  className="rounded px-2 py-1 text-xs font-medium text-gray-500 hover:bg-gray-100 hover:text-gray-800 dark:hover:bg-gray-800 dark:hover:text-gray-200"
+                  className="rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
                   aria-label="Закрыть диалог"
                 >
                   ✕
@@ -125,7 +125,7 @@ export function TransactionRawDetailsButton({ details, className }: TransactionR
             </div>
 
             <div className="overflow-auto p-4">
-              <pre className="rounded bg-gray-50 p-3 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap text-gray-800 dark:bg-gray-950 dark:text-gray-200">
+              <pre className="rounded-lg bg-secondary/50 p-3 font-mono text-xs leading-relaxed break-all whitespace-pre-wrap text-foreground">
                 {formattedJson}
               </pre>
             </div>

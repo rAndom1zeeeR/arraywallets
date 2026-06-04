@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getWalletPagePath, type WalletTabId } from "@/shared/lib/wallet-route.utils";
+import { tabStyles } from "@/shared/presentation/components/data-table/data-table.styles";
 import { cn } from "@/shared/lib/utils";
 
 interface WalletTabConfig {
@@ -22,8 +23,8 @@ export interface WalletPageTabsProps {
 
 export function WalletPageTabs({ address, activeTab, currentPage, swapsOnly }: WalletPageTabsProps) {
   return (
-    <nav className="mb-4 border-b border-gray-200 dark:border-gray-800" aria-label="Wallet sections">
-      <div className="flex gap-1" role="tablist">
+    <nav className={cn("mb-6", tabStyles.nav)} aria-label="Wallet sections">
+      <div className={tabStyles.list} role="tablist">
         {WALLET_TABS.map(tab => {
           const isActive = tab.id === activeTab;
 
@@ -40,12 +41,7 @@ export function WalletPageTabs({ address, activeTab, currentPage, swapsOnly }: W
               aria-selected={isActive}
               aria-controls={`wallet-tabpanel-${tab.id}`}
               id={`wallet-tab-${tab.id}`}
-              className={cn(
-                "-mb-px border-b-2 px-4 py-2.5 text-sm font-medium transition-colors",
-                isActive
-                  ? "border-sky-500 text-sky-600 dark:text-sky-400"
-                  : "border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              )}
+              className={cn(tabStyles.tab, isActive && tabStyles.tabActive)}
             >
               {tab.label}
             </Link>

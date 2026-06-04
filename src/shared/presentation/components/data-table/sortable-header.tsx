@@ -1,7 +1,7 @@
 "use client";
 
 import type { Column } from "@tanstack/react-table";
-import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import type { ReactNode } from "react";
 import { cn } from "@/shared/lib/utils";
 
@@ -12,7 +12,7 @@ interface DataTableSortHeaderProps<TData> {
 }
 
 /**
- * Clickable column header with sort direction indicator.
+ * Clickable column header with sort direction indicator (DropsTab style).
  */
 export function DataTableSortHeader<TData>({ column, label, className }: DataTableSortHeaderProps<TData>) {
   if (!column.getCanSort()) {
@@ -27,19 +27,18 @@ export function DataTableSortHeader<TData>({ column, label, className }: DataTab
       onClick={column.getToggleSortingHandler()}
       className={cn(
         "inline-flex items-center gap-1 transition-colors select-none",
-        "hover:text-gray-900 dark:hover:text-gray-100",
+        "text-muted-foreground hover:text-foreground",
+        sorted && "text-foreground",
         className
       )}
       aria-label={`Sort by ${typeof label === "string" ? label : column.id}`}
     >
       <span>{label}</span>
       {sorted === "asc" ? (
-        <ArrowUp className="size-3.5 shrink-0" aria-hidden />
+        <ArrowUp className="size-3 shrink-0" aria-hidden />
       ) : sorted === "desc" ? (
-        <ArrowDown className="size-3.5 shrink-0" aria-hidden />
-      ) : (
-        <ChevronsUpDown className="size-3.5 shrink-0 opacity-40" aria-hidden />
-      )}
+        <ArrowDown className="size-3 shrink-0" aria-hidden />
+      ) : null}
     </button>
   );
 }

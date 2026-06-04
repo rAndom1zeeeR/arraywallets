@@ -28,14 +28,14 @@ function parseDiffPercent(diff: string | null): number | null {
 
 export function JettonPriceCell({ rate, isLoading }: JettonPriceCellProps) {
   if (isLoading) {
-    return <span className="text-xs text-gray-400">…</span>;
+    return <span className="text-xs text-muted-foreground">…</span>;
   }
 
   const hasUsd = rate?.usd !== null && rate?.usd !== undefined && rate.usd > 0;
   const hasTon = rate?.ton !== null && rate?.ton !== undefined && rate.ton > 0;
 
   if (!hasUsd && !hasTon) {
-    return <span className="text-xs text-gray-400">—</span>;
+    return <span className="text-xs text-muted-foreground">—</span>;
   }
 
   const diffValue = parseDiffPercent(rate?.diff24hUsd ?? null);
@@ -43,28 +43,28 @@ export function JettonPriceCell({ rate, isLoading }: JettonPriceCellProps) {
   const diffIsNegative = diffValue !== null && diffValue < 0;
 
   return (
-    <div className="min-w-[5.5rem]">
+    <div className="min-w-[5rem] text-right sm:min-w-[5.5rem]">
       {hasUsd && rate?.usd ? (
-        <div className="font-medium text-gray-900 dark:text-gray-100">{formatUsdPrice(rate.usd)}</div>
+        <div className="font-medium tabular-nums text-foreground">{formatUsdPrice(rate.usd)}</div>
       ) : hasTon && rate?.ton ? (
-        <div className="font-medium text-gray-900 dark:text-gray-100">
+        <div className="font-medium tabular-nums text-foreground">
           {rate.ton.toLocaleString(undefined, { maximumFractionDigits: 6 })} TON
         </div>
       ) : null}
       {hasUsd && rate?.diff24hUsd && (
         <div
           className={cn(
-            "mt-0.5 text-xs font-medium",
-            diffIsPositive && "text-green-600 dark:text-green-400",
-            diffIsNegative && "text-red-600 dark:text-red-400",
-            diffValue === 0 && "text-gray-500"
+            "mt-0.5 text-xs font-medium tabular-nums",
+            diffIsPositive && "text-profit",
+            diffIsNegative && "text-loss",
+            diffValue === 0 && "text-muted-foreground"
           )}
         >
           {rate.diff24hUsd} 24h
         </div>
       )}
       {hasUsd && hasTon && rate?.ton && (
-        <div className="mt-0.5 text-[10px] text-gray-500">
+        <div className="mt-0.5 text-[10px] tabular-nums text-muted-foreground">
           {rate.ton.toLocaleString(undefined, { maximumFractionDigits: 6 })} TON
         </div>
       )}

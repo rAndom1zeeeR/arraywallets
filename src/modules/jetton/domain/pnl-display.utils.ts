@@ -32,9 +32,9 @@ export function pnlToneFromBigint(value: bigint): PnlTone {
 
 export function pnlToneClassName(tone: PnlTone): string {
   return cn(
-    tone === "profit" && "text-green-600 dark:text-green-400",
-    tone === "loss" && "text-red-600 dark:text-red-400",
-    tone === "neutral" && "text-gray-900 dark:text-gray-100"
+    tone === "profit" && "text-profit",
+    tone === "loss" && "text-loss",
+    tone === "neutral" && "text-foreground"
   );
 }
 

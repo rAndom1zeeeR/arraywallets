@@ -9,6 +9,7 @@ import type { AssetPnlFormatted } from "@/modules/swap/domain/swap-pnl.utils";
 import { JettonPortfolioPnlTable } from "@/modules/jetton/presentation/components/JettonPortfolioPnlTable";
 import { buildTonviewerTransactionUrl } from "@/shared/lib/tonviewer";
 import { tonapiBaseUrl } from "@/shared/config/env.config";
+import { pageStyles } from "@/shared/presentation/components/data-table/data-table.styles";
 import { cn } from "@/shared/lib/utils";
 
 export type BaseAssetPnlCurrency = "ton" | "usd";
@@ -34,12 +35,12 @@ interface FlowMetricProps {
 function FlowMetric({ label, value, tone = "spent", netRaw }: FlowMetricProps) {
   return (
     <div>
-      <div className="text-[10px] text-gray-400 uppercase">{label}</div>
+      <div className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">{label}</div>
       <div
         className={cn(
           "font-medium tabular-nums",
-          tone === "spent" && "text-red-600 dark:text-red-400",
-          tone === "received" && "text-green-600 dark:text-green-400",
+          tone === "spent" && "text-loss",
+          tone === "received" && "text-profit",
           tone === "net" && cn("font-semibold", netRaw !== undefined && pnlClassNameFromBigint(netRaw))
         )}
       >
@@ -63,9 +64,9 @@ function PortfolioMetricBlock({
   }
 
   return (
-    <div className="rounded-lg border border-gray-200 bg-white/90 p-3 dark:border-gray-700 dark:bg-gray-900/90">
-      <div className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">{label}</div>
-      <div className={cn("mt-1 text-lg font-semibold tabular-nums", valueClassName)}>{value}</div>
+    <div className={pageStyles.metricCard}>
+      <div className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">{label}</div>
+      <div className={cn("mt-1 text-lg font-semibold tabular-nums text-foreground", valueClassName)}>{value}</div>
     </div>
   );
 }
@@ -125,35 +126,35 @@ export function BaseAssetSwapPnlSection({
     currency === "ton" ? portfolioLine?.hasIncompleteTonBasis : portfolioLine?.hasIncompleteUsdBasis;
 
   return (
-    <section className="rounded-lg border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-900 dark:bg-sky-950/30">
-      <h2 className="text-lg font-semibold text-sky-900 dark:text-sky-100">{title}</h2>
-      <p className="mt-0.5 text-xs text-gray-600 dark:text-gray-400">{subtitle}</p>
-      <p className="mt-1 text-xs text-gray-500 dark:text-gray-500">
+    <section className={pageStyles.section}>
+      <h2 className={pageStyles.sectionTitle}>{title}</h2>
+      <p className={pageStyles.sectionSubtitle}>{subtitle}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
         {swapCount} swap{swapCount === 1 ? "" : "s"} · все суммы в {unitLabel}
       </p>
 
       {hasFlow ? (
-        <div className="mt-3 rounded-lg border border-sky-300/80 bg-white/90 p-3 dark:border-sky-800 dark:bg-gray-900/90">
-          <div className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+        <div className={cn(pageStyles.metricCard, "mt-4")}>
+          <div className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             Поток по свапам ({unitLabel})
           </div>
-          <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
+          <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
             <FlowMetric label="Spent" value={flowPnl.spent} tone="spent" />
             <FlowMetric label="Received" value={flowPnl.received} tone="received" />
             <FlowMetric label="Net" value={flowPnl.net} tone="net" netRaw={flowPnl.netRaw} />
           </div>
         </div>
       ) : (
-        <p className="mt-3 text-sm text-gray-500">Нет движения по этому активу в свапах.</p>
+        <p className="mt-4 text-sm text-muted-foreground">Нет движения по этому активу в свапах.</p>
       )}
 
       {(portfolioLine || hasStandaloneTransfers) && (invested || holdingsValue || currentProfitFormatted) && (
-        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <div className="mt-4 grid gap-3 sm:grid-cols-3">
           <PortfolioMetricBlock label={`Вложено (${unitLabel})`} value={invested} />
           <PortfolioMetricBlock label={`Остаток (spot)`} value={holdingsValue} />
           {portfolioLine ? (
-            <div className="rounded-lg border border-gray-200 bg-white/90 p-3 dark:border-gray-700 dark:bg-gray-900/90">
-              <div className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">{`PnL (${unitLabel})`}</div>
+            <div className={pageStyles.metricCard}>
+              <div className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">{`PnL (${unitLabel})`}</div>
               <div className="mt-1">
                 <PnlAmountStack
                   ton={currency === "ton" ? displayProfitTon : null}
@@ -163,24 +164,24 @@ export function BaseAssetSwapPnlSection({
                   size="lg"
                 />
                 {currency === "ton" && tonPnlWithTransfers && tonPnlWithTransfers.withdrawnTon > 0 && (
-                  <p className="mt-1 text-xs tabular-nums text-gray-500 dark:text-gray-400">
+                  <p className="mt-1 text-xs tabular-nums text-muted-foreground">
                     {formatTonAmount(tonPnlWithTransfers.withdrawnTon)} выведено
                   </p>
                 )}
                 {currency === "ton" && tonPnlWithTransfers && tonPnlWithTransfers.depositedTon > 0 && (
-                  <p className="mt-0.5 text-xs tabular-nums text-gray-500 dark:text-gray-400">
+                  <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
                     {formatTonAmount(tonPnlWithTransfers.depositedTon)} получено
                   </p>
                 )}
               </div>
             </div>
           ) : (
-            <div className="rounded-lg border border-gray-200 bg-white/90 p-3 dark:border-gray-700 dark:bg-gray-900/90">
-              <div className="text-[10px] font-semibold tracking-wide text-gray-500 uppercase">{`PnL (${unitLabel})`}</div>
+            <div className={pageStyles.metricCard}>
+              <div className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">{`PnL (${unitLabel})`}</div>
               <div className="mt-1">
                 <PnlAmountStack ton={displayProfitTon} size="lg" />
                 {tonPnlWithTransfers && tonPnlWithTransfers.withdrawnTon > 0 && (
-                  <p className="mt-1 text-xs tabular-nums text-gray-500 dark:text-gray-400">
+                  <p className="mt-1 text-xs tabular-nums text-muted-foreground">
                     {formatTonAmount(tonPnlWithTransfers.withdrawnTon)} выведено
                   </p>
                 )}
@@ -191,17 +192,17 @@ export function BaseAssetSwapPnlSection({
       )}
 
       {hasIncomplete && (
-        <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
+        <p className="mt-3 text-xs text-amber-400">
           Часть сделок без оценки контрагента в {unitLabel} — cost basis и PnL могут быть неполными.
         </p>
       )}
 
       {currency === "ton" && tonTransfers && tonTransfers.items.length > 0 && (
-        <div className="mt-3 rounded-lg border border-gray-200 bg-white/90 p-3 dark:border-gray-700 dark:bg-gray-900/90">
-          <div className="text-xs font-semibold tracking-wide text-gray-500 uppercase">
+        <div className={cn(pageStyles.metricCard, "mt-4")}>
+          <div className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             Чистые переводы TON ({tonTransfers.items.length})
           </div>
-          <ul className="mt-2 space-y-1.5">
+          <ul className="mt-3 space-y-2">
             {tonTransfers.items.map(item => {
               const tonviewerHref = buildTonviewerTransactionUrl(item.tonEventId, null, tonapiBaseUrl);
               const directionLabel = item.direction === "OUTGOING" ? "вывод" : "ввод";
@@ -212,19 +213,17 @@ export function BaseAssetSwapPnlSection({
                   key={item.id}
                   className="flex flex-wrap items-center justify-between gap-2 text-sm"
                 >
-                  <span className="tabular-nums text-gray-700 dark:text-gray-300">
+                  <span className="tabular-nums text-muted-foreground">
                     <span
                       className={cn(
                         "font-medium",
-                        item.direction === "OUTGOING"
-                          ? "text-red-600 dark:text-red-400"
-                          : "text-green-600 dark:text-green-400"
+                        item.direction === "OUTGOING" ? "text-loss" : "text-profit"
                       )}
                     >
                       {item.direction === "OUTGOING" ? "−" : "+"}
                       {formatTonAmount(item.amountTon)} TON
                     </span>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs">
                       {" "}
                       ({directionLabel}
                       {counterpartyLabel})
@@ -235,7 +234,7 @@ export function BaseAssetSwapPnlSection({
                       href={tonviewerHref}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs font-medium text-sky-600 hover:underline dark:text-sky-400"
+                      className="text-xs font-medium text-primary hover:underline"
                     >
                       Tonviewer ↗
                     </a>
@@ -248,8 +247,8 @@ export function BaseAssetSwapPnlSection({
       )}
 
       {portfolioLine && portfolioLine.trades.length > 0 && (
-        <div className="mt-4">
-          <h3 className="mb-2 text-sm font-medium text-sky-800 dark:text-sky-200">
+        <div className="mt-6">
+          <h3 className="mb-3 text-sm font-medium text-foreground">
             Сделки ({portfolioLine.trades.length})
           </h3>
           <JettonPortfolioPnlTable rows={[portfolioLine]} />
