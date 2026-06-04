@@ -159,6 +159,51 @@ function isEventComplete(actionCount: number, expectedCount: number): boolean {
   return expectedCount > 0 && actionCount >= expectedCount;
 }
 
+function getMaxOrderIndex(orderIndexes: number[]): number | null {
+  if (orderIndexes.length === 0) {
+    return null;
+  }
+
+  return Math.max(...orderIndexes);
+}
+
+function hasActionIndexGap(actionCount: number, maxOrderIndex: number | null): boolean {
+  if (actionCount === 0 || maxOrderIndex === null) {
+    return false;
+  }
+
+  return actionCount < maxOrderIndex + 1;
+}
+
+function isStoredEventIncomplete(params: {
+  actionCount: number;
+  maxOrderIndex: number | null;
+  expectedFromRaw: number;
+}): boolean {
+  const { actionCount, maxOrderIndex, expectedFromRaw } = params;
+
+  if (actionCount === 0) {
+    return true;
+  }
+
+  if (expectedFromRaw > 0 && actionCount < expectedFromRaw) {
+    return true;
+  }
+
+  return hasActionIndexGap(actionCount, maxOrderIndex);
+}
+
+async function isChainEventComplete(eventId: string, expectedFromRaw: number): Promise<boolean> {
+  const actions = await prisma.chainAction.findMany({
+    where: { eventId },
+    select: { orderIndex: true },
+  });
+  const actionCount = actions.length;
+  const maxOrderIndex = getMaxOrderIndex(actions.map(action => action.orderIndex));
+
+  return !isStoredEventIncomplete({ actionCount, maxOrderIndex, expectedFromRaw });
+}
+
 function buildActionCreateData(
   eventId: string,
   transformed: TransformedEvent,
@@ -421,10 +466,16 @@ export async function clearWalletSyncData(walletAddress: string): Promise<ClearW
   };
 }
 
+export interface RepairIncompleteEventsResult {
+  fixed: number;
+  rebuiltInPlace: number;
+  deleted: number;
+}
+
 /**
- * Удаляет events без actions или с неполным набором actions.
+ * Rebuilds or deletes events without actions, missing actions vs raw, or orderIndex gaps.
  */
-export async function repairIncompleteEvents(walletAddress: string): Promise<number> {
+export async function repairIncompleteEvents(walletAddress: string): Promise<RepairIncompleteEventsResult> {
   const walletVariants = getWalletAddressVariants(walletAddress);
 
   const events = await prisma.chainEvent.findMany({
@@ -432,35 +483,52 @@ export async function repairIncompleteEvents(walletAddress: string): Promise<num
     select: {
       id: true,
       rawData: true,
-      _count: { select: { actions: true } },
+      actions: { select: { orderIndex: true } },
     },
   });
 
   const incompleteIds: string[] = [];
+  let rebuiltInPlace = 0;
 
   for (const event of events) {
+    const actionCount = event.actions.length;
+    const maxOrderIndex = getMaxOrderIndex(event.actions.map(action => action.orderIndex));
     const expectedFromRaw = getExpectedActionCountFromRaw(event.rawData);
-    const expected = expectedFromRaw > 0 ? expectedFromRaw : 0;
 
-    if (event._count.actions === 0) {
-      incompleteIds.push(event.id);
+    if (!isStoredEventIncomplete({ actionCount, maxOrderIndex, expectedFromRaw })) {
       continue;
     }
 
-    if (expected > 0 && event._count.actions < expected) {
-      incompleteIds.push(event.id);
+    if (event.rawData) {
+      try {
+        const transformed = transformAccountEvent(event.rawData as unknown as AccountEvent);
+        await replaceEventActions(event.id, transformed);
+
+        if (await isChainEventComplete(event.id, expectedFromRaw)) {
+          rebuiltInPlace += 1;
+          continue;
+        }
+      } catch {
+        // fall through to delete
+      }
     }
+
+    incompleteIds.push(event.id);
   }
 
-  if (incompleteIds.length === 0) {
-    return 0;
+  if (incompleteIds.length > 0) {
+    await prisma.chainEvent.deleteMany({
+      where: { id: { in: incompleteIds } },
+    });
   }
 
-  await prisma.chainEvent.deleteMany({
-    where: { id: { in: incompleteIds } },
-  });
+  const deleted = incompleteIds.length;
 
-  return incompleteIds.length;
+  return {
+    fixed: rebuiltInPlace + deleted,
+    rebuiltInPlace,
+    deleted,
+  };
 }
 
 const DTRADE_FEE_PATTERN = /dtrade/i;
@@ -683,18 +751,17 @@ export async function syncAccountEvents(
 }
 
 /**
- * Lightweight incomplete check — events with zero actions only (no groupBy scan).
- * Used before incremental sync to avoid heavy stats queries on remote DB.
+ * Incomplete events: no actions, fewer actions than raw, or gaps in orderIndex.
+ * Matches {@link getWalletStats} `incompleteEvents`.
  */
-export async function countQuickIncompleteEvents(walletAddress: string): Promise<number> {
-  const walletVariants = getWalletAddressVariants(walletAddress);
+export async function countIncompleteEvents(walletAddress: string): Promise<number> {
+  const stats = await getWalletStats(walletAddress);
+  return stats.incompleteEvents;
+}
 
-  return prisma.chainEvent.count({
-    where: {
-      walletAddress: { in: walletVariants },
-      actions: { none: {} },
-    },
-  });
+/** @deprecated Use {@link countIncompleteEvents}. */
+export async function countQuickIncompleteEvents(walletAddress: string): Promise<number> {
+  return countIncompleteEvents(walletAddress);
 }
 
 export async function getWalletStats(walletAddress: string): Promise<{
@@ -722,14 +789,8 @@ export async function getWalletStats(walletAddress: string): Promise<{
   let gapIncompleteEvents = 0;
 
   for (const group of actionGroups) {
-    const maxIndex = group._max.orderIndex;
-    if (maxIndex === null) {
-      continue;
-    }
-
-    const expectedAtLeast = maxIndex + 1;
-    if (group._count._all < expectedAtLeast) {
-      gapIncompleteEvents++;
+    if (hasActionIndexGap(group._count._all, group._max.orderIndex)) {
+      gapIncompleteEvents += 1;
     }
   }
 

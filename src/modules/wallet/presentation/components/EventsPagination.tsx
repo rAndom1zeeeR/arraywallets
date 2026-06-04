@@ -60,6 +60,11 @@ export function EventsPagination({
           ← Prev
         </PaginationLink>
 
+        <span className="min-w-0 flex-1 text-center text-sm font-medium tabular-nums text-foreground sm:hidden">
+          {currentPage} / {totalPages}
+        </span>
+
+        <div className="hidden flex-wrap items-center gap-1 sm:flex">
         {pageNumbers.map((item, index) =>
           item === "ellipsis" ? (
             <span key={`ellipsis-${index}`} className="px-2 text-sm text-muted-foreground" aria-hidden>
@@ -77,6 +82,7 @@ export function EventsPagination({
             </PaginationLink>
           )
         )}
+        </div>
 
         <PaginationLink
           href={buildPageHref(address, currentPage + 1, swapsOnly)}

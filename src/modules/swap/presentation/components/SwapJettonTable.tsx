@@ -24,7 +24,9 @@ import { formatTonFromNanoton, parseNanoton } from "@/shared/lib/ton/ton-amount.
 import type { JettonSwapBreakdownFormatted } from "@/modules/swap/domain/swap-stats.utils";
 import { buildTonviewerTransactionUrl } from "@/shared/lib/tonviewer";
 import { tonapiBaseUrl } from "@/shared/config/env.public.config";
+import { SwapJettonMobileList } from "@/modules/swap/presentation/components/SwapJettonMobileList";
 import { DataTable } from "@/shared/presentation/components/data-table/data-table";
+import { ResponsiveDataTable } from "@/shared/presentation/components/data-table/responsive-data-table";
 import { DataTableSortHeader } from "@/shared/presentation/components/data-table/sortable-header";
 import {
   createBigintSortingFn,
@@ -59,7 +61,7 @@ interface RelatedSwapsPanelProps {
   relatedSwaps: JettonRelatedSwapItem[];
 }
 
-function RelatedSwapsPanel({ jettonSymbol, relatedSwaps }: RelatedSwapsPanelProps) {
+export function RelatedSwapsPanel({ jettonSymbol, relatedSwaps }: RelatedSwapsPanelProps) {
   return (
     <>
       <p className="mb-2 text-xs font-medium text-muted-foreground">
@@ -352,11 +354,16 @@ export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps)
           Не удалось обновить цены — показаны данные из кэша БД (если есть).
         </p>
       )}
-      <DataTable
-        table={table}
-        tableClassName="min-w-[32rem] sm:min-w-[56rem]"
-        isRowExpanded={row => expandedRowIds[row.id] ?? false}
-        renderSubComponent={renderSubComponent}
+      <ResponsiveDataTable
+        mobile={<SwapJettonMobileList rows={rows} relatedByJetton={relatedByJetton} />}
+        desktop={
+          <DataTable
+            table={table}
+            tableClassName="min-w-[32rem] lg:min-w-[56rem]"
+            isRowExpanded={row => expandedRowIds[row.id] ?? false}
+            renderSubComponent={renderSubComponent}
+          />
+        }
       />
     </div>
   );

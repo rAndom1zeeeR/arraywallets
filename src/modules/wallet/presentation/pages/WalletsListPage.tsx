@@ -4,6 +4,8 @@ import { AnalyzeWalletForm } from "@/modules/wallet/presentation/components/Anal
 import { WalletSyncStatusBadge } from "@/modules/wallet/presentation/components/WalletSyncStatusBadge";
 import type { AnalyzedWalletListItem } from "@/modules/wallet/domain/wallets-list.types";
 import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
+import { WalletsMobileList } from "@/modules/wallet/presentation/components/WalletsMobileList";
+import { ResponsiveDataTable } from "@/shared/presentation/components/data-table/responsive-data-table";
 import { dataTableStyles, pageStyles } from "@/shared/presentation/components/data-table/data-table.styles";
 
 export interface WalletsListPageProps {
@@ -41,8 +43,11 @@ function WalletsTable({ wallets }: { wallets: AnalyzedWalletListItem[] }) {
         <p className={pageStyles.sectionSubtitle}>{wallets.length} в базе</p>
       </div>
 
-      <div className={dataTableStyles.scroll}>
-        <table className={dataTableStyles.table}>
+      <ResponsiveDataTable
+        mobile={<WalletsMobileList wallets={wallets} />}
+        desktop={
+          <div className={dataTableStyles.scroll}>
+            <table className={dataTableStyles.table}>
           <thead className={dataTableStyles.thead}>
             <tr className={dataTableStyles.headerRow}>
               <th className={dataTableStyles.headerCell}>Адрес</th>
@@ -89,8 +94,10 @@ function WalletsTable({ wallets }: { wallets: AnalyzedWalletListItem[] }) {
               </tr>
             ))}
           </tbody>
-        </table>
-      </div>
+            </table>
+          </div>
+        }
+      />
     </section>
   );
 }

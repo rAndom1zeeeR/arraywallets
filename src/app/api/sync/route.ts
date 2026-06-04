@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Address } from "@ton/core";
+import { auth } from "@/auth";
 import { AccountEvent } from "@/shared/infrastructure/api/tonapi";
 import { TONAPI_CLIENT } from "@/shared/infrastructure/api/tonapi-client";
 import { callTonapi, isTonApiRateLimitError } from "@/shared/infrastructure/tonapi/tonapi-limiter";
@@ -13,11 +14,18 @@ import {
   repairTraceInferredSwapEvents,
   clearWalletSyncData,
   getWalletStats,
-  getOldestSyncedLt,
   getSyncState,
-  countQuickIncompleteEvents,
+  countIncompleteEvents,
   SYNC_BATCH_SIZE,
 } from "@/modules/wallet/application/sync-service";
+import {
+  filterEventsNewerThanSynced,
+  filterEventsOlderThanSynced,
+  getWalletSyncBoundaries,
+  isPageFullyInsideSyncedSpan,
+  isTailBoundarySatisfied,
+  type WalletSyncBoundaries,
+} from "@/modules/wallet/application/wallet-sync-boundaries";
 import { getWalletSwapStats, repairJettonSwapActionFields } from "@/modules/swap/application/swap-stats.service";
 
 const API_PAGE_SIZE = SYNC_BATCH_SIZE;
@@ -44,6 +52,7 @@ interface SyncTotals {
   errors: number;
   actionsSaved: number;
   eventsFetched: number;
+  pagesSkippedInSpan: number;
 }
 
 function createTotals(): SyncTotals {
@@ -56,17 +65,9 @@ function createTotals(): SyncTotals {
     errors: 0,
     actionsSaved: 0,
     eventsFetched: 0,
+    pagesSkippedInSpan: 0,
   };
 }
-
-// function mergeTotals(target: SyncTotals, source: SyncTotals): void {
-//   target.saved += source.saved;
-//   target.skipped += source.skipped;
-//   target.repaired += source.repaired;
-//   target.errors += source.errors;
-//   target.actionsSaved += source.actionsSaved;
-//   target.eventsFetched += source.eventsFetched;
-// }
 
 async function fetchAccountEventsPage(
   parsedAddress: Address,
@@ -104,22 +105,17 @@ async function processEventsPage(
   totals.eventsFetched += events.length;
 }
 
-function isFullySkippedPage(
-  eventsCount: number,
-  result: { saved: number; repaired: number; skipped: number }
-): boolean {
-  return eventsCount > 0 && result.saved === 0 && result.repaired === 0 && result.skipped === eventsCount;
-}
-
 /**
- * Fetches newest pages until all events are already in DB (new txs since last sync).
+ * Fetches pages from chain head while lt > newestInDb.
+ * Stops when a full page lies inside [oldestLt, newestLt] — no DB round-trip.
  */
 async function syncNewestEvents(
   parsedAddress: Address,
   walletAddress: string,
   totals: SyncTotals,
   maxPages: number,
-  signal: AbortSignal
+  signal: AbortSignal,
+  boundaries: WalletSyncBoundaries
 ): Promise<void> {
   let beforeLt: bigint | undefined;
   let pages = 0;
@@ -131,16 +127,34 @@ async function syncNewestEvents(
       break;
     }
 
+    if (isPageFullyInsideSyncedSpan(events, boundaries)) {
+      totals.pagesSkippedInSpan += 1;
+      totals.skipped += events.length;
+      break;
+    }
+
+    const toSync = filterEventsNewerThanSynced(events, boundaries);
+    const inSpanCount = events.length - toSync.length;
+
+    if (inSpanCount > 0) {
+      totals.skipped += inSpanCount;
+    }
+
+    if (toSync.length === 0) {
+      totals.pagesSkippedInSpan += 1;
+      break;
+    }
+
     throwIfAborted(signal);
-    const batch = await syncAccountEvents(events, walletAddress, signal);
+    const batch = await syncAccountEvents(toSync, walletAddress, signal);
     totals.saved += batch.saved;
     totals.skipped += batch.skipped;
     totals.repaired += batch.repaired;
     totals.errors += batch.errors;
     totals.actionsSaved += batch.actionsSaved;
-    totals.eventsFetched += events.length;
+    totals.eventsFetched += toSync.length;
 
-    if (isFullySkippedPage(events.length, batch)) {
+    if (inSpanCount > 0) {
       break;
     }
 
@@ -155,7 +169,8 @@ async function syncNewestEvents(
 }
 
 /**
- * Fetches older history using `before_lt` from the oldest event already in DB.
+ * Extends history before `boundaries.oldestLt` only.
+ * Skips pages that do not contain events older than DB oldest (boundary verification, no DB).
  */
 async function syncOlderEvents(
   parsedAddress: Address,
@@ -163,7 +178,8 @@ async function syncOlderEvents(
   totals: SyncTotals,
   startBeforeLt: bigint | undefined,
   maxPages: number,
-  signal: AbortSignal
+  signal: AbortSignal,
+  boundaries: WalletSyncBoundaries | null
 ): Promise<boolean> {
   let beforeLt = startBeforeLt;
   let pages = 0;
@@ -175,7 +191,29 @@ async function syncOlderEvents(
       return false;
     }
 
-    await processEventsPage(events, walletAddress, totals, signal);
+    if (boundaries) {
+      if (isTailBoundarySatisfied(events, boundaries)) {
+        totals.pagesSkippedInSpan += 1;
+        totals.skipped += events.length;
+        return false;
+      }
+
+      const toSync = filterEventsOlderThanSynced(events, boundaries);
+      const inSpanCount = events.length - toSync.length;
+
+      if (inSpanCount > 0) {
+        totals.skipped += inSpanCount;
+      }
+
+      if (toSync.length === 0) {
+        totals.pagesSkippedInSpan += 1;
+        return false;
+      }
+
+      await processEventsPage(toSync, walletAddress, totals, signal);
+    } else {
+      await processEventsPage(events, walletAddress, totals, signal);
+    }
 
     const lastEvent = events[events.length - 1];
     beforeLt = lastEvent.lt;
@@ -222,6 +260,7 @@ function buildSyncResponse(
     hasMore,
     historyComplete,
     incrementalOnly,
+    pagesSkippedInSpan: totals.pagesSkippedInSpan,
     continuedFromLt: resumeBeforeLt?.toString() ?? null,
   };
 }
@@ -264,51 +303,82 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     let clearedEvents = 0;
 
     if (force) {
+      const session = await auth();
+      if (session?.user?.role !== "ADMIN") {
+        return NextResponse.json(
+          { error: "Force resync is available for admins only" },
+          { status: 403 }
+        );
+      }
+
       const cleared = await clearWalletSyncData(normalizedAddress);
       clearedEvents = cleared.eventsDeleted;
       console.log(`Force resync: cleared ${cleared.eventsDeleted} events, ${cleared.rawEventsDeleted} raw`);
     }
 
-    const [existingSyncState, oldestLtBefore] = await Promise.all([
+    const [existingSyncState, boundaries] = await Promise.all([
       shouldContinueFromLast ? getSyncState(normalizedAddress) : Promise.resolve(null),
-      shouldContinueFromLast ? getOldestSyncedLt(normalizedAddress) : Promise.resolve(null),
+      shouldContinueFromLast ? getWalletSyncBoundaries(normalizedAddress) : Promise.resolve(null),
     ]);
 
     historyComplete = existingSyncState?.historyComplete ?? false;
 
-    const quickIncompleteEvents =
-      shouldContinueFromLast && historyComplete ? await countQuickIncompleteEvents(normalizedAddress) : 0;
+    const incompleteEventsBeforeSync =
+      shouldContinueFromLast && historyComplete ? await countIncompleteEvents(normalizedAddress) : 0;
 
-    incrementalOnly = shouldContinueFromLast && historyComplete && quickIncompleteEvents === 0;
+    incrementalOnly =
+      shouldContinueFromLast && boundaries !== null && historyComplete && incompleteEventsBeforeSync === 0;
 
     await updateSyncState(normalizedAddress, { status: ChainSyncStatus.SYNCING });
 
     const shouldRunRepair = shouldRepair && !incrementalOnly;
 
+    let deletedIncompleteEvents = 0;
+
     if (shouldRunRepair) {
-      const deleted = await repairIncompleteEvents(normalizedAddress);
+      const repairResult = await repairIncompleteEvents(normalizedAddress);
+      deletedIncompleteEvents = repairResult.deleted;
       totals.traceSwapsRepaired = await repairTraceInferredSwapEvents(normalizedAddress);
       totals.swapsRepaired = await repairJettonSwapActionFields(normalizedAddress);
-      totals.repaired += deleted;
+      totals.repaired += repairResult.fixed;
+
+      if (deletedIncompleteEvents > 0) {
+        incrementalOnly = false;
+      }
+
       console.log(
-        `Repaired: deleted ${deleted} incomplete events, trace swaps ${totals.traceSwapsRepaired}, fixed ${totals.swapsRepaired} swap rows`
+        `Repaired: ${repairResult.fixed} events (${repairResult.rebuiltInPlace} rebuilt, ${repairResult.deleted} deleted), trace swaps ${totals.traceSwapsRepaired}, fixed ${totals.swapsRepaired} swap rows`
       );
     }
 
     const maxPages = fetchAll ? Number.POSITIVE_INFINITY : maxPagesPerRun;
     const signal = request.signal;
 
-    // New transactions (only when we already have history in DB)
-    if (shouldContinueFromLast && oldestLtBefore !== null) {
-      await syncNewestEvents(parsedAddress, normalizedAddress, totals, Math.min(HEAD_PAGES_LIMIT, maxPages), signal);
+    if (boundaries) {
+      await syncNewestEvents(
+        parsedAddress,
+        normalizedAddress,
+        totals,
+        Math.min(HEAD_PAGES_LIMIT, maxPages),
+        signal,
+        boundaries
+      );
+      resumeBeforeLt = boundaries.oldestLt;
     }
-
-    resumeBeforeLt = shouldContinueFromLast && oldestLtBefore !== null ? oldestLtBefore : undefined;
 
     if (incrementalOnly) {
       hasMore = false;
     } else {
-      hasMore = await syncOlderEvents(parsedAddress, normalizedAddress, totals, resumeBeforeLt, maxPages, signal);
+      const tailBeforeLt = boundaries?.oldestLt;
+      hasMore = await syncOlderEvents(
+        parsedAddress,
+        normalizedAddress,
+        totals,
+        tailBeforeLt,
+        maxPages,
+        signal,
+        boundaries
+      );
       historyComplete = !hasMore;
     }
 
@@ -321,16 +391,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       historyComplete,
     });
 
-    const stats =
-      incrementalOnly && totals.saved === 0 && totals.repaired === 0
-        ? undefined
-        : await getWalletStats(normalizedAddress).catch(error => {
-            console.error("getWalletStats after sync failed:", error);
-            return undefined;
-          });
-    const oldestLtAfter = await getOldestSyncedLt(normalizedAddress);
+    const stats = await getWalletStats(normalizedAddress).catch(error => {
+      console.error("getWalletStats after sync failed:", error);
+      return undefined;
+    });
 
-    const shouldRefreshPnl = totals.saved > 0 || totals.repaired > 0 || !incrementalOnly;
+    const shouldRefreshPnl = totals.saved > 0 || totals.repaired > 0;
 
     if (shouldRefreshPnl) {
       try {
@@ -344,7 +410,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       ...buildSyncResponse(normalizedAddress, totals, hasMore, resumeBeforeLt, false, historyComplete, incrementalOnly),
       force,
       clearedEvents,
-      oldestSyncedLt: oldestLtAfter?.toString() ?? null,
+      oldestSyncedLt: boundaries?.oldestLt.toString() ?? null,
+      newestSyncedLt: boundaries?.newestLt.toString() ?? null,
       stats,
     });
   } catch (error) {
@@ -364,7 +431,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             return undefined;
           })
         : undefined;
-      const oldestLtAfter = normalizedAddress ? await getOldestSyncedLt(normalizedAddress) : null;
+
+      const boundaries = normalizedAddress ? await getWalletSyncBoundaries(normalizedAddress) : null;
 
       return NextResponse.json({
         ...buildSyncResponse(
@@ -376,7 +444,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           historyComplete,
           incrementalOnly
         ),
-        oldestSyncedLt: oldestLtAfter?.toString() ?? null,
+        oldestSyncedLt: boundaries?.oldestLt.toString() ?? null,
+        newestSyncedLt: boundaries?.newestLt.toString() ?? null,
         stats,
       });
     }
@@ -412,16 +481,17 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 
   const normalized = toRawTonAddress(address);
-  const [syncState, stats, oldestLt] = await Promise.all([
+  const [syncState, stats, boundaries] = await Promise.all([
     getSyncState(normalized),
     getWalletStats(normalized),
-    getOldestSyncedLt(normalized),
+    getWalletSyncBoundaries(normalized),
   ]);
 
   return NextResponse.json({
     address: normalized,
     syncState,
     stats,
-    oldestSyncedLt: oldestLt?.toString() ?? null,
+    oldestSyncedLt: boundaries?.oldestLt.toString() ?? null,
+    newestSyncedLt: boundaries?.newestLt.toString() ?? null,
   });
 }

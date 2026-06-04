@@ -18,3 +18,4 @@ export { TonWalletSignIn } from "./presentation/components/TonWalletSignIn";
 export { TonWalletSignInServer } from "./presentation/components/TonWalletSignInServer";
 export { UserAuthMenu } from "./presentation/components/UserAuthMenu";
 export { SignInPage } from "./presentation/pages/sign-in-page";
+export { ProfilePage } from "./presentation/pages/profile-page";

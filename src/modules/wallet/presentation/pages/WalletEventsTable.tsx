@@ -23,7 +23,9 @@ import {
 import type { WalletEventActionRow } from "@/modules/wallet/domain/wallet-events.types";
 import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
 import type { ChainActionDirectionValue } from "@/shared/constants/chain-prisma.enums";
+import { WalletEventsMobileList } from "@/modules/wallet/presentation/components/WalletEventsMobileList";
 import { DataTable } from "@/shared/presentation/components/data-table/data-table";
+import { ResponsiveDataTable } from "@/shared/presentation/components/data-table/responsive-data-table";
 import {
   dataTableStyles,
   getResponsiveHideClass,
@@ -344,10 +346,13 @@ export function WalletEventsTable({
           </p>
         </div>
       ) : (
-        <DataTable
-          table={table}
-          tableClassName="min-w-[36rem] sm:min-w-full"
-          renderRow={row => {
+        <ResponsiveDataTable
+          mobile={<WalletEventsMobileList rows={visibleRows.map(r => r.original)} />}
+          desktop={
+            <DataTable
+              table={table}
+              tableClassName="min-w-[36rem] lg:min-w-full"
+              renderRow={row => {
             const flat = row.original;
             const span = rowSpanMeta.get(flat.rowKey);
             const isFirst = useRowSpan ? (span?.isFirst ?? flat.isFirstActionInEvent) : true;
@@ -393,6 +398,8 @@ export function WalletEventsTable({
               </tr>
             );
           }}
+            />
+          }
         />
       )}
 

@@ -11,7 +11,7 @@ interface SignInPageProps {
 
 export const SignInPage = async ({ callbackUrl }: SignInPageProps) => {
   const session = await auth();
-  const redirectTo = callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/";
+  const redirectTo = callbackUrl && callbackUrl.startsWith("/") ? callbackUrl : "/wallets";
   const oauthProviders = getOAuthProviderAvailability();
   const hasOAuth = oauthProviders.github || oauthProviders.google;
 
@@ -20,7 +20,7 @@ export const SignInPage = async ({ callbackUrl }: SignInPageProps) => {
   }
 
   return (
-    <main className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center gap-8 px-4 py-16">
+    <main className="mx-auto flex min-h-[60vh] max-w-lg flex-col items-center justify-center gap-6 px-3 py-12 sm:gap-8 sm:px-4 sm:py-16">
       <div className="space-y-2 text-center">
         <h1 className="text-2xl font-bold tracking-tight">Sign in</h1>
         <p className="text-muted-foreground text-sm">
@@ -39,7 +39,7 @@ export const SignInPage = async ({ callbackUrl }: SignInPageProps) => {
         </div>
       ) : null}
       <SignInButtons callbackUrl={redirectTo} oauthProviders={oauthProviders} />
-      <Link href="/" className="text-muted-foreground text-sm underline-offset-4 hover:underline">
+      <Link href="/wallets" className="text-muted-foreground text-sm underline-offset-4 hover:underline">
         Back to home
       </Link>
     </main>

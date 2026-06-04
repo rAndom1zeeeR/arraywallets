@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { walletQueryKeys } from "@/modules/wallet/api/wallet-query-keys";
 import { buttonStyles } from "@/shared/presentation/components/data-table/data-table.styles";
@@ -47,6 +48,8 @@ export function SyncButton({
 }: SyncButtonProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "ADMIN";
   const abortRef = useRef<AbortController | null>(null);
   const autoStartTriggeredRef = useRef(false);
   const [isSyncing, setIsSyncing] = useState(initialSyncing);
@@ -255,15 +258,17 @@ export function SyncButton({
             syncButtonLabel
           )}
         </button>
-        <button
-          type="button"
-          onClick={handleForceSync}
-          disabled={isSyncing}
-          aria-label="Полный ресинк — очистить БД и загрузить заново"
-          className={cn(buttonStyles.secondary, "border-orange-500/30 text-orange-400 hover:bg-orange-500/10")}
-        >
-          Force resync
-        </button>
+        {isAdmin ? (
+          <button
+            type="button"
+            onClick={handleForceSync}
+            disabled={isSyncing}
+            aria-label="Полный ресинк — очистить БД и загрузить заново"
+            className={cn(buttonStyles.secondary, "border-orange-500/30 text-orange-400 hover:bg-orange-500/10")}
+          >
+            Force resync
+          </button>
+        ) : null}
         {isSyncing && (
           <button
             type="button"

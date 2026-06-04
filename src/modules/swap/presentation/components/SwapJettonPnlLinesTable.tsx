@@ -83,5 +83,33 @@ export function SwapJettonPnlLinesTable({ lines }: SwapJettonPnlLinesTableProps)
     getRowId: row => row.jetton.address,
   });
 
-  return <DataTable table={table} tableClassName="min-w-[20rem]" />;
+  const visibleLines = table.getRowModel().rows.map(r => r.original);
+
+  return (
+    <>
+      <ul className="divide-y divide-border/60 md:hidden" role="list" aria-label="Jetton PnL lines">
+        {visibleLines.map(line => (
+          <li key={line.jetton.address} className="py-3">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-semibold text-foreground">{line.jetton.symbol}</span>
+              <span className={cn("text-sm font-medium tabular-nums", pnlClassNameFromBigint(line.netRaw))}>
+                {formatMoneyJetton(line.netRaw, line.jetton.decimals, line.jetton.symbol)}
+              </span>
+            </div>
+            <div className="mt-1.5 flex justify-between text-xs tabular-nums">
+              <span className="text-loss">
+                − {formatMoneyJetton(line.spentRaw, line.jetton.decimals, line.jetton.symbol)}
+              </span>
+              <span className="text-profit">
+                + {formatMoneyJetton(line.receivedRaw, line.jetton.decimals, line.jetton.symbol)}
+              </span>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div className="hidden md:block">
+        <DataTable table={table} tableClassName="min-w-[20rem]" />
+      </div>
+    </>
+  );
 }

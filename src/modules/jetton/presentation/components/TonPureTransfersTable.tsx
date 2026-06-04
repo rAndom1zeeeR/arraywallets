@@ -7,6 +7,16 @@ import type { TonTransferPnlItem } from "@/modules/jetton/domain/ton-transfer-pn
 import { compareNullableNumber } from "@/shared/presentation/components/data-table/sorting.utils";
 import { tonapiBaseUrl } from "@/shared/config/env.public.config";
 import { buildTonviewerTransactionUrl } from "@/shared/lib/tonviewer";
+import { ResponsiveDataTable } from "@/shared/presentation/components/data-table/responsive-data-table";
+import {
+  MobileList,
+  MobileListAmount,
+  MobileListBody,
+  MobileListIcon,
+  MobileListItem,
+} from "@/shared/presentation/components/mobile-list/mobile-list";
+import { mobileListStyles } from "@/shared/presentation/components/mobile-list/mobile-list.styles";
+import { truncateMiddle } from "@/shared/lib/truncate-middle.utils";
 import { dataTableStyles, pageStyles } from "@/shared/presentation/components/data-table/data-table.styles";
 import { cn } from "@/shared/lib/utils";
 
@@ -206,12 +216,50 @@ export function TonPureTransfersTable({ items }: TonPureTransfersTableProps) {
     });
   }, []);
 
+  const mobileList = (
+    <MobileList aria-label="TON transfers" className="max-h-96 overflow-y-auto">
+      {sortedRows.map(row => (
+        <MobileListItem key={row.id}>
+          <MobileListIcon>
+            {row.direction === "OUTGOING" ? (
+              <ArrowUp className="size-4 text-loss" aria-hidden />
+            ) : (
+              <ArrowDown className="size-4 text-profit" aria-hidden />
+            )}
+          </MobileListIcon>
+          <MobileListBody>
+            <div className={mobileListStyles.titleRow}>
+              <div className="min-w-0">
+                <TransferDateCell row={row} />
+                <div className="mt-1">
+                  <TransferPurposeCell row={row} />
+                </div>
+                {row.counterparty && (
+                  <p className="mt-1 font-mono text-xs text-primary" title={row.counterparty}>
+                    {truncateMiddle(row.counterparty, 8, 8)}
+                  </p>
+                )}
+              </div>
+              <MobileListAmount tone={row.direction === "OUTGOING" ? "loss" : "profit"}>
+                <TransferAmountCell row={row} />
+              </MobileListAmount>
+            </div>
+          </MobileListBody>
+        </MobileListItem>
+      ))}
+    </MobileList>
+  );
+
   return (
-    <div className={cn(dataTableStyles.scroll, pageStyles.metricCard, "mt-4 max-h-96")}>
-      <table
-        data-testid="transfers-table"
-        className={cn(dataTableStyles.table, "min-w-[36rem]")}
-      >
+    <div className={cn(pageStyles.metricCard, "mt-4 max-h-[28rem] overflow-hidden")}>
+      <ResponsiveDataTable
+        mobile={mobileList}
+        desktop={
+          <div className={cn(dataTableStyles.scroll, "max-h-96")}>
+            <table
+              data-testid="transfers-table"
+              className={cn(dataTableStyles.table, "min-w-[36rem]")}
+            >
         <thead className={dataTableStyles.thead}>
           <tr className={dataTableStyles.headerRow}>
             <th className={dataTableStyles.headerCell} scope="col">
@@ -246,7 +294,10 @@ export function TonPureTransfersTable({ items }: TonPureTransfersTableProps) {
             </tr>
           ))}
         </tbody>
-      </table>
+            </table>
+          </div>
+        }
+      />
     </div>
   );
 }

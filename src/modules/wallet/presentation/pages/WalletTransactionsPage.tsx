@@ -64,15 +64,15 @@ export function WalletTransactionsPage({
 
   return (
     <main className={pageStyles.main}>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
+      <div className="mb-4 flex flex-col gap-3 sm:mb-6 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+        <div className="min-w-0">
           <Link href="/wallets" className="mb-2 inline-block text-sm text-primary hover:underline">
             ← Все кошельки
           </Link>
           <h1 className={pageStyles.pageTitle}>TON Wallet</h1>
           <p className="mt-1 text-sm text-muted-foreground">Portfolio tracker & transaction history</p>
         </div>
-        <div className="flex items-center gap-3 self-end sm:self-auto">
+        <div className="flex w-full items-center gap-3 sm:w-auto sm:self-auto">
           <SyncButton
             address={address}
             isSyncing={Boolean(isSyncing)}
@@ -99,7 +99,9 @@ export function WalletTransactionsPage({
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <span className="text-xs font-medium tracking-wide text-muted-foreground uppercase">Address</span>
-                <code className="mt-1 block break-all font-mono text-sm text-foreground">{address}</code>
+                <code className="mt-1 block font-mono text-xs break-all text-foreground sm:text-sm">
+                  {address}
+                </code>
               </div>
             </div>
 

@@ -144,7 +144,7 @@ export function BaseAssetSwapPnlSection({
           <div className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
             Поток по свапам ({unitLabel})
           </div>
-          <div className="mt-3 grid grid-cols-3 gap-3 text-sm">
+          <div className="mt-3 grid grid-cols-1 gap-3 text-sm min-[400px]:grid-cols-3">
             <FlowMetric label="Spent" value={formatFlowRaw(flowPnl.spentRaw)} tone="spent" />
             <FlowMetric label="Received" value={formatFlowRaw(flowPnl.receivedRaw)} tone="received" />
             <FlowMetric label="Net" value={formatFlowRaw(flowPnl.netRaw)} tone="net" netRaw={flowPnl.netRaw} />
