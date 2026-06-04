@@ -1,6 +1,23 @@
 const TON_DECIMALS = 9;
 const NANOTON_PER_TON = 10n ** BigInt(TON_DECIMALS);
 
+/** Normalizes API/Prisma nanoton values to bigint. */
+export function coerceNanoton(value: bigint | string | number | null | undefined): bigint {
+  if (value === null || value === undefined) {
+    return 0n;
+  }
+
+  if (typeof value === "bigint") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return BigInt(Math.trunc(value));
+  }
+
+  return parseNanoton(value);
+}
+
 /**
  * Parses a Prisma Decimal string (nanotons) into bigint.
  */
@@ -21,9 +38,10 @@ export function parseNanoton(value: string | null | undefined): bigint {
 /**
  * Formats nanoton bigint as human-readable TON (up to 9 fractional digits, trimmed).
  */
-export function formatTonFromNanoton(nanoton: bigint): string {
-  const sign = nanoton < 0n ? "-" : "";
-  const abs = nanoton < 0n ? -nanoton : nanoton;
+export function formatTonFromNanoton(nanoton: bigint | string | number | null | undefined): string {
+  const amount = coerceNanoton(nanoton);
+  const sign = amount < 0n ? "-" : "";
+  const abs = amount < 0n ? -amount : amount;
   const whole = abs / NANOTON_PER_TON;
   const frac = abs % NANOTON_PER_TON;
 
@@ -38,14 +56,20 @@ export function formatTonFromNanoton(nanoton: bigint): string {
 /**
  * Formats jetton raw amount (smallest units) with decimals and symbol.
  */
-export function formatJettonFromRaw(raw: bigint, decimals: number, symbol: string): string {
+export function formatJettonFromRaw(
+  raw: bigint | string | number | null | undefined,
+  decimals: number,
+  symbol: string
+): string {
+  const amount = coerceNanoton(raw);
+
   if (decimals <= 0) {
-    return `${raw.toString()} ${symbol}`;
+    return `${amount.toString()} ${symbol}`;
   }
 
   const divisor = 10n ** BigInt(decimals);
-  const sign = raw < 0n ? "-" : "";
-  const abs = raw < 0n ? -raw : raw;
+  const sign = amount < 0n ? "-" : "";
+  const abs = amount < 0n ? -amount : amount;
   const whole = abs / divisor;
   const frac = abs % divisor;
 

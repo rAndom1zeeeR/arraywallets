@@ -17,6 +17,11 @@ import {
 import { parseNanoton } from "@/features/sync-events/lib/ton-amount.utils";
 import { buildSwapPnlSummary, type SwapPnlSummary } from "@/features/sync-events/lib/swap-pnl.utils";
 import { parseJettonSwapFromRawEvent } from "@/features/sync-events/lib/swap-raw-parser";
+import {
+  getStoredWalletPnlSwapCount,
+  loadWalletPnlFromDb,
+  recomputeWalletPnl,
+} from "@/features/sync-events/model/wallet-pnl.service";
 import { transformAccountEvent } from "@/features/sync-events/model/transformer";
 
 export interface WalletSwapStatsResult {
@@ -155,7 +160,23 @@ export async function getWalletSwapStats(walletAddress: string): Promise<WalletS
 
   const swaps = rows.map(row => mapSwapRowToSnapshot(row, rawByEventId.get(row.eventId) ?? null));
   const aggregate = aggregateWalletSwaps(swaps);
-  const pnl = buildSwapPnlSummary(aggregate, swaps);
+
+  const [storedSwapCount, currentSwapCount] = await Promise.all([
+    getStoredWalletPnlSwapCount(walletAddress),
+    Promise.resolve(aggregate.swapCount),
+  ]);
+
+  let pnl: SwapPnlSummary;
+
+  if (storedSwapCount === currentSwapCount && currentSwapCount > 0) {
+    const cached = await loadWalletPnlFromDb(walletAddress);
+    pnl = cached ?? (await recomputeWalletPnl(walletAddress, aggregate, swaps));
+  } else if (currentSwapCount === 0) {
+    pnl = buildSwapPnlSummary(aggregate, swaps);
+    await recomputeWalletPnl(walletAddress, aggregate, swaps);
+  } else {
+    pnl = await recomputeWalletPnl(walletAddress, aggregate, swaps);
+  }
 
   return {
     aggregate,

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
 import { SwapJettonTable } from "@/features/sync-events/components/SwapJettonTable";
 import { SwapPnlSummary } from "@/features/sync-events/components/SwapPnlSummary";
 import { getRelatedSwapsForJetton } from "@/features/sync-events/lib/swap-transaction-list.utils";
@@ -33,6 +34,13 @@ function formatLegCounts(swaps: WalletSwapStatsResult["swaps"]): { kind: string;
 export function SwapSummaryPanel({ address, stats }: SwapSummaryPanelProps) {
   const { aggregate, pnl, byJetton, swaps } = stats;
 
+  const legCounts = formatLegCounts(swaps);
+  const recentSwaps = swaps.slice(0, 8);
+
+  const relatedByJetton = Object.fromEntries(
+    byJetton.map(row => [row.jetton.address.toLowerCase(), getRelatedSwapsForJetton(swaps, row.jetton.address)])
+  );
+
   if (aggregate.swapCount === 0) {
     return (
       <section className="mb-4 rounded-lg border border-dashed border-gray-300 p-4 dark:border-gray-700">
@@ -41,13 +49,6 @@ export function SwapSummaryPanel({ address, stats }: SwapSummaryPanelProps) {
       </section>
     );
   }
-
-  const legCounts = formatLegCounts(swaps);
-  const recentSwaps = swaps.slice(0, 8);
-
-  const relatedByJetton = Object.fromEntries(
-    byJetton.map(row => [row.jetton.address.toLowerCase(), getRelatedSwapsForJetton(swaps, row.jetton.address)])
-  );
 
   return (
     <>
@@ -62,7 +63,7 @@ export function SwapSummaryPanel({ address, stats }: SwapSummaryPanelProps) {
             </p>
           </div>
           <Link
-            href={`?address=${encodeURIComponent(address)}&swaps=1`}
+            href={getWalletPagePath(address, { swaps: true })}
             className="text-sm font-medium text-sky-600 hover:underline dark:text-sky-400"
           >
             Show in list ↓

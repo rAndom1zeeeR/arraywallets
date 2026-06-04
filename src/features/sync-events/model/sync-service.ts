@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { AccountEvent } from "@/shared/api/tonapi";
 import { ChainJettonVerification, ChainSyncStatus, Prisma } from "@/shared/api/prisma-client";
+import { clearWalletPnl } from "@/features/sync-events/model/wallet-pnl.service";
 import { prisma } from "@/shared/api/prisma";
 import { toRawTonAddress, getWalletAddressVariants, collectMatchingWalletAddressKeys } from "@/shared/lib/ton-address";
 import { serializeForJson } from "@/shared/lib/serialize-json";
@@ -383,6 +384,8 @@ export async function clearWalletSyncData(walletAddress: string): Promise<ClearW
     prisma.chainEvent.deleteMany({ where: walletScopeFilter }),
     prisma.chainRawEvent.deleteMany({ where: walletScopeFilter }),
   ]);
+
+  await clearWalletPnl(normalized);
 
   await prisma.chainSyncState.upsert({
     where: { walletAddress: normalized },

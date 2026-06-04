@@ -1,4 +1,4 @@
-import { ChainActionDirection } from "@/shared/api/prisma-client";
+import { ChainActionDirection, type ChainActionDirectionValue } from "@/shared/constants/chain-prisma.enums";
 
 const TRANSFERRING_PREFIX = /^transferring\s+/i;
 const AMOUNT_ONLY_PATTERN = /^[\d][\d.,]*\s+[\w₮]+$/u;
@@ -119,7 +119,7 @@ function isRoundedAmountDuplicate(preview: ParsedAmountLabel, display: ParsedAmo
 export function isAmountLabelEquivalent(
   preview: string,
   displayAmount: string,
-  direction?: ChainActionDirection | null
+  direction?: ChainActionDirectionValue | null
 ): boolean {
   const previewNorm = normalizeAmountLabel(preview);
   const amountNorm = normalizeAmountLabel(displayAmount);
@@ -169,7 +169,7 @@ export function normalizeSimplePreviewText(preview: string): string {
 export function resolveDisplayDetails(
   rawPreview: string | null | undefined,
   displayAmount: string | null | undefined,
-  direction?: ChainActionDirection | null
+  direction?: ChainActionDirectionValue | null
 ): string | undefined {
   if (!rawPreview?.trim()) {
     return undefined;

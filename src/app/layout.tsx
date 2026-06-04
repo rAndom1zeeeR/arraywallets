@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import { QueryProvider } from "@/shared/providers/QueryProvider";
 import { cn } from "@/shared/lib/utils";
 import "./globals.css";
 
@@ -42,7 +43,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={cn(inter.variable, "font-inter antialiased")}>{children}</body>
+      <body className={cn(inter.variable, "font-inter antialiased")}>
+        <QueryProvider>{children}</QueryProvider>
+      </body>
     </html>
   );
 }

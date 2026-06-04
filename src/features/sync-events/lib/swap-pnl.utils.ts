@@ -28,6 +28,8 @@ export interface JettonPnlLine {
   spent: string;
   received: string;
   net: string;
+  spentRaw: bigint;
+  receivedRaw: bigint;
   netRaw: bigint;
 }
 
@@ -94,7 +96,7 @@ function aggregateUsdtFromSwaps(swaps: SwapActionSnapshot[]): AssetPnlTotals {
   };
 }
 
-function resolveUsdtDecimals(swaps: SwapActionSnapshot[]): number {
+export function resolveUsdtDecimals(swaps: SwapActionSnapshot[]): number {
   for (const swap of swaps) {
     if (swap.jettonIn && isUsdtLikeJetton(swap.jettonIn)) {
       return swap.jettonIn.decimals;
@@ -122,6 +124,8 @@ function buildJettonPnlLines(byJetton: JettonSwapBreakdown[]): JettonPnlLine[] {
         spent: formatJettonFromRaw(row.spentRaw, row.jetton.decimals, row.jetton.symbol),
         received: formatJettonFromRaw(row.receivedRaw, row.jetton.decimals, row.jetton.symbol),
         net: formatJettonFromRaw(netRaw, row.jetton.decimals, row.jetton.symbol),
+        spentRaw: row.spentRaw,
+        receivedRaw: row.receivedRaw,
         netRaw,
       };
     })

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
 import { cn } from "@/shared/lib/utils";
 
 export const EVENTS_PAGE_SIZE = 100;
@@ -9,19 +10,23 @@ interface EventsPaginationProps {
   totalPages: number;
   totalEvents: number;
   address: string;
+  swapsOnly?: boolean;
 }
 
-function buildPageHref(address: string, page: number): string {
-  const params = new URLSearchParams();
-  params.set("address", address);
-  if (page > 1) {
-    params.set("page", String(page));
-  }
-  const query = params.toString();
-  return query ? `/?${query}` : "/";
+function buildPageHref(address: string, page: number, swapsOnly: boolean): string {
+  return getWalletPagePath(address, {
+    page: page > 1 ? page : undefined,
+    swaps: swapsOnly,
+  });
 }
 
-export function EventsPagination({ currentPage, totalPages, totalEvents, address }: EventsPaginationProps) {
+export function EventsPagination({
+  currentPage,
+  totalPages,
+  totalEvents,
+  address,
+  swapsOnly = false,
+}: EventsPaginationProps) {
   if (totalPages <= 1) {
     return (
       <p className="mt-4 text-sm text-gray-500">
@@ -46,7 +51,7 @@ export function EventsPagination({ currentPage, totalPages, totalEvents, address
 
       <div className="flex flex-wrap items-center gap-1">
         <PaginationLink
-          href={buildPageHref(address, currentPage - 1)}
+          href={buildPageHref(address, currentPage - 1, swapsOnly)}
           disabled={currentPage <= 1}
           aria-label="Previous page"
         >
@@ -61,7 +66,7 @@ export function EventsPagination({ currentPage, totalPages, totalEvents, address
           ) : (
             <PaginationLink
               key={item}
-              href={buildPageHref(address, item)}
+              href={buildPageHref(address, item, swapsOnly)}
               active={item === currentPage}
               aria-label={`Page ${item}`}
               aria-current={item === currentPage ? "page" : undefined}
@@ -72,7 +77,7 @@ export function EventsPagination({ currentPage, totalPages, totalEvents, address
         )}
 
         <PaginationLink
-          href={buildPageHref(address, currentPage + 1)}
+          href={buildPageHref(address, currentPage + 1, swapsOnly)}
           disabled={currentPage >= totalPages}
           aria-label="Next page"
         >

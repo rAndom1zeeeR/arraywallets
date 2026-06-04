@@ -16,7 +16,7 @@ import {
   getSyncState,
   SYNC_BATCH_SIZE,
 } from "@/features/sync-events/model/sync-service";
-import { repairJettonSwapActionFields } from "@/features/sync-events/model/swap-stats.service";
+import { getWalletSwapStats, repairJettonSwapActionFields } from "@/features/sync-events/model/swap-stats.service";
 
 const API_PAGE_SIZE = SYNC_BATCH_SIZE;
 const DEFAULT_MAX_PAGES_PER_RUN = 30;
@@ -308,6 +308,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const stats = await getWalletStats(normalizedAddress);
     const oldestLtAfter = await getOldestSyncedLt(normalizedAddress);
+
+    try {
+      await getWalletSwapStats(normalizedAddress);
+    } catch (pnlError) {
+      console.error("Wallet PnL materialization failed:", pnlError);
+    }
 
     return NextResponse.json({
       ...buildSyncResponse(normalizedAddress, totals, hasMore, resumeBeforeLt, false),

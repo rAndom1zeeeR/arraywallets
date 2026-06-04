@@ -37,14 +37,30 @@ export interface TransactionRawDetailsPayload {
   rawEvent: unknown | null;
 }
 
+function toIsoTimestamp(value: string | Date): string {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+
+  return new Date(value).toISOString();
+}
+
+function toDecimalString(value: { toString(): string } | string | bigint | number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "0";
+  }
+
+  return value.toString();
+}
+
 interface BuildRawDetailsParams {
   event: {
     tonEventId: string;
-    timestamp: Date;
-    lt: { toString(): string };
+    timestamp: string | Date;
+    lt: { toString(): string } | string | bigint;
     isScam: boolean;
     inProgress: boolean;
-    extra: bigint;
+    extra: bigint | string | { toString(): string };
     rawData: unknown;
   };
   action: {
@@ -91,11 +107,11 @@ export function buildTransactionRawDetailsPayload(params: BuildRawDetailsParams)
   return serializeForJson({
     event: {
       tonEventId: event.tonEventId,
-      timestamp: event.timestamp.toISOString(),
-      lt: event.lt.toString(),
+      timestamp: toIsoTimestamp(event.timestamp),
+      lt: toDecimalString(event.lt),
       isScam: event.isScam,
       inProgress: event.inProgress,
-      extra: event.extra.toString(),
+      extra: toDecimalString(event.extra),
     },
     action: {
       id: action.id,

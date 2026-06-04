@@ -1,7 +1,9 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useState, useCallback, useRef } from "react";
+import { walletQueryKeys } from "@/features/sync-events/api/wallet-query-keys";
 
 interface SyncButtonProps {
   address: string;
@@ -31,6 +33,7 @@ function isAbortError(error: unknown): boolean {
 
 export function SyncButton({ address, isSyncing: initialSyncing }: SyncButtonProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const abortRef = useRef<AbortController | null>(null);
   const [isSyncing, setIsSyncing] = useState(initialSyncing);
   const [result, setResult] = useState<SyncResult | null>(null);
@@ -94,11 +97,8 @@ export function SyncButton({ address, isSyncing: initialSyncing }: SyncButtonPro
           stats: data.stats,
         });
 
+        await queryClient.invalidateQueries({ queryKey: walletQueryKeys.root(address) });
         router.refresh();
-
-        if (!data.cancelled && !data.hasMore) {
-          window.location.reload();
-        }
       } catch (error) {
         if (isAbortError(error)) {
           setResult({
@@ -121,7 +121,7 @@ export function SyncButton({ address, isSyncing: initialSyncing }: SyncButtonPro
         setIsSyncing(false);
       }
     },
-    [address, isSyncing, router]
+    [address, isSyncing, queryClient, router]
   );
 
   const handleSync = useCallback(() => {
