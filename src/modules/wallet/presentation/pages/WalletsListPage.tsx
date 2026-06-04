@@ -4,7 +4,6 @@ import { AnalyzeWalletForm } from "@/modules/wallet/presentation/components/Anal
 import { WalletSyncStatusBadge } from "@/modules/wallet/presentation/components/WalletSyncStatusBadge";
 import type { AnalyzedWalletListItem } from "@/modules/wallet/domain/wallets-list.types";
 import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
-import { ModeToggle } from "@/shared/components/mode-toggle";
 import { dataTableStyles, pageStyles } from "@/shared/presentation/components/data-table/data-table.styles";
 
 export interface WalletsListPageProps {
@@ -99,12 +98,9 @@ function WalletsTable({ wallets }: { wallets: AnalyzedWalletListItem[] }) {
 export function WalletsListPage({ wallets }: WalletsListPageProps) {
   return (
     <main className={pageStyles.main}>
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <h1 className={pageStyles.pageTitle}>Кошельки</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Список проанализированных TON-кошельков</p>
-        </div>
-        <ModeToggle />
+      <div className="mb-6">
+        <h1 className={pageStyles.pageTitle}>Кошельки</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Список проанализированных TON-кошельков</p>
       </div>
 
       <section className={`${pageStyles.infoCard} mb-6`}>

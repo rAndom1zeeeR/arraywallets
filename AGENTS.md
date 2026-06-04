@@ -12,7 +12,8 @@ Single Next.js 16 app (`tonapi`) for TON wallet events, sync from TonAPI, swap a
 |---------|--------|
 | **Next.js** | `pnpm dev` → http://localhost:3000 |
 | **PostgreSQL** | `DATABASE_URL` must be set (Prisma 7 + `@prisma/adapter-pg`) |
-| **TonAPI (hosted)** | Optional env: `NEXT_PUBLIC_TONAPI_BASE_URL`, `NEXT_PUBLIC_TONAPI_API_KEY` — required for live sync and rate refresh |
+| **TonAPI (hosted)** | `NEXT_PUBLIC_TONAPI_BASE_URL` (client + server), `TONAPI_API_KEY` (server only, never `NEXT_PUBLIC_`) — required for live sync and rate refresh |
+| **Auth.js** | **`AUTH_SECRET` required in production** (without it `/api/auth/session` returns 500). OAuth (`AUTH_GITHUB_*`, `AUTH_GOOGLE_*`) optional. TON Connect + `/tonconnect-manifest.json`, JWT 15m + rotating refresh cookie, optional `AUTH_ADMIN_EMAILS` / `AUTH_ADMIN_WALLETS` |
 
 No Docker Compose or separate workers in this repo.
 

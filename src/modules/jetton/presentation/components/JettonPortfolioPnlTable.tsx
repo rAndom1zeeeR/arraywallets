@@ -22,7 +22,7 @@ import {
   formatUsdUnitPrice,
 } from "@/modules/jetton/domain/money-format.utils";
 import { buildTonviewerTransactionUrl } from "@/shared/lib/tonviewer";
-import { tonapiBaseUrl } from "@/shared/config/env.config";
+import { tonapiBaseUrl } from "@/shared/config/env.public.config";
 import { DataTable } from "@/shared/presentation/components/data-table/data-table";
 import { DataTableSortHeader } from "@/shared/presentation/components/data-table/sortable-header";
 import {

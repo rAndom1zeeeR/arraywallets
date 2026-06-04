@@ -23,7 +23,7 @@ import { formatMoneyJetton, formatMoneyTonFromNanoton } from "@/modules/jetton/d
 import { formatTonFromNanoton, parseNanoton } from "@/shared/lib/ton/ton-amount.utils";
 import type { JettonSwapBreakdownFormatted } from "@/modules/swap/domain/swap-stats.utils";
 import { buildTonviewerTransactionUrl } from "@/shared/lib/tonviewer";
-import { tonapiBaseUrl } from "@/shared/config/env.config";
+import { tonapiBaseUrl } from "@/shared/config/env.public.config";
 import { DataTable } from "@/shared/presentation/components/data-table/data-table";
 import { DataTableSortHeader } from "@/shared/presentation/components/data-table/sortable-header";
 import {

@@ -1,5 +1,5 @@
 import { buildTonviewerAccountUrl } from "@/shared/lib/tonviewer";
-import { tonapiBaseUrl } from "@/shared/config/env.config";
+import { tonapiBaseUrl } from "@/shared/config/env.public.config";
 
 interface TonviewerAccountLinkProps {
   address: string;

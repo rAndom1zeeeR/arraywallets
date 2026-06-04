@@ -11,7 +11,6 @@ import { WalletEventsTable } from "@/modules/wallet/presentation/pages/WalletEve
 import type { WalletTabId } from "@/shared/lib/wallet-route.utils";
 import { ChainSyncStatus } from "@/shared/constants/chain-prisma.enums";
 import { pageStyles } from "@/shared/presentation/components/data-table/data-table.styles";
-import { ModeToggle } from "@/shared/components/mode-toggle";
 import { cn } from "@/shared/lib/utils";
 
 function WalletTransactionsSkeleton() {
@@ -74,7 +73,6 @@ export function WalletTransactionsPage({
           <p className="mt-1 text-sm text-muted-foreground">Portfolio tracker & transaction history</p>
         </div>
         <div className="flex items-center gap-3 self-end sm:self-auto">
-          <ModeToggle />
           <SyncButton
             address={address}
             isSyncing={Boolean(isSyncing)}

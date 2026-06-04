@@ -277,12 +277,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     historyComplete = existingSyncState?.historyComplete ?? false;
 
     const quickIncompleteEvents =
-      shouldContinueFromLast && historyComplete
-        ? await countQuickIncompleteEvents(normalizedAddress)
-        : 0;
+      shouldContinueFromLast && historyComplete ? await countQuickIncompleteEvents(normalizedAddress) : 0;
 
-    incrementalOnly =
-      shouldContinueFromLast && historyComplete && quickIncompleteEvents === 0;
+    incrementalOnly = shouldContinueFromLast && historyComplete && quickIncompleteEvents === 0;
 
     await updateSyncState(normalizedAddress, { status: ChainSyncStatus.SYNCING });
 
@@ -344,15 +341,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     return NextResponse.json({
-      ...buildSyncResponse(
-        normalizedAddress,
-        totals,
-        hasMore,
-        resumeBeforeLt,
-        false,
-        historyComplete,
-        incrementalOnly
-      ),
+      ...buildSyncResponse(normalizedAddress, totals, hasMore, resumeBeforeLt, false, historyComplete, incrementalOnly),
       force,
       clearedEvents,
       oldestSyncedLt: oldestLtAfter?.toString() ?? null,

@@ -1,5 +1,5 @@
 import { buildTonviewerTransactionUrl } from "@/shared/lib/tonviewer";
-import { tonapiBaseUrl } from "@/shared/config/env.config";
+import { tonapiBaseUrl } from "@/shared/config/env.public.config";
 
 interface TonviewerTransactionLinkProps {
   tonEventId: string;

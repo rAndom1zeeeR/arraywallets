@@ -5,7 +5,7 @@ import { ArrowDown, ArrowUp, ChevronsUpDown } from "lucide-react";
 import { formatTonAmount } from "@/modules/jetton/domain/money-format.utils";
 import type { TonTransferPnlItem } from "@/modules/jetton/domain/ton-transfer-pnl.utils";
 import { compareNullableNumber } from "@/shared/presentation/components/data-table/sorting.utils";
-import { tonapiBaseUrl } from "@/shared/config/env.config";
+import { tonapiBaseUrl } from "@/shared/config/env.public.config";
 import { buildTonviewerTransactionUrl } from "@/shared/lib/tonviewer";
 import { dataTableStyles, pageStyles } from "@/shared/presentation/components/data-table/data-table.styles";
 import { cn } from "@/shared/lib/utils";
