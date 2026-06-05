@@ -1,12 +1,28 @@
-export const WALLET_TAB_IDS = ["events", "swaps", "pnl"] as const;
+import {
+  EMPTY_WALLET_HISTORY_FILTERS,
+  isChainActionTypeValue,
+  parseWalletHistoryDirectionFilter,
+  parseWalletHistoryStatusFilter,
+  WALLET_HISTORY_FILTER_ALL,
+  type WalletHistoryFilters,
+  type WalletHistoryStatusFilter,
+  type WalletEventDirectionFilter,
+  type WalletEventTypeFilter,
+} from "@/modules/wallet/domain/wallet-events-filter.utils";
+import { parseWalletHistoryDateRange } from "@/modules/wallet/domain/wallet-history-date.utils";
+
+export const WALLET_TAB_IDS = ["events", "swaps", "pnl", "tokens"] as const;
 
 export type WalletTabId = (typeof WALLET_TAB_IDS)[number];
 
 export interface WalletPageQueryOptions {
   tab?: WalletTabId;
   page?: number;
-  swaps?: boolean;
-  /** Starts sync automatically on the wallet page. */
+  type?: WalletEventTypeFilter;
+  status?: WalletHistoryStatusFilter;
+  direction?: WalletEventDirectionFilter;
+  from?: string;
+  to?: string;
   sync?: boolean;
 }
 
@@ -19,23 +35,67 @@ export function parseWalletTabParam(value: string | string[] | undefined): Walle
   return "events";
 }
 
-/**
- * URL-safe wallet segment for `/wallets/[address]`.
- */
+export function parseWalletEventTypeParam(
+  typeParam: string | string[] | undefined,
+  legacySwapsParam?: string | string[] | undefined
+): WalletEventTypeFilter {
+  const rawType = typeof typeParam === "string" ? typeParam : undefined;
+  if (rawType === WALLET_HISTORY_FILTER_ALL) {
+    return WALLET_HISTORY_FILTER_ALL;
+  }
+
+  if (rawType && isChainActionTypeValue(rawType)) {
+    return rawType;
+  }
+
+  const legacySwaps = typeof legacySwapsParam === "string" ? legacySwapsParam : undefined;
+  if (legacySwaps === "1") {
+    return "JETTON_SWAP";
+  }
+
+  return WALLET_HISTORY_FILTER_ALL;
+}
+
+/** @deprecated Use {@link parseWalletHistoryFilters} */
+export function parseWalletEventStatusParam(
+  value: string | string[] | undefined
+): WalletHistoryStatusFilter {
+  return parseWalletHistoryStatusFilter(typeof value === "string" ? value : undefined);
+}
+
+export function parseWalletHistoryFilters(query: {
+  type?: string | string[] | undefined;
+  status?: string | string[] | undefined;
+  direction?: string | string[] | undefined;
+  from?: string | string[] | undefined;
+  to?: string | string[] | undefined;
+  swaps?: string | string[] | undefined;
+}): WalletHistoryFilters {
+  const dateRange = parseWalletHistoryDateRange(
+    typeof query.from === "string" ? query.from : undefined,
+    typeof query.to === "string" ? query.to : undefined
+  );
+
+  return {
+    actionType: parseWalletEventTypeParam(query.type, query.swaps),
+    actionStatus: parseWalletHistoryStatusFilter(
+      typeof query.status === "string" ? query.status : undefined
+    ),
+    direction: parseWalletHistoryDirectionFilter(
+      typeof query.direction === "string" ? query.direction : undefined
+    ),
+    ...dateRange,
+  };
+}
+
 export function encodeWalletAddressParam(address: string): string {
   return encodeURIComponent(address);
 }
 
-/**
- * Decodes `[address]` route param from Next.js.
- */
 export function decodeWalletAddressParam(param: string): string {
   return decodeURIComponent(param);
 }
 
-/**
- * Path to wallet transactions page with optional pagination and swap filter.
- */
 export function getWalletPagePath(address: string, options: WalletPageQueryOptions = {}): string {
   const base = `/wallets/${encodeWalletAddressParam(address)}`;
   const params = new URLSearchParams();
@@ -48,8 +108,24 @@ export function getWalletPagePath(address: string, options: WalletPageQueryOptio
     params.set("page", String(options.page));
   }
 
-  if (options.swaps) {
-    params.set("swaps", "1");
+  if (options.type !== undefined && options.type !== WALLET_HISTORY_FILTER_ALL) {
+    params.set("type", options.type);
+  }
+
+  if (options.status !== undefined && options.status !== WALLET_HISTORY_FILTER_ALL) {
+    params.set("status", options.status);
+  }
+
+  if (options.direction !== undefined && options.direction !== WALLET_HISTORY_FILTER_ALL) {
+    params.set("direction", options.direction);
+  }
+
+  if (options.from) {
+    params.set("from", options.from);
+  }
+
+  if (options.to) {
+    params.set("to", options.to);
   }
 
   if (options.sync) {
@@ -59,3 +135,17 @@ export function getWalletPagePath(address: string, options: WalletPageQueryOptio
   const query = params.toString();
   return query ? `${base}?${query}` : base;
 }
+
+export function walletHistoryFiltersToQueryOptions(
+  filters: WalletHistoryFilters
+): Pick<WalletPageQueryOptions, "type" | "status" | "direction" | "from" | "to"> {
+  return {
+    type: filters.actionType,
+    status: filters.actionStatus,
+    direction: filters.direction,
+    from: filters.dateFrom ?? undefined,
+    to: filters.dateTo ?? undefined,
+  };
+}
+
+export { EMPTY_WALLET_HISTORY_FILTERS };

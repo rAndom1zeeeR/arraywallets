@@ -2,7 +2,11 @@ import { apiClient } from "@/shared/infrastructure/api/client";
 import type { WalletSummaryData, WalletEventsPageData } from "@/modules/wallet/api/wallet-api.handlers";
 import { reviveWalletSwapStats, type SerializedWalletSwapStats } from "@/modules/wallet/api/wallet-api.adapter";
 import type { WalletSwapStatsResult } from "@/modules/swap/application/swap-stats.service";
-import { encodeWalletAddressParam } from "@/shared/lib/wallet-route.utils";
+import type { WalletHistoryFilters } from "@/modules/wallet/domain/wallet-events-filter.utils";
+import {
+  encodeWalletAddressParam,
+  walletHistoryFiltersToQueryOptions,
+} from "@/shared/lib/wallet-route.utils";
 
 interface WalletSummaryResponse {
   totalEvents: number;
@@ -33,11 +37,29 @@ export async function fetchWalletSummary(address: string): Promise<WalletSummary
   };
 }
 
-export function fetchWalletEvents(address: string, page: number, swapsOnly: boolean): Promise<WalletEventsPageData> {
+export function fetchWalletEvents(
+  address: string,
+  page: number,
+  filters: WalletHistoryFilters
+): Promise<WalletEventsPageData> {
   const params = new URLSearchParams();
   params.set("page", String(page));
-  if (swapsOnly) {
-    params.set("swaps", "1");
+
+  const queryOptions = walletHistoryFiltersToQueryOptions(filters);
+  if (queryOptions.type) {
+    params.set("type", queryOptions.type);
+  }
+  if (queryOptions.status) {
+    params.set("status", queryOptions.status);
+  }
+  if (queryOptions.direction) {
+    params.set("direction", queryOptions.direction);
+  }
+  if (queryOptions.from) {
+    params.set("from", queryOptions.from);
+  }
+  if (queryOptions.to) {
+    params.set("to", queryOptions.to);
   }
 
   return apiClient<WalletEventsPageData>(`${walletApiBase(address)}/events?${params.toString()}`);

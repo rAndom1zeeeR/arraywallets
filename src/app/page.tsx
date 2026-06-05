@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
+import { getWalletPagePath, parseWalletHistoryFilters } from "@/shared/lib/wallet-route.utils";
 import { parsePageParam } from "@/modules/wallet/domain/wallet-page.utils";
 
 interface HomePageProps {
@@ -18,13 +18,17 @@ export default async function Home({ searchParams }: HomePageProps) {
   }
 
   const page = parsePageParam(params.page);
-  const swapsOnly = params.swaps === "1";
+  const historyFilters = parseWalletHistoryFilters(params);
 
   redirect(
     getWalletPagePath(addressParam, {
       tab: "events",
       page: page > 1 ? page : undefined,
-      swaps: swapsOnly,
+      type: historyFilters.actionType,
+      status: historyFilters.actionStatus,
+      direction: historyFilters.direction,
+      from: historyFilters.dateFrom ?? undefined,
+      to: historyFilters.dateTo ?? undefined,
     })
   );
 }

@@ -20,6 +20,7 @@ import {
   prepareAccountEventForTransform,
   accountEventNeedsTraceEnrichment,
 } from "@/modules/wallet/application/trace-event-enrichment.service";
+import { hasActionIndexGap } from "@/modules/wallet/domain/wallet-action-index.utils";
 
 /** Matches TonAPI page size (`limit: 100`). */
 export const SYNC_BATCH_SIZE = 100;
@@ -165,14 +166,6 @@ function getMaxOrderIndex(orderIndexes: number[]): number | null {
   }
 
   return Math.max(...orderIndexes);
-}
-
-function hasActionIndexGap(actionCount: number, maxOrderIndex: number | null): boolean {
-  if (actionCount === 0 || maxOrderIndex === null) {
-    return false;
-  }
-
-  return actionCount < maxOrderIndex + 1;
 }
 
 function isStoredEventIncomplete(params: {

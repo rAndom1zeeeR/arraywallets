@@ -14,6 +14,8 @@ interface SyncButtonProps {
   incompleteEvents?: number;
   historyComplete?: boolean;
   autoStart?: boolean;
+  /** Full-width footer style for explorer sidebar card */
+  embedded?: boolean;
 }
 
 interface SyncResult {
@@ -45,6 +47,7 @@ export function SyncButton({
   incompleteEvents = 0,
   historyComplete = false,
   autoStart = false,
+  embedded = false,
 }: SyncButtonProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -170,13 +173,13 @@ export function SyncButton({
         : "Continue sync";
 
   return (
-    <div className="flex flex-col items-end gap-2">
-      {hasIncompleteEvents && !isSyncing && (
+    <div className={cn("flex flex-col gap-2", embedded ? "w-full items-stretch" : "items-end")}>
+      {hasIncompleteEvents && !isSyncing && !embedded && (
         <p className="max-w-sm text-right text-xs text-amber-400">
           {incompleteEvents} incomplete events — repair запускается автоматически при Sync
         </p>
       )}
-      {result && (
+      {result && !embedded && (
         <div className="text-right text-sm text-muted-foreground">
           {result.cancelled && (
             <p className="mb-1 font-medium text-amber-400">Синхронизация остановлена</p>
@@ -224,13 +227,22 @@ export function SyncButton({
           )}
         </div>
       )}
-      <div className="flex flex-wrap items-center justify-end gap-2">
+      <div
+        className={cn(
+          "flex flex-wrap gap-2",
+          embedded ? "w-full flex-col" : "items-center justify-end"
+        )}
+      >
         <button
           type="button"
           onClick={handleSync}
           disabled={isSyncing}
           className={cn(
-            hasIncompleteEvents && !isSyncing ? buttonStyles.warning : buttonStyles.primary,
+            embedded
+              ? "w-full rounded-none bg-explorer-sync py-3 text-sm font-semibold text-background hover:opacity-90"
+              : hasIncompleteEvents && !isSyncing
+                ? buttonStyles.warning
+                : buttonStyles.primary,
             isSyncing && "cursor-not-allowed opacity-50"
           )}
         >
@@ -258,7 +270,7 @@ export function SyncButton({
             syncButtonLabel
           )}
         </button>
-        {isAdmin ? (
+        {isAdmin && !embedded ? (
           <button
             type="button"
             onClick={handleForceSync}

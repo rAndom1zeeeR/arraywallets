@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
+import type { WalletHistoryFilters } from "@/modules/wallet/domain/wallet-events-filter.utils";
+import { getWalletPagePath, walletHistoryFiltersToQueryOptions } from "@/shared/lib/wallet-route.utils";
 import { buttonStyles } from "@/shared/presentation/components/data-table/data-table.styles";
 import { cn } from "@/shared/lib/utils";
 
@@ -9,36 +10,36 @@ export const EVENTS_PAGE_SIZE = 100;
 interface EventsPaginationProps {
   currentPage: number;
   totalPages: number;
-  totalEvents: number;
+  totalActions: number;
   address: string;
-  swapsOnly?: boolean;
+  filters: WalletHistoryFilters;
 }
 
-function buildPageHref(address: string, page: number, swapsOnly: boolean): string {
+function buildPageHref(address: string, page: number, filters: WalletHistoryFilters): string {
   return getWalletPagePath(address, {
     tab: "events",
     page: page > 1 ? page : undefined,
-    swaps: swapsOnly,
+    ...walletHistoryFiltersToQueryOptions(filters),
   });
 }
 
 export function EventsPagination({
   currentPage,
   totalPages,
-  totalEvents,
+  totalActions,
   address,
-  swapsOnly = false,
+  filters,
 }: EventsPaginationProps) {
   if (totalPages <= 1) {
     return (
       <p className="text-sm text-muted-foreground">
-        {totalEvents} event{totalEvents === 1 ? "" : "s"}
+        {totalActions} action{totalActions === 1 ? "" : "s"}
       </p>
     );
   }
 
   const from = (currentPage - 1) * EVENTS_PAGE_SIZE + 1;
-  const to = Math.min(currentPage * EVENTS_PAGE_SIZE, totalEvents);
+  const to = Math.min(currentPage * EVENTS_PAGE_SIZE, totalActions);
 
   const pageNumbers = getPageNumbers(currentPage, totalPages);
 
@@ -48,12 +49,12 @@ export function EventsPagination({
       aria-label="Events pagination"
     >
       <p className="text-sm text-muted-foreground">
-        Events {from}–{to} of {totalEvents} · page {currentPage} of {totalPages}
+        Actions {from}–{to} of {totalActions} · page {currentPage} of {totalPages}
       </p>
 
       <div className="flex flex-wrap items-center gap-1">
         <PaginationLink
-          href={buildPageHref(address, currentPage - 1, swapsOnly)}
+          href={buildPageHref(address, currentPage - 1, filters)}
           disabled={currentPage <= 1}
           aria-label="Previous page"
         >
@@ -73,7 +74,7 @@ export function EventsPagination({
           ) : (
             <PaginationLink
               key={item}
-              href={buildPageHref(address, item, swapsOnly)}
+              href={buildPageHref(address, item, filters)}
               active={item === currentPage}
               aria-label={`Page ${item}`}
               aria-current={item === currentPage ? "page" : undefined}
@@ -85,7 +86,7 @@ export function EventsPagination({
         </div>
 
         <PaginationLink
-          href={buildPageHref(address, currentPage + 1, swapsOnly)}
+          href={buildPageHref(address, currentPage + 1, filters)}
           disabled={currentPage >= totalPages}
           aria-label="Next page"
         >

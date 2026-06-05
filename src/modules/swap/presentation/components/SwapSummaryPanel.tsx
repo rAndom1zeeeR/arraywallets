@@ -95,7 +95,7 @@ export function SwapSummaryPanel({ address, stats }: SwapSummaryPanelProps) {
             </p>
           </div>
           <Link
-            href={getWalletPagePath(address, { tab: "events", swaps: true })}
+            href={getWalletPagePath(address, { tab: "events", type: "JETTON_SWAP" })}
             className="text-sm font-medium text-primary hover:underline"
           >
             Show in Events ↓

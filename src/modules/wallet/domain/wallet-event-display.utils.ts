@@ -60,3 +60,15 @@ export function getTransactionDateGroupLabel(isoTimestamp: string | Date, now: D
 
   return `${datePart} ${timePart}`;
 }
+
+/**
+ * Short date header for explorer history table (e.g. "05 May").
+ */
+export function getExplorerDateGroupLabel(isoTimestamp: string | Date): string {
+  const date = isoTimestamp instanceof Date ? isoTimestamp : new Date(isoTimestamp);
+
+  return date.toLocaleDateString(undefined, {
+    day: "2-digit",
+    month: "short",
+  });
+}

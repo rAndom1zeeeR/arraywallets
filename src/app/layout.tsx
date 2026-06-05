@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { AuthAppHeader, AuthProvider } from "@/modules/auth";
+import { AuthProvider } from "@/modules/auth";
+import { ExplorerAppHeader } from "@/modules/auth/presentation/components/explorer-app-header";
 import { QueryProvider } from "@/shared/providers/QueryProvider";
 import { ThemeProvider } from "@/shared/components/theme-provider";
 import { cn } from "@/shared/lib/utils";
@@ -34,8 +35,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "TON Wallet Transactions",
-  description: "View TON blockchain wallet transactions via TonAPI",
+  title: "TON Explorer",
+  description: "TON wallet events, sync, swap analytics, and jetton portfolio PnL",
 };
 
 export default function RootLayout({
@@ -49,7 +50,7 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <QueryProvider>
-              <AuthAppHeader />
+              <ExplorerAppHeader />
               {children}
             </QueryProvider>
           </AuthProvider>

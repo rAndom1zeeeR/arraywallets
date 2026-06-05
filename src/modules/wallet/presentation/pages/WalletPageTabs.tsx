@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getWalletPagePath, type WalletTabId } from "@/shared/lib/wallet-route.utils";
+import type { WalletHistoryFilters } from "@/modules/wallet/domain/wallet-events-filter.utils";
+import { getWalletPagePath, walletHistoryFiltersToQueryOptions, type WalletTabId } from "@/shared/lib/wallet-route.utils";
 import { tabStyles } from "@/shared/presentation/components/data-table/data-table.styles";
 import { cn } from "@/shared/lib/utils";
 
@@ -12,16 +13,22 @@ const WALLET_TABS: WalletTabConfig[] = [
   { id: "events", label: "Events" },
   { id: "swaps", label: "Swaps" },
   { id: "pnl", label: "PnL" },
+  { id: "tokens", label: "Tokens" },
 ];
 
 export interface WalletPageTabsProps {
   address: string;
   activeTab: WalletTabId;
   currentPage: number;
-  swapsOnly: boolean;
+  filters: WalletHistoryFilters;
 }
 
-export function WalletPageTabs({ address, activeTab, currentPage, swapsOnly }: WalletPageTabsProps) {
+export function WalletPageTabs({
+  address,
+  activeTab,
+  currentPage,
+  filters,
+}: WalletPageTabsProps) {
   return (
     <nav className={cn("mb-6", tabStyles.nav)} aria-label="Wallet sections">
       <div className={tabStyles.list} role="tablist">
@@ -35,7 +42,7 @@ export function WalletPageTabs({ address, activeTab, currentPage, swapsOnly }: W
                 tab: tab.id,
                 page:
                   (tab.id === "events" || tab.id === "pnl") && currentPage > 1 ? currentPage : undefined,
-                swaps: tab.id === "events" && swapsOnly,
+                ...(tab.id === "events" ? walletHistoryFiltersToQueryOptions(filters) : {}),
               })}
               role="tab"
               aria-selected={isActive}

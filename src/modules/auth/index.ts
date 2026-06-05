@@ -8,6 +8,7 @@ export {
 export { resolveUserRole } from "./domain/resolve-user-role";
 export { hasRole, requireRole } from "./domain/require-role";
 export { AuthAppHeader } from "./presentation/components/auth-app-header";
+export { ExplorerAppHeader } from "./presentation/components/explorer-app-header";
 export { AuthProvider } from "./presentation/providers/AuthProvider";
 /** @deprecated Use AuthProvider */
 export { AuthProvider as AuthSessionProvider } from "./presentation/providers/AuthProvider";

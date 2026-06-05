@@ -1,13 +1,12 @@
 import { Address } from "@ton/core";
-import { EVENTS_PAGE_SIZE } from "@/modules/wallet/presentation/components/EventsPagination";
-import { getEvents, getEventsCount, getSyncState } from "@/modules/wallet/application/wallet-page.queries";
+import { getEventsCount, getSyncState } from "@/modules/wallet/application/wallet-page.queries";
+import { getWalletHistoryPage } from "@/modules/wallet/application/wallet-history.queries";
 import { getWalletStats } from "@/modules/wallet/application/sync-service";
 import { getWalletSwapStats } from "@/modules/swap/application/swap-stats.service";
 import { decodeWalletAddressParam } from "@/shared/lib/wallet-route.utils";
 import { normalizeWalletAddress } from "@/shared/lib/ton/ton-address";
-import { SWAP_AGGREGATE_ACTION_TYPES } from "@/modules/swap/domain/swap-inference.utils";
-
-const SWAP_EVENTS_FILTER_TYPES = new Set<string>([...SWAP_AGGREGATE_ACTION_TYPES, "FLAWED_HEURISTIC"]);
+import type { WalletHistoryFilters } from "@/modules/wallet/domain/wallet-events-filter.utils";
+import type { EventWithActions } from "@/modules/wallet/domain/wallet-events.types";
 
 export function parseWalletAddressParam(param: string): string {
   const decoded = decodeWalletAddressParam(param);
@@ -34,35 +33,30 @@ export async function loadWalletSummary(address: string): Promise<WalletSummaryD
 }
 
 export interface WalletEventsPageData {
-  totalEvents: number;
+  /** Filtered rows count used for pagination (actions or incomplete events). */
+  totalActions: number;
   totalPages: number;
   safePage: number;
-  events: Awaited<ReturnType<typeof getEvents>>;
+  events: EventWithActions[];
+  /** @deprecated Use totalActions — kept for older clients */
+  totalEvents: number;
 }
 
 export async function loadWalletEventsPage(
   address: string,
   page: number,
-  swapsOnly: boolean
+  filters: WalletHistoryFilters
 ): Promise<WalletEventsPageData> {
-  const totalEvents = await getEventsCount(address);
-  const totalPages = Math.max(1, Math.ceil(totalEvents / EVENTS_PAGE_SIZE));
-  const safePage = Math.min(page, totalPages);
-  const events = await getEvents(address, safePage);
-
-  const visibleEvents = swapsOnly
-    ? events
-        .map(event => ({
-          ...event,
-          actions: event.actions.filter(action => SWAP_EVENTS_FILTER_TYPES.has(action.type)),
-        }))
-        .filter(event => event.actions.length > 0)
-    : events;
+  const [historyPage, totalEvents] = await Promise.all([
+    getWalletHistoryPage(address, page, filters),
+    getEventsCount(address),
+  ]);
 
   return {
+    totalActions: historyPage.totalActions,
+    totalPages: historyPage.totalPages,
+    safePage: historyPage.safePage,
+    events: historyPage.events,
     totalEvents,
-    totalPages,
-    safePage,
-    events: visibleEvents,
   };
 }

@@ -21,6 +21,15 @@ import {
   formatTonLegIfNonZero,
 } from "@/modules/jetton/domain/money-format.utils";
 import type { WalletEventActionRow } from "@/modules/wallet/domain/wallet-events.types";
+import {
+  getWalletActionTypeFilterLabel,
+  getWalletDirectionFilterLabel,
+  getWalletHistoryStatusFilterLabel,
+  hasActiveHistoryFilters,
+  WALLET_HISTORY_FILTER_ALL,
+  type WalletHistoryFilters,
+} from "@/modules/wallet/domain/wallet-events-filter.utils";
+import { getWalletHistoryDateFilterLabel } from "@/modules/wallet/domain/wallet-history-date.utils";
 import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
 import type { ChainActionDirectionValue } from "@/shared/constants/chain-prisma.enums";
 import { WalletEventsMobileList } from "@/modules/wallet/presentation/components/WalletEventsMobileList";
@@ -44,10 +53,10 @@ export type { WalletEventFlatRow };
 export interface WalletEventsTableProps {
   address: string;
   events: import("@/modules/wallet/domain/wallet-events.types").EventWithActions[];
-  totalEvents: number;
+  totalActions: number;
   totalPages: number;
   safePage: number;
-  swapsOnly: boolean;
+  filters: WalletHistoryFilters;
 }
 
 function getActionDetailsText(action: WalletEventActionRow): string | undefined {
@@ -125,10 +134,10 @@ const columnHelper = createColumnHelper<WalletEventFlatRow>();
 export function WalletEventsTable({
   address,
   events,
-  totalEvents,
+  totalActions,
   totalPages,
   safePage,
-  swapsOnly,
+  filters,
 }: WalletEventsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const tableData = useMemo(() => flattenEvents(events), [events]);
@@ -312,36 +321,65 @@ export function WalletEventsTable({
       aria-labelledby="wallet-tab-events"
       className="space-y-4"
     >
-      {swapsOnly && (
+      {hasActiveHistoryFilters(filters) && (
         <p className="text-sm text-orange-400">
-          Filter: <strong>JETTON_SWAP</strong>, <strong>INFERRED_SWAP</strong> on this page.{" "}
+          Filters:{" "}
+          {filters.actionType !== WALLET_HISTORY_FILTER_ALL && (
+            <strong>{getWalletActionTypeFilterLabel(filters.actionType)}</strong>
+          )}
+          {filters.actionStatus !== WALLET_HISTORY_FILTER_ALL && (
+            <>
+              {filters.actionType !== WALLET_HISTORY_FILTER_ALL && " · "}
+              <strong>{getWalletHistoryStatusFilterLabel(filters.actionStatus)}</strong>
+            </>
+          )}
+          {filters.direction !== WALLET_HISTORY_FILTER_ALL && (
+            <>
+              {(filters.actionType !== WALLET_HISTORY_FILTER_ALL ||
+                filters.actionStatus !== WALLET_HISTORY_FILTER_ALL) &&
+                " · "}
+              <strong>{getWalletDirectionFilterLabel(filters.direction)}</strong>
+            </>
+          )}
+          {(filters.dateFrom !== null || filters.dateTo !== null) && (
+            <>
+              {(filters.actionType !== WALLET_HISTORY_FILTER_ALL ||
+                filters.actionStatus !== WALLET_HISTORY_FILTER_ALL ||
+                filters.direction !== WALLET_HISTORY_FILTER_ALL) &&
+                " · "}
+              <strong>{getWalletHistoryDateFilterLabel(filters)}</strong>
+            </>
+          )}
+          .{" "}
           <Link
             href={getWalletPagePath(address, { tab: "events" })}
             className="text-primary underline"
           >
-            Show all events
+            Clear filters
           </Link>
         </p>
       )}
 
-      {totalEvents > 0 && (
+      {totalActions > 0 && (
         <EventsPagination
           currentPage={safePage}
           totalPages={totalPages}
-          totalEvents={totalEvents}
+          totalActions={totalActions}
           address={address}
-          swapsOnly={swapsOnly}
+          filters={filters}
         />
       )}
 
       {events.length === 0 ? (
         <div className="py-8 text-center">
           <p className="mb-4 text-muted-foreground">
-            {swapsOnly ? "No swap actions on this page." : "No events found in database."}
+            {hasActiveHistoryFilters(filters)
+              ? "No matching actions for this filter."
+              : "No events found in database."}
           </p>
           <p className="text-sm text-muted-foreground">
-            {swapsOnly
-              ? "Try another page or disable the swap filter."
+            {hasActiveHistoryFilters(filters)
+              ? "Try another page or clear filters."
               : 'Click "Sync" to fetch transactions from TON API.'}
           </p>
         </div>
@@ -403,13 +441,13 @@ export function WalletEventsTable({
         />
       )}
 
-      {totalEvents > 0 && (
+      {totalActions > 0 && (
         <EventsPagination
           currentPage={safePage}
           totalPages={totalPages}
-          totalEvents={totalEvents}
+          totalActions={totalActions}
           address={address}
-          swapsOnly={swapsOnly}
+          filters={filters}
         />
       )}
     </div>
