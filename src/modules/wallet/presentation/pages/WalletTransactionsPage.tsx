@@ -12,7 +12,10 @@ import { WalletSidebarPanel } from "@/modules/wallet/presentation/components/wal
 import { WalletTokenHoldings } from "@/modules/wallet/presentation/components/wallet-token-holdings";
 import { WalletExplorerTabs } from "@/modules/wallet/presentation/components/wallet-explorer-tabs";
 import { WalletExplorerHistoryTable } from "@/modules/wallet/presentation/components/wallet-explorer-history-table";
+import { WalletExplorerHistoryMobileList } from "@/modules/wallet/presentation/components/wallet-explorer-history-mobile-list";
 import { WalletExplorerPagination } from "@/modules/wallet/presentation/components/wallet-explorer-pagination";
+import { WalletMobileSummaryCard } from "@/modules/wallet/presentation/components/wallet-mobile-summary-card";
+import { WalletMobileToolbar } from "@/modules/wallet/presentation/components/wallet-mobile-toolbar";
 import {
   getWalletActionTypeFilterLabel,
   getWalletDirectionFilterLabel,
@@ -81,6 +84,7 @@ export function WalletTransactionsPage({
 
   return (
     <div className={explorerStyles.page}>
+      <WalletMobileToolbar />
       <WalletExplorerBreadcrumb address={address} />
 
       {isLoading && <WalletTransactionsSkeleton />}
@@ -93,7 +97,14 @@ export function WalletTransactionsPage({
 
       {!isLoading && !isError && summaryQuery.data && stats && swapStats && (
         <div className={explorerStyles.content}>
-          <aside className={explorerStyles.sidebar}>
+          <WalletMobileSummaryCard
+            address={address}
+            summary={summaryQuery.data}
+            isSyncing={Boolean(isSyncing)}
+            autoStartSync={autoStartSync}
+          />
+
+          <aside className={cn(explorerStyles.sidebar, "hidden lg:flex")}>
             <WalletSidebarPanel
               address={address}
               summary={summaryQuery.data}
@@ -107,23 +118,25 @@ export function WalletTransactionsPage({
           </aside>
 
           <div className={explorerStyles.main}>
-            <WalletExplorerTabs
-              address={address}
-              activeTab={activeTab}
-              currentPage={currentPage}
-              filters={historyFilters}
-              tokenCount={swapStats.byJetton.length}
-            />
+            <div className="mx-4 mt-5 lg:mx-0 lg:mt-0">
+              <WalletExplorerTabs
+                address={address}
+                activeTab={activeTab}
+                currentPage={currentPage}
+                filters={historyFilters}
+                tokenCount={swapStats.byJetton.length}
+              />
+            </div>
 
             {activeTab === "events" && eventsQuery.data && (
               <div
                 id="wallet-tabpanel-events"
                 role="tabpanel"
                 aria-labelledby="wallet-tab-events"
-                className={cn(explorerStyles.tabPanel, "space-y-0")}
+                className={cn(explorerStyles.tabPanel, "mt-4 space-y-0 lg:mt-4")}
               >
                 {hasActiveHistoryFilters(historyFilters) && (
-                  <p className="mb-3 text-sm text-muted-foreground">
+                  <p className="mb-3 hidden text-sm text-muted-foreground lg:block">
                     {historyFilters.actionType !== WALLET_HISTORY_FILTER_ALL && (
                       <span className="text-primary">
                         Type: {getWalletActionTypeFilterLabel(historyFilters.actionType)}
@@ -159,13 +172,20 @@ export function WalletTransactionsPage({
                     )}
                   </p>
                 )}
-                <WalletExplorerHistoryTable events={eventsQuery.data.events} />
+                <WalletExplorerHistoryMobileList
+                  events={eventsQuery.data.events}
+                  className="lg:hidden"
+                />
+                <div className="hidden lg:block">
+                  <WalletExplorerHistoryTable events={eventsQuery.data.events} />
+                </div>
                 <WalletExplorerPagination
                   address={address}
                   currentPage={eventsQuery.data.safePage}
                   totalPages={eventsQuery.data.totalPages}
                   totalActions={eventsQuery.data.totalActions}
                   filters={historyFilters}
+                  className="mx-4 lg:mx-0"
                 />
               </div>
             )}
@@ -181,7 +201,7 @@ export function WalletTransactionsPage({
                 id="wallet-tabpanel-swaps"
                 role="tabpanel"
                 aria-labelledby="wallet-tab-swaps"
-                className={cn(explorerStyles.tabPanel, explorerStyles.card, "p-5")}
+                className={cn(explorerStyles.tabPanel, explorerStyles.card, "mx-4 p-5 lg:mx-0")}
               >
                 <SwapSummaryPanel address={address} stats={swapStats} />
               </div>
@@ -193,7 +213,7 @@ export function WalletTransactionsPage({
                   id="wallet-tabpanel-pnl"
                   role="tabpanel"
                   aria-labelledby="wallet-tab-pnl"
-                  className={cn(explorerStyles.tabPanel, explorerStyles.card, "p-5")}
+                  className={cn(explorerStyles.tabPanel, explorerStyles.card, "mx-4 p-5 lg:mx-0")}
                 >
                   <h2 className="text-lg font-semibold text-foreground">Swap PnL</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -205,7 +225,7 @@ export function WalletTransactionsPage({
                   id="wallet-tabpanel-pnl"
                   role="tabpanel"
                   aria-labelledby="wallet-tab-pnl"
-                  className={cn(explorerStyles.tabPanel, explorerStyles.card, "p-5")}
+                  className={cn(explorerStyles.tabPanel, explorerStyles.card, "mx-4 p-5 lg:mx-0")}
                 >
                   <WalletPnlPanel address={address} currentPage={currentPage} stats={swapStats} />
                 </div>
@@ -216,7 +236,7 @@ export function WalletTransactionsPage({
                 id="wallet-tabpanel-tokens"
                 role="tabpanel"
                 aria-labelledby="wallet-tab-tokens"
-                className={explorerStyles.tabPanel}
+                className={cn(explorerStyles.tabPanel, "mx-4 lg:mx-0")}
               >
                 <WalletTokenHoldings
                   holdings={swapStats.byJetton}

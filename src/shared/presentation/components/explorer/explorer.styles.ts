@@ -4,7 +4,9 @@ export const explorerStyles = {
   page: "flex min-h-[calc(100dvh-var(--app-header-height))] flex-col bg-background font-sans",
   breadcrumb:
     "flex flex-wrap items-center gap-2 border-b border-border px-4 py-3 text-xs text-muted-foreground sm:px-8",
-  content: "flex flex-1 flex-col gap-4 px-4 py-4 sm:px-8 sm:py-6 lg:flex-row lg:gap-6",
+  content:
+    "flex flex-1 flex-col gap-4 px-0 py-0 sm:px-8 sm:py-6 lg:flex-row lg:gap-6 lg:px-8",
+  mobileSection: "mx-4 mt-4 lg:mx-0 lg:mt-0",
   sidebar: "flex w-full shrink-0 flex-col gap-4 lg:w-80",
   main: "flex min-w-0 flex-1 flex-col gap-4",
   card: "overflow-hidden rounded-xl border border-border bg-explorer-surface",
@@ -19,14 +21,14 @@ export const explorerStyles = {
   tabList:
     "flex gap-0 overflow-x-auto border-b border-border scrollbar-thin-x [-webkit-overflow-scrolling:touch]",
   tabPanel:
-    "min-w-0 overflow-x-auto scrollbar-table-x [-webkit-overflow-scrolling:touch]",
+    "min-w-0 overflow-x-visible lg:overflow-x-auto lg:scrollbar-table-x [-webkit-overflow-scrolling:touch]",
   tab: cn(
     "-mb-px border-b-2 px-5 py-2.5 text-sm font-medium transition-colors",
     "border-transparent text-muted-foreground hover:text-foreground"
   ),
   tabActive: "border-primary text-foreground",
   filterChip:
-    "inline-flex items-center gap-1.5 rounded-lg border border-border bg-explorer-surface px-3 py-1.5 text-sm text-foreground",
+    "inline-flex items-center gap-1 rounded-lg border border-border bg-explorer-surface px-3 py-1.5 text-foreground",
   tableShell: "overflow-hidden rounded-xl border border-border bg-explorer-surface",
   tableScroll: "overflow-x-auto scrollbar-table-x [-webkit-overflow-scrolling:touch]",
   tableMinWidth: "min-w-[40rem]",

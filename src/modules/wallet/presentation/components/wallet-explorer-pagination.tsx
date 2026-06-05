@@ -11,6 +11,7 @@ interface WalletExplorerPaginationProps {
   totalPages: number;
   totalActions: number;
   filters: WalletHistoryFilters;
+  className?: string;
 }
 
 function buildPageHref(address: string, page: number, filters: WalletHistoryFilters): string {
@@ -53,6 +54,7 @@ export const WalletExplorerPagination = ({
   totalPages,
   totalActions,
   filters,
+  className,
 }: WalletExplorerPaginationProps) => {
   if (totalPages <= 1) {
     return (
@@ -68,13 +70,16 @@ export const WalletExplorerPagination = ({
 
   return (
     <nav
-      className="flex flex-col gap-3 py-2 sm:flex-row sm:items-center sm:justify-between"
+      className={cn(
+        "flex flex-col gap-3 py-5 lg:flex-row lg:items-center lg:justify-between lg:py-2",
+        className
+      )}
       aria-label="History pagination"
     >
-      <span className="text-xs text-muted-foreground">
+      <span className="hidden text-xs text-muted-foreground lg:inline">
         Showing {from}–{to} of {totalActions} actions
       </span>
-      <div className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2">
         {currentPage <= 1 ? (
           <span
             className="inline-flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs text-muted-foreground/40"

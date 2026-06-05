@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { CopyToClipboardButton } from "@/shared/presentation/components/explorer/copy-to-clipboard-button";
 import { explorerStyles } from "@/shared/presentation/components/explorer/explorer.styles";
+import { cn } from "@/shared/lib/utils";
 
 interface WalletExplorerBreadcrumbProps {
   address: string;
@@ -9,7 +10,7 @@ interface WalletExplorerBreadcrumbProps {
 
 export const WalletExplorerBreadcrumb = ({ address }: WalletExplorerBreadcrumbProps) => {
   return (
-    <div className={explorerStyles.breadcrumb}>
+    <div className={cn(explorerStyles.breadcrumb, "hidden lg:flex")}>
       <Link href="/wallets" className="text-primary hover:underline">
         All wallets
       </Link>

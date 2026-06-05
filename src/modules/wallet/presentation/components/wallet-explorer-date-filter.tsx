@@ -109,6 +109,7 @@ export const WalletExplorerDateFilter = ({
           type="button"
           className={cn(
             explorerStyles.filterChip,
+            "text-xs lg:text-sm",
             hasDateFilter && "border-primary/40 bg-explorer-surface-2"
           )}
           aria-label="Filter by date"

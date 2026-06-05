@@ -64,6 +64,7 @@ export const WalletExplorerEventFilters = ({
           type="button"
           className={cn(
             explorerStyles.filterChip,
+            "text-xs lg:text-sm",
             filters.actionType !== WALLET_HISTORY_FILTER_ALL &&
             "border-primary/40 bg-explorer-surface-2"
           )}
@@ -92,6 +93,7 @@ export const WalletExplorerEventFilters = ({
           type="button"
           className={cn(
             explorerStyles.filterChip,
+            "text-xs lg:text-sm",
             filters.actionStatus !== WALLET_HISTORY_FILTER_ALL &&
             "border-primary/40 bg-explorer-surface-2"
           )}
@@ -120,6 +122,7 @@ export const WalletExplorerEventFilters = ({
           type="button"
           className={cn(
             explorerStyles.filterChip,
+            "hidden text-xs lg:inline-flex lg:text-sm",
             filters.direction !== WALLET_HISTORY_FILTER_ALL &&
             "border-primary/40 bg-explorer-surface-2"
           )}
@@ -145,7 +148,7 @@ export const WalletExplorerEventFilters = ({
 
       <WalletExplorerDateFilter address={address} filters={filters} />
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto hidden items-center gap-2 lg:flex">
         <span className="text-xs text-muted-foreground">Per page: 100</span>
       </div>
     </div>
