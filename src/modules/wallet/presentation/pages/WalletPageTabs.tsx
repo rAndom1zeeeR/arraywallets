@@ -13,7 +13,7 @@ const WALLET_TABS: WalletTabConfig[] = [
   { id: "events", label: "Events" },
   { id: "swaps", label: "Swaps" },
   { id: "pnl", label: "PnL" },
-  { id: "tokens", label: "Tokens" },
+  { id: "tokens", label: "Jettons" },
 ];
 
 export interface WalletPageTabsProps {

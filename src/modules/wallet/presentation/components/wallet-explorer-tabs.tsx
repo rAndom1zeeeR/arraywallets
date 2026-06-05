@@ -18,7 +18,7 @@ const TAB_ITEMS: Array<{ id: WalletTabId; label: string }> = [
   { id: "events", label: "History" },
   { id: "swaps", label: "Swaps" },
   { id: "pnl", label: "PnL" },
-  { id: "tokens", label: "Tokens" },
+  { id: "tokens", label: "Jettons" },
 ];
 
 export const WalletExplorerTabs = ({
