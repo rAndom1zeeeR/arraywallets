@@ -30,7 +30,7 @@ function WalletsTable({ wallets }: { wallets: AnalyzedWalletListItem[] }) {
     return (
       <div className={pageStyles.section}>
         <p className="text-sm text-muted-foreground">
-          Пока нет проанализированных кошельков. Вставь адрес выше и нажми «Анализировать».
+          No analyzed wallets yet. Paste an address above and click &quot;Analyze&quot;.
         </p>
       </div>
     );
@@ -39,8 +39,8 @@ function WalletsTable({ wallets }: { wallets: AnalyzedWalletListItem[] }) {
   return (
     <section className={pageStyles.section}>
       <div className="mb-4">
-        <h2 className={pageStyles.sectionTitle}>Проанализированные кошельки</h2>
-        <p className={pageStyles.sectionSubtitle}>{wallets.length} в базе</p>
+        <h2 className={pageStyles.sectionTitle}>Analyzed wallets</h2>
+        <p className={pageStyles.sectionSubtitle}>{wallets.length} in database</p>
       </div>
 
       <ResponsiveDataTable
@@ -50,11 +50,11 @@ function WalletsTable({ wallets }: { wallets: AnalyzedWalletListItem[] }) {
             <table className={dataTableStyles.table}>
           <thead className={dataTableStyles.thead}>
             <tr className={dataTableStyles.headerRow}>
-              <th className={dataTableStyles.headerCell}>Адрес</th>
-              <th className={dataTableStyles.headerCell}>Статус</th>
+              <th className={dataTableStyles.headerCell}>Address</th>
+              <th className={dataTableStyles.headerCell}>Status</th>
               <th className={dataTableStyles.headerCell}>Events</th>
               <th className={dataTableStyles.headerCell}>Actions</th>
-              <th className={`${dataTableStyles.headerCell} hidden md:table-cell`}>Обновлён</th>
+              <th className={`${dataTableStyles.headerCell} hidden md:table-cell`}>Updated</th>
               <th className={`${dataTableStyles.headerCell} ${dataTableStyles.headerCellRight}`}> </th>
             </tr>
           </thead>
@@ -88,7 +88,7 @@ function WalletsTable({ wallets }: { wallets: AnalyzedWalletListItem[] }) {
                     href={getWalletPagePath(wallet.address)}
                     className="text-sm font-medium text-primary hover:underline"
                   >
-                    Открыть
+                    Open
                   </Link>
                 </td>
               </tr>
@@ -106,8 +106,8 @@ export function WalletsListPage({ wallets }: WalletsListPageProps) {
   return (
     <main className={pageStyles.main}>
       <div className="mb-6">
-        <h1 className={pageStyles.pageTitle}>Кошельки</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Список проанализированных TON-кошельков</p>
+        <h1 className={pageStyles.pageTitle}>Wallets</h1>
+        <p className="mt-1 text-sm text-muted-foreground">List of analyzed TON wallets</p>
       </div>
 
       <section className={`${pageStyles.infoCard} mb-6`}>

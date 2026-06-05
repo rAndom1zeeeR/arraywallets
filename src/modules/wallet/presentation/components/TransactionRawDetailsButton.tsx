@@ -84,7 +84,7 @@ export function TransactionRawDetailsButton({ details, className }: TransactionR
             className="fixed inset-0 z-50 flex items-center justify-center p-4 text-left"
             role="presentation"
           >
-          <button type="button" className="absolute inset-0 bg-black/50" aria-label="Закрыть" onClick={handleClose} />
+          <button type="button" className="absolute inset-0 bg-black/50" aria-label="Close" onClick={handleClose} />
 
           <div
             role="dialog"
@@ -95,7 +95,7 @@ export function TransactionRawDetailsButton({ details, className }: TransactionR
             <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
               <div>
                 <h2 id={dialogTitleId} className="text-sm font-semibold text-foreground">
-                  Сырые данные транзакции
+                  Raw transaction data
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   {details.action.type.replace(/_/g, " ")} · event {details.event.tonEventId.slice(0, 8)}…
@@ -111,17 +111,17 @@ export function TransactionRawDetailsButton({ details, className }: TransactionR
                   className="rounded-lg border border-border px-2 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
                 >
                   {copyState === "copied"
-                    ? "Скопировано"
+                    ? "Copied"
                     : copyState === "error"
-                      ? "Ошибка копирования"
-                      : "Копировать JSON"}
+                      ? "Copy failed"
+                      : "Copy JSON"}
                 </button>
                 <button
                   ref={closeButtonRef}
                   type="button"
                   onClick={handleClose}
                   className="rounded-lg px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
-                  aria-label="Закрыть диалог"
+                  aria-label="Close dialog"
                 >
                   ✕
                 </button>

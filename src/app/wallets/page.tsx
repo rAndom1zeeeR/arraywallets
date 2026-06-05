@@ -5,8 +5,8 @@ import { getAnalyzedWallets } from "@/modules/wallet/application/wallets-list.qu
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Кошельки | TON Wallet",
-  description: "Список проанализированных TON-кошельков",
+  title: "Wallets | TON Wallet",
+  description: "List of analyzed TON wallets",
 };
 
 export default async function WalletsPage() {

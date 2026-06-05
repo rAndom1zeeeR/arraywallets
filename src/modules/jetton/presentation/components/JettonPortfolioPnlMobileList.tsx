@@ -70,7 +70,7 @@ export function JettonPortfolioPnlMobileList({ rows }: JettonPortfolioPnlMobileL
   }, []);
 
   if (rows.length === 0) {
-    return <p className="text-sm text-muted-foreground">Нет данных по jetton для PnL.</p>;
+    return <p className="text-sm text-muted-foreground">No jetton data for PnL.</p>;
   }
 
   return (
@@ -140,7 +140,7 @@ export function JettonPortfolioPnlMobileList({ rows }: JettonPortfolioPnlMobileL
                     aria-controls={panelId}
                     className={cn(buttonStyles.ghost, "w-full justify-center")}
                   >
-                    {isExpanded ? "Скрыть сделки" : `Сделки (${row.trades.length})`}
+                    {isExpanded ? "Hide trades" : `Trades (${row.trades.length})`}
                   </button>
                   {isExpanded && (
                     <ul id={panelId} className="mt-2 max-h-80 space-y-2 overflow-y-auto text-sm">

@@ -136,13 +136,13 @@ export function BaseAssetSwapPnlSection({
       <h2 className={pageStyles.sectionTitle}>{title}</h2>
       <p className={pageStyles.sectionSubtitle}>{subtitle}</p>
       <p className="mt-1 text-xs text-muted-foreground">
-        {swapCount} swap{swapCount === 1 ? "" : "s"} · все суммы в {unitLabel}
+        {swapCount} swap{swapCount === 1 ? "" : "s"} · all amounts in {unitLabel}
       </p>
 
       {hasFlow ? (
         <div className={cn(pageStyles.metricCard, "mt-4")}>
           <div className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Поток по свапам ({unitLabel})
+            Swap flow ({unitLabel})
           </div>
           <div className="mt-3 grid grid-cols-1 gap-3 text-sm min-[400px]:grid-cols-3">
             <FlowMetric label="Spent" value={formatFlowRaw(flowPnl.spentRaw)} tone="spent" />
@@ -151,13 +151,13 @@ export function BaseAssetSwapPnlSection({
           </div>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-muted-foreground">Нет движения по этому активу в свапах.</p>
+        <p className="mt-4 text-sm text-muted-foreground">No activity for this asset in swaps.</p>
       )}
 
       {(portfolioLine || hasStandaloneTransfers) && (invested || holdingsValue || currentProfitFormatted) && (
         <div className="mt-4 grid gap-3 sm:grid-cols-3">
-          <PortfolioMetricBlock label={`Вложено (${unitLabel})`} value={invested} />
-          <PortfolioMetricBlock label={`Остаток (spot)`} value={holdingsValue} />
+          <PortfolioMetricBlock label={`Invested (${unitLabel})`} value={invested} />
+          <PortfolioMetricBlock label={`Holdings (spot)`} value={holdingsValue} />
           {portfolioLine ? (
             <div className={pageStyles.metricCard}>
               <div className="text-[10px] font-medium tracking-wide text-muted-foreground uppercase">{`PnL (${unitLabel})`}</div>
@@ -171,12 +171,12 @@ export function BaseAssetSwapPnlSection({
                 />
                 {currency === "ton" && tonPnlWithTransfers && tonPnlWithTransfers.withdrawnTon > 0 && (
                   <p className="mt-1 text-xs tabular-nums text-muted-foreground">
-                    {formatTonAmount(tonPnlWithTransfers.withdrawnTon)} выведено
+                    {formatTonAmount(tonPnlWithTransfers.withdrawnTon)} withdrawn
                   </p>
                 )}
                 {currency === "ton" && tonPnlWithTransfers && tonPnlWithTransfers.depositedTon > 0 && (
                   <p className="mt-0.5 text-xs tabular-nums text-muted-foreground">
-                    {formatTonAmount(tonPnlWithTransfers.depositedTon)} получено
+                    {formatTonAmount(tonPnlWithTransfers.depositedTon)} received
                   </p>
                 )}
               </div>
@@ -188,7 +188,7 @@ export function BaseAssetSwapPnlSection({
                 <PnlAmountStack ton={displayProfitTon} size="lg" />
                 {tonPnlWithTransfers && tonPnlWithTransfers.withdrawnTon > 0 && (
                   <p className="mt-1 text-xs tabular-nums text-muted-foreground">
-                    {formatTonAmount(tonPnlWithTransfers.withdrawnTon)} выведено
+                    {formatTonAmount(tonPnlWithTransfers.withdrawnTon)} withdrawn
                   </p>
                 )}
               </div>
@@ -199,14 +199,14 @@ export function BaseAssetSwapPnlSection({
 
       {hasIncomplete && (
         <p className="mt-3 text-xs text-amber-400">
-          Часть сделок без оценки контрагента в {unitLabel} — cost basis и PnL могут быть неполными.
+          Some trades lack counterparty valuation in {unitLabel} — cost basis and PnL may be incomplete.
         </p>
       )}
 
       {portfolioLine && portfolioLine.trades.length > 0 && (
         <div className="mt-6">
           <h3 className="mb-3 text-sm font-medium text-foreground">
-            Сделки ({portfolioLine.trades.length})
+            Trades ({portfolioLine.trades.length})
           </h3>
           <JettonPortfolioPnlTable rows={[portfolioLine]} />
         </div>

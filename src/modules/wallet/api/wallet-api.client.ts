@@ -1,6 +1,11 @@
 import { apiClient } from "@/shared/infrastructure/api/client";
 import type { WalletSummaryData, WalletEventsPageData } from "@/modules/wallet/api/wallet-api.handlers";
+import {
+  reviveWalletAccountBalances,
+  type SerializedWalletAccountBalances,
+} from "@/modules/wallet/api/wallet-balances.adapter";
 import { reviveWalletSwapStats, type SerializedWalletSwapStats } from "@/modules/wallet/api/wallet-api.adapter";
+import type { WalletAccountBalances } from "@/modules/wallet/domain/wallet-balances.types";
 import type { WalletSwapStatsResult } from "@/modules/swap/application/swap-stats.service";
 import type { WalletHistoryFilters } from "@/modules/wallet/domain/wallet-events-filter.utils";
 import {
@@ -35,6 +40,12 @@ export async function fetchWalletSummary(address: string): Promise<WalletSummary
     stats: data.stats,
     swapStats: reviveWalletSwapStats(data.swapStats),
   };
+}
+
+export function fetchWalletBalances(address: string): Promise<WalletAccountBalances> {
+  return apiClient<SerializedWalletAccountBalances>(`${walletApiBase(address)}/balances`).then(
+    reviveWalletAccountBalances
+  );
 }
 
 export function fetchWalletEvents(

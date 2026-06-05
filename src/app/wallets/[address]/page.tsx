@@ -22,7 +22,7 @@ export default async function WalletPage({ params, searchParams }: WalletPagePro
   } catch {
     return (
       <main className="min-h-screen bg-background px-4 py-6 sm:px-8">
-        <h1 className="mb-4 text-2xl font-bold text-foreground">TON Explorer</h1>
+        <h1 className="mb-4 text-2xl font-bold text-foreground">TON Wallets</h1>
         <div className="rounded-xl border border-loss/30 bg-loss/10 px-4 py-3 text-loss">
           Invalid TON address: {decodedAddress}
         </div>

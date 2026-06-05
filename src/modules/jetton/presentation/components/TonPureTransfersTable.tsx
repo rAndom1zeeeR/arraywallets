@@ -54,7 +54,7 @@ interface TransferSortHeaderProps {
 const DEFAULT_SORT: TransferSortState = { id: "timestampMs", desc: true };
 
 function getDirectionLabel(direction: TonTransferPnlItem["direction"]): string {
-  return direction === "OUTGOING" ? "вывод" : "ввод";
+  return direction === "OUTGOING" ? "withdrawal" : "deposit";
 }
 
 function getPurposeSortKey(item: TonTransferPnlItem): string {
@@ -87,7 +87,7 @@ function compareTransferRows(a: TonTransferTableRow, b: TonTransferTableRow, sor
       result = compareNullableNumber(a.signedAmountTon, b.signedAmountTon);
       break;
     case "purposeSortKey":
-      result = a.purposeSortKey.localeCompare(b.purposeSortKey, "ru");
+      result = a.purposeSortKey.localeCompare(b.purposeSortKey, "en");
       break;
   }
 
@@ -115,7 +115,7 @@ function TransferSortHeader({ label, columnId, sort, onSort, className }: Transf
         isActive && "text-foreground",
         className
       )}
-      aria-label={`Сортировать по ${label}`}
+      aria-label={`Sort by ${label}`}
       aria-sort={isActive ? (sort.desc ? "descending" : "ascending") : "none"}
     >
       <span>{label}</span>
@@ -167,7 +167,7 @@ function TransferDateCell({ row }: { row: TonTransferTableRow }) {
       target="_blank"
       rel="noopener noreferrer"
       className="text-xs tabular-nums text-primary hover:underline"
-      aria-label={`Открыть перевод в Tonviewer · ${formattedDate}`}
+      aria-label={`Open transfer in Tonviewer · ${formattedDate}`}
     >
       <time dateTime={row.timestampIso}>{formattedDate}</time>
     </a>
@@ -263,11 +263,11 @@ export function TonPureTransfersTable({ items }: TonPureTransfersTableProps) {
         <thead className={dataTableStyles.thead}>
           <tr className={dataTableStyles.headerRow}>
             <th className={dataTableStyles.headerCell} scope="col">
-              <TransferSortHeader label="Дата" columnId="timestampMs" sort={sort} onSort={handleSort} />
+              <TransferSortHeader label="Date" columnId="timestampMs" sort={sort} onSort={handleSort} />
             </th>
             <th className={cn(dataTableStyles.headerCell, dataTableStyles.headerCellRight)} scope="col">
               <TransferSortHeader
-                label="Сумма"
+                label="Amount"
                 columnId="signedAmountTon"
                 sort={sort}
                 onSort={handleSort}
@@ -275,7 +275,7 @@ export function TonPureTransfersTable({ items }: TonPureTransfersTableProps) {
               />
             </th>
             <th className={dataTableStyles.headerCell} scope="col">
-              <TransferSortHeader label="Назначение" columnId="purposeSortKey" sort={sort} onSort={handleSort} />
+              <TransferSortHeader label="Purpose" columnId="purposeSortKey" sort={sort} onSort={handleSort} />
             </th>
           </tr>
         </thead>

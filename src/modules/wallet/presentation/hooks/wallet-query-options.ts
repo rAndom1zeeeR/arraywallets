@@ -1,9 +1,15 @@
 import { keepPreviousData, queryOptions } from "@tanstack/react-query";
 import { walletQueryKeys } from "@/modules/wallet/api/wallet-query-keys";
-import { fetchWalletSummary, fetchWalletEvents } from "@/modules/wallet/api/wallet-api.client";
+import {
+  fetchWalletBalances,
+  fetchWalletSummary,
+  fetchWalletEvents,
+} from "@/modules/wallet/api/wallet-api.client";
+import type { WalletAccountBalances } from "@/modules/wallet/domain/wallet-balances.types";
 import type { WalletHistoryFilters } from "@/modules/wallet/domain/wallet-events-filter.utils";
 
 const SUMMARY_STALE_MS = 30_000;
+const BALANCES_STALE_MS = 30_000;
 const EVENTS_STALE_MS = 60_000;
 
 export function walletSummaryQueryOptions(address: string) {
@@ -11,6 +17,14 @@ export function walletSummaryQueryOptions(address: string) {
     queryKey: walletQueryKeys.summary(address),
     queryFn: () => fetchWalletSummary(address),
     staleTime: SUMMARY_STALE_MS,
+  });
+}
+
+export function walletBalancesQueryOptions(address: string) {
+  return queryOptions<WalletAccountBalances>({
+    queryKey: walletQueryKeys.balances(address),
+    queryFn: () => fetchWalletBalances(address),
+    staleTime: BALANCES_STALE_MS,
   });
 }
 

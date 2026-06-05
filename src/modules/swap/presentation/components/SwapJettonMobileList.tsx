@@ -55,7 +55,7 @@ export function SwapJettonMobileList({ rows, relatedByJetton }: SwapJettonMobile
     <div>
       {needsLiveRates && isRatesError && (
         <p className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-          Не удалось обновить цены — показаны данные из кэша БД (если есть).
+          Failed to refresh prices — showing cached DB data (if available).
         </p>
       )}
       <MobileList aria-label="Swap breakdown by jetton">
@@ -124,7 +124,7 @@ export function SwapJettonMobileList({ rows, relatedByJetton }: SwapJettonMobile
                       aria-controls={panelId}
                       className={cn(buttonStyles.ghost, "w-full justify-center")}
                     >
-                      {isExpanded ? "Скрыть свапы" : `Свапы (${relatedSwaps.length})`}
+                      {isExpanded ? "Hide swaps" : `Swaps (${relatedSwaps.length})`}
                     </button>
                     {isExpanded && (
                       <div id={panelId} className="mt-2">

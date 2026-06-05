@@ -116,7 +116,7 @@ export function SwapSummaryPanel({ address, stats }: SwapSummaryPanelProps) {
       {byJetton.length > 0 && (
         <DataTableShell
           title="By jetton"
-          subtitle="Asset + Price · Sold/Bought · TON got/paid · Other = USDT и др."
+          subtitle="Asset + Price · Sold/Bought · TON got/paid · Other = USDT etc."
         >
           <Suspense fallback={<p className="text-sm text-muted-foreground">Loading jetton table…</p>}>
             <SwapJettonTable rows={byJetton} relatedByJetton={relatedByJetton} />
@@ -150,8 +150,8 @@ export function SwapSummaryPanel({ address, stats }: SwapSummaryPanelProps) {
             Unclassified swap-like events ({unclassified.length})
           </h3>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Transfer clusters that look like swaps but could not be inferred automatically. Нажми{" "}
-            <strong className="text-foreground">Sync + repair</strong> в шапке страницы.
+            Transfer clusters that look like swaps but could not be inferred automatically. Click{" "}
+            <strong className="text-foreground">Sync + repair</strong> in the page header.
           </p>
           <ul className="mt-3 max-h-48 space-y-2 overflow-y-auto text-sm">
             {unclassified.map(cluster => (

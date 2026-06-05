@@ -212,7 +212,7 @@ export function JettonPortfolioPnlTable({ rows, pageIndex, pageSize }: JettonPor
               primary={formatLineSpotPrice(row.original)}
               secondary={
                 priceChange24h ??
-                (row.original.currentPriceUnit === "ton" ? "цена в TON" : undefined)
+                (row.original.currentPriceUnit === "ton" ? "price in TON" : undefined)
               }
               tone={diff24hValid ? profitTone(diff24h) : "neutral"}
             />
@@ -232,7 +232,7 @@ export function JettonPortfolioPnlTable({ rows, pageIndex, pageSize }: JettonPor
             primary={formatLineInvested(row.original)}
             secondary={
               row.original.hasIncompleteTonBasis || row.original.hasIncompleteUsdBasis
-                ? "неполные ноги"
+                ? "incomplete legs"
                 : proceedsText
                   ? `proceeds ${proceedsText}`
                   : undefined
@@ -253,10 +253,10 @@ export function JettonPortfolioPnlTable({ rows, pageIndex, pageSize }: JettonPor
             primary={formatLineAvgPrice(row.original)}
             secondary={
               row.original.isTonNative
-                ? "средняя цена TON на свапах"
+                ? "avg TON price on swaps"
                 : row.original.holdingsRaw > 0n
-                  ? "cost basis / остаток"
-                  : "средняя по всем покупкам"
+                  ? "cost basis / remaining"
+                  : "avg across all buys"
             }
           />
         ),
@@ -360,7 +360,7 @@ export function JettonPortfolioPnlTable({ rows, pageIndex, pageSize }: JettonPor
     (row: { original: JettonPortfolioPnlLine; id: string }) => (
       <div id={`${panelIdPrefix}-${row.id}`}>
         <p className="mb-2 text-xs font-medium text-muted-foreground">
-          Сделки {row.original.jetton.symbol} — TON и USD отдельно
+          Trades for {row.original.jetton.symbol} — TON and USD separately
         </p>
         <ul className="max-h-80 space-y-2 overflow-y-auto text-sm">
           {row.original.trades.map(trade => (
@@ -378,7 +378,7 @@ export function JettonPortfolioPnlTable({ rows, pageIndex, pageSize }: JettonPor
   );
 
   if (rows.length === 0) {
-    return <p className="text-sm text-muted-foreground">Нет данных по jetton для PnL.</p>;
+    return <p className="text-sm text-muted-foreground">No jetton data for PnL.</p>;
   }
 
   const visibleRows = table.getRowModel().rows.map(r => r.original);

@@ -3,6 +3,7 @@ import type { WalletHistoryFilters } from "@/modules/wallet/domain/wallet-events
 export const walletQueryKeys = {
   root: (address: string) => ["wallet", address] as const,
   summary: (address: string) => [...walletQueryKeys.root(address), "summary"] as const,
+  balances: (address: string) => [...walletQueryKeys.root(address), "balances"] as const,
   events: (address: string, page: number, filters: WalletHistoryFilters) =>
     [
       ...walletQueryKeys.root(address),

@@ -24,7 +24,7 @@ export function AnalyzeWalletForm() {
 
       const trimmed = value.trim();
       if (!trimmed) {
-        setError("Введите адрес кошелька");
+        setError("Enter a wallet address");
         return;
       }
 
@@ -37,7 +37,7 @@ export function AnalyzeWalletForm() {
           })
         );
       } catch {
-        setError("Некорректный TON-адрес");
+        setError("Invalid TON address");
         setIsSubmitting(false);
       }
     },
@@ -53,7 +53,7 @@ export function AnalyzeWalletForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <label htmlFor="wallet-address" className="block text-sm font-medium text-foreground">
-        Новый кошелёк для анализа
+        New wallet to analyze
       </label>
       <div className="flex flex-col gap-3 sm:flex-row">
         <input
@@ -67,7 +67,7 @@ export function AnalyzeWalletForm() {
             }
           }}
           onKeyDown={handleKeyDown}
-          placeholder="EQ... или UQ..."
+          placeholder="EQ... or UQ..."
           autoComplete="off"
           spellCheck={false}
           aria-invalid={error ? true : undefined}
@@ -85,7 +85,7 @@ export function AnalyzeWalletForm() {
           disabled={isSubmitting || !value.trim()}
           className={cn(buttonStyles.primary, "shrink-0 px-6")}
         >
-          {isSubmitting ? "Открываем…" : "Анализировать"}
+          {isSubmitting ? "Opening…" : "Analyze"}
         </button>
       </div>
       {error && (

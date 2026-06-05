@@ -24,7 +24,7 @@ export function TonviewerTransactionLink({
       target="_blank"
       rel="noopener noreferrer"
       className={className}
-      title="Открыть транзакцию в Tonviewer"
+      title="Open transaction in Tonviewer"
     >
       Tonviewer ↗
     </a>

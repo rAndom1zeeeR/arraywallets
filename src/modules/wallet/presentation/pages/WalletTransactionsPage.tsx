@@ -7,6 +7,7 @@ import { SwapSummaryPanel } from "@/modules/swap/presentation/components/SwapSum
 import { WalletPnlPanel } from "@/modules/jetton/presentation/pages/WalletPnlPanel";
 import { walletEventsQueryOptions, walletSummaryQueryOptions } from "@/modules/wallet/presentation/hooks/wallet-query-options";
 import { WalletExplorerBreadcrumb } from "@/modules/wallet/presentation/components/wallet-explorer-breadcrumb";
+import { WalletAccountBalancesPanel } from "@/modules/wallet/presentation/components/wallet-account-balances-panel";
 import { WalletSidebarPanel } from "@/modules/wallet/presentation/components/wallet-sidebar-panel";
 import { WalletTokenHoldings } from "@/modules/wallet/presentation/components/wallet-token-holdings";
 import { WalletExplorerTabs } from "@/modules/wallet/presentation/components/wallet-explorer-tabs";
@@ -98,6 +99,10 @@ export function WalletTransactionsPage({
               summary={summaryQuery.data}
               isSyncing={Boolean(isSyncing)}
               autoStartSync={autoStartSync}
+            />
+            <WalletAccountBalancesPanel
+              address={address}
+              trackedJettonCount={swapStats.byJetton.length}
             />
           </aside>
 

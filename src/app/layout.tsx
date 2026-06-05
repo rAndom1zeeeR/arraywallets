@@ -35,7 +35,7 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "TON Explorer",
+  title: "TON Wallets",
   description: "TON wallet events, sync, swap analytics, and jetton portfolio PnL",
 };
 

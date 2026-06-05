@@ -14,13 +14,13 @@ export function TonPureTransfersSection({ transfers }: TonPureTransfersSectionPr
   }
 
   const count = transfers.items.length;
-  const countLabel = count === 1 ? "перевод" : count >= 2 && count <= 4 ? "перевода" : "переводов";
+  const countLabel = count === 1 ? "transfer" : "transfers";
 
   return (
     <section className={pageStyles.section}>
-      <h2 className={pageStyles.sectionTitle}>Чистые переводы TON</h2>
+      <h2 className={pageStyles.sectionTitle}>Pure TON transfers</h2>
       <p className={pageStyles.sectionSubtitle}>
-        Ввод и вывод без свапов и контрактов · {count} {countLabel}
+        Deposits and withdrawals without swaps or contracts · {count} {countLabel}
       </p>
 
       <TonPureTransfersTable items={transfers.items} />

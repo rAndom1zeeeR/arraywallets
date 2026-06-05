@@ -71,7 +71,7 @@ export function SyncButton({
 
       if (force) {
         const confirmed = window.confirm(
-          `Удалить из БД только события кошелька ${address} и загрузить историю заново с TonAPI? Другие кошельки не затрагиваются.`
+          `Delete only this wallet's events from the database and reload history from TonAPI? Other wallets are not affected.`
         );
         if (!confirmed) {
           return;
@@ -177,20 +177,20 @@ export function SyncButton({
     <div className={cn("flex flex-col gap-2", embedded ? "w-full items-stretch" : "items-end")}>
       {hasIncompleteEvents && !isSyncing && !embedded && (
         <p className="max-w-sm text-right text-xs text-amber-400">
-          {incompleteEvents} incomplete events — repair запускается автоматически при Sync
+          {incompleteEvents} incomplete events — repair runs automatically on Sync
         </p>
       )}
       {result && !embedded && (
         <div className="text-right text-sm text-muted-foreground">
           {result.cancelled && (
-            <p className="mb-1 font-medium text-amber-400">Синхронизация остановлена</p>
+            <p className="mb-1 font-medium text-amber-400">Sync stopped</p>
           )}
           {result.incrementalOnly && !result.cancelled && (
-            <p className="mb-1 font-medium text-profit">Только новые транзакции</p>
+            <p className="mb-1 font-medium text-profit">New transactions only</p>
           )}
           {result.force && !result.cancelled && (
             <p className="mb-1 font-medium text-orange-400">
-              Полный ресинк: удалено {result.clearedEvents ?? 0} events из БД
+              Full resync: cleared {result.clearedEvents ?? 0} events from DB
             </p>
           )}
           <span>
@@ -221,10 +221,10 @@ export function SyncButton({
             </span>
           )}
           {result.hasMore && !result.cancelled && (
-            <p className="mt-1 text-primary">Есть ещё история — нажми Sync ещё раз для продолжения</p>
+            <p className="mt-1 text-primary">More history available — click Sync again to continue</p>
           )}
           {result.cancelled && result.hasMore && (
-            <p className="mt-1 text-primary">Прогресс сохранён — можно продолжить синхронизацию</p>
+            <p className="mt-1 text-primary">Progress saved — you can continue syncing</p>
           )}
         </div>
       )}
@@ -279,7 +279,7 @@ export function SyncButton({
             type="button"
             onClick={handleForceSync}
             disabled={isSyncing}
-            aria-label="Полный ресинк — очистить БД и загрузить заново"
+            aria-label="Full resync — clear DB and reload"
             className={cn(buttonStyles.secondary, "border-orange-500/30 text-orange-400 hover:bg-orange-500/10")}
           >
             Force resync
@@ -290,10 +290,10 @@ export function SyncButton({
             <button
               type="button"
               onClick={handleCancel}
-              aria-label="Отменить синхронизацию"
+              aria-label="Cancel sync"
               className={cn(buttonStyles.danger, embedded && "w-full")}
             >
-              Отмена
+              Cancel
             </button>
           </div>
         )}

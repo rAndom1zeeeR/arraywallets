@@ -70,7 +70,7 @@ export function SwapPnlSummary({
     <div className="mb-4 rounded-lg border border-sky-200 bg-sky-50/60 p-4 dark:border-sky-900 dark:bg-sky-950/30">
       <h2 className="text-lg font-semibold text-sky-900 dark:text-sky-100">Swap PnL (all deals)</h2>
       <p className="mt-0.5 text-xs text-gray-600 dark:text-gray-400">
-        TON (incl. pTON) и USDT считаются отдельно. Детальный PnL по каждому активу — на вкладке PnL.
+        TON (incl. pTON) and USDT are counted separately. Detailed PnL per asset is on the PnL tab.
       </p>
 
       {portfolioTotals &&
@@ -114,9 +114,9 @@ export function SwapPnlSummary({
 
       {(portfolioTotals?.hasIncompleteTon || portfolioTotals?.hasIncompleteUsd) && (
         <p className="mt-2 text-xs text-amber-700 dark:text-amber-300">
-          {portfolioTotals.hasIncompleteTon && "Часть TON-ног без суммы. "}
+          {portfolioTotals.hasIncompleteTon && "Some TON legs are missing amounts. "}
           {portfolioTotals.hasIncompleteUsd &&
-            "Часть USD-ног без оценки (нет USDT и нет цены jetton) — USD-суммы могут быть занижены."}
+            "Some USD legs lack valuation (no USDT and no jetton price) — USD totals may be understated."}
         </p>
       )}
 
@@ -127,7 +127,7 @@ export function SwapPnlSummary({
         ) : (
           <div className="rounded-lg border border-dashed border-gray-300 bg-white/50 p-3 text-sm text-gray-500 dark:border-gray-600 dark:bg-gray-900/50">
             <div className="text-xs font-semibold tracking-wide uppercase">USDT</div>
-            <p className="mt-2">Нет свапов с jetton USDT / USD₮ в данных.</p>
+            <p className="mt-2">No swaps with jetton USDT / USD₮ in data.</p>
           </div>
         )}
       </div>

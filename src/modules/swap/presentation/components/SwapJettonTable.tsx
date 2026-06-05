@@ -351,7 +351,7 @@ export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps)
     <div>
       {needsLiveRates && isRatesError && (
         <p className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
-          Не удалось обновить цены — показаны данные из кэша БД (если есть).
+          Failed to refresh prices — showing cached DB data (if available).
         </p>
       )}
       <ResponsiveDataTable
