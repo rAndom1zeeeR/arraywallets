@@ -1,7 +1,6 @@
 import "dotenv/config";
-import { Prisma } from "@generated/prisma/client";
-import { prisma } from "../src/shared/api/prisma";
-import { toRawTonAddress } from "../src/shared/lib/ton-address";
+import { prisma } from "../src/shared/infrastructure/api/prisma";
+import { toRawTonAddress } from "../src/shared/lib/ton/ton-address";
 
 const normalizeDistinct = async (
   label: string,
@@ -52,7 +51,7 @@ const mergeChainSyncStates = async (): Promise<void> => {
     const mergedLastLt =
       group
         .map(row => row.lastLt)
-        .filter((lt): lt is Prisma.Decimal => lt != null)
+        .filter((lt): lt is NonNullable<typeof keeper.lastLt> => lt != null)
         .sort((a, b) => (a.gt(b) ? -1 : 1))[0] ?? keeper.lastLt;
 
     const mergedLastTimestamp =
