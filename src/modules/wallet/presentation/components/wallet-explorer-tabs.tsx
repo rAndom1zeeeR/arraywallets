@@ -48,7 +48,7 @@ export const WalletExplorerTabs = ({
               aria-selected={isActive}
               id={`wallet-tab-${tab.id}`}
               aria-controls={`wallet-tabpanel-${tab.id}`}
-              className={cn(explorerStyles.tab, isActive && explorerStyles.tabActive)}
+              className={cn(explorerStyles.tab, "shrink-0", isActive && explorerStyles.tabActive)}
             >
               {tab.label}
               {tab.id === "tokens" && tokenCount !== undefined && tokenCount > 0 && (

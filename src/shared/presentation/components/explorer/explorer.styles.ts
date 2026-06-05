@@ -16,7 +16,10 @@ export const explorerStyles = {
   metricLabel: "text-sm text-muted-foreground",
   metricValue: "text-sm font-semibold text-foreground",
   metricSub: "ml-2 text-xs text-muted-foreground",
-  tabList: "flex gap-0 border-b border-border",
+  tabList:
+    "flex gap-0 overflow-x-auto border-b border-border scrollbar-thin-x [-webkit-overflow-scrolling:touch]",
+  tabPanel:
+    "min-w-0 overflow-x-auto scrollbar-table-x [-webkit-overflow-scrolling:touch]",
   tab: cn(
     "-mb-px border-b-2 px-5 py-2.5 text-sm font-medium transition-colors",
     "border-transparent text-muted-foreground hover:text-foreground"
@@ -25,6 +28,8 @@ export const explorerStyles = {
   filterChip:
     "inline-flex items-center gap-1.5 rounded-lg border border-border bg-explorer-surface px-3 py-1.5 text-sm text-foreground",
   tableShell: "overflow-hidden rounded-xl border border-border bg-explorer-surface",
+  tableScroll: "overflow-x-auto scrollbar-table-x [-webkit-overflow-scrolling:touch]",
+  tableMinWidth: "min-w-[40rem]",
   tableHeader:
     "grid grid-cols-12 border-b border-border px-4 py-2.5 text-xs font-medium tracking-wide text-muted-foreground uppercase",
   tableGroup:

@@ -4,7 +4,7 @@ import type {
   WalletAccountBalances,
   WalletJettonBalanceRow,
 } from "@/modules/wallet/domain/wallet-balances.types";
-import { parseNanoton } from "@/shared/lib/ton/ton-amount.utils";
+import { coerceNanoton } from "@/shared/lib/ton/ton-amount.utils";
 
 type SerializedBigint = string | number | bigint;
 
@@ -21,7 +21,7 @@ export interface SerializedWalletAccountBalances {
 }
 
 function reviveJettonRow(row: SerializedWalletJettonBalanceRow): WalletJettonBalanceRow {
-  const balanceRaw = parseNanoton(row.balanceRaw);
+  const balanceRaw = coerceNanoton(row.balanceRaw);
 
   return {
     jetton: row.jetton,
@@ -33,7 +33,7 @@ function reviveJettonRow(row: SerializedWalletJettonBalanceRow): WalletJettonBal
 export function reviveWalletAccountBalances(
   data: SerializedWalletAccountBalances
 ): WalletAccountBalances {
-  const tonBalanceNanoton = parseNanoton(data.tonBalanceNanoton);
+  const tonBalanceNanoton = coerceNanoton(data.tonBalanceNanoton);
 
   return {
     tonBalanceNanoton,

@@ -120,7 +120,7 @@ export function WalletTransactionsPage({
                 id="wallet-tabpanel-events"
                 role="tabpanel"
                 aria-labelledby="wallet-tab-events"
-                className="space-y-0"
+                className={cn(explorerStyles.tabPanel, "space-y-0")}
               >
                 {hasActiveHistoryFilters(historyFilters) && (
                   <p className="mb-3 text-sm text-muted-foreground">
@@ -181,7 +181,7 @@ export function WalletTransactionsPage({
                 id="wallet-tabpanel-swaps"
                 role="tabpanel"
                 aria-labelledby="wallet-tab-swaps"
-                className={cn(explorerStyles.card, "p-5")}
+                className={cn(explorerStyles.tabPanel, explorerStyles.card, "p-5")}
               >
                 <SwapSummaryPanel address={address} stats={swapStats} />
               </div>
@@ -193,7 +193,7 @@ export function WalletTransactionsPage({
                   id="wallet-tabpanel-pnl"
                   role="tabpanel"
                   aria-labelledby="wallet-tab-pnl"
-                  className={cn(explorerStyles.card, "p-5")}
+                  className={cn(explorerStyles.tabPanel, explorerStyles.card, "p-5")}
                 >
                   <h2 className="text-lg font-semibold text-foreground">Swap PnL</h2>
                   <p className="mt-1 text-sm text-muted-foreground">
@@ -205,7 +205,7 @@ export function WalletTransactionsPage({
                   id="wallet-tabpanel-pnl"
                   role="tabpanel"
                   aria-labelledby="wallet-tab-pnl"
-                  className={cn(explorerStyles.card, "p-5")}
+                  className={cn(explorerStyles.tabPanel, explorerStyles.card, "p-5")}
                 >
                   <WalletPnlPanel address={address} currentPage={currentPage} stats={swapStats} />
                 </div>
@@ -216,6 +216,7 @@ export function WalletTransactionsPage({
                 id="wallet-tabpanel-tokens"
                 role="tabpanel"
                 aria-labelledby="wallet-tab-tokens"
+                className={explorerStyles.tabPanel}
               >
                 <WalletTokenHoldings
                   holdings={swapStats.byJetton}

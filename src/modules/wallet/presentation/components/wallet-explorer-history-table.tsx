@@ -222,39 +222,43 @@ export const WalletExplorerHistoryTable = ({ events }: WalletExplorerHistoryTabl
 
   return (
     <div className={explorerStyles.tableShell}>
-      <div className={explorerStyles.tableHeader} role="row">
-        <div className="col-span-1" role="columnheader">
-          Dir
-        </div>
-        <div className="col-span-3" role="columnheader">
-          Action
-        </div>
-        <div className="col-span-3" role="columnheader">
-          Address
-        </div>
-        <div className="col-span-3" role="columnheader">
-          Amount
-        </div>
-        <div className="col-span-2 text-right" role="columnheader">
-          Time
-        </div>
-      </div>
-      <div role="table" aria-label="Wallet transaction history">
-        {grouped.map(entry => {
-          if (entry.kind === "header") {
-            return (
-              <div key={entry.key} className={explorerStyles.tableGroup} role="row">
-                {entry.label}
-              </div>
-            );
-          }
+      <div className={explorerStyles.tableScroll}>
+        <div className={explorerStyles.tableMinWidth}>
+          <div className={explorerStyles.tableHeader} role="row">
+            <div className="col-span-1" role="columnheader">
+              Dir
+            </div>
+            <div className="col-span-3" role="columnheader">
+              Action
+            </div>
+            <div className="col-span-3" role="columnheader">
+              Address
+            </div>
+            <div className="col-span-3" role="columnheader">
+              Amount
+            </div>
+            <div className="col-span-2 text-right" role="columnheader">
+              Time
+            </div>
+          </div>
+          <div role="table" aria-label="Wallet transaction history">
+            {grouped.map(entry => {
+              if (entry.kind === "header") {
+                return (
+                  <div key={entry.key} className={explorerStyles.tableGroup} role="row">
+                    {entry.label}
+                  </div>
+                );
+              }
 
-          if (entry.kind === "incomplete") {
-            return <IncompleteEventRow key={entry.key} event={entry.event} />;
-          }
+              if (entry.kind === "incomplete") {
+                return <IncompleteEventRow key={entry.key} event={entry.event} />;
+              }
 
-          return <HistoryRow key={entry.key} row={entry.row} />;
-        })}
+              return <HistoryRow key={entry.key} row={entry.row} />;
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );

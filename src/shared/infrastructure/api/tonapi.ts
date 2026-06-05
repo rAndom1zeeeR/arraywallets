@@ -9,6 +9,7 @@ export type {
   AccountEvent,
   AccountEvents,
   Action,
+  JettonBalance,
   JettonPreview,
   TokenRates,
   TonApiError,
