@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
+import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { SwapSummaryPanel } from "@/modules/swap/presentation/components/SwapSummaryPanel";
 import { WalletPnlPanel } from "@/modules/jetton/presentation/pages/WalletPnlPanel";
@@ -16,10 +18,13 @@ import {
   getWalletHistoryStatusFilterLabel,
   hasActiveHistoryFilters,
   WALLET_HISTORY_FILTER_ALL,
-  type WalletHistoryFilters,
 } from "@/modules/wallet/domain/wallet-events-filter.utils";
 import { getWalletHistoryDateFilterLabel } from "@/modules/wallet/domain/wallet-history-date.utils";
-import type { WalletTabId } from "@/shared/lib/wallet-route.utils";
+import {
+  parseWalletHistoryFiltersFromSearchParams,
+  parseWalletTabParam,
+} from "@/shared/lib/wallet-route.utils";
+import { parsePageParam } from "@/modules/wallet/domain/wallet-page.utils";
 import { ChainSyncStatus } from "@/shared/constants/chain-prisma.enums";
 import { explorerStyles } from "@/shared/presentation/components/explorer/explorer.styles";
 import { cn } from "@/shared/lib/utils";
@@ -35,19 +40,21 @@ function WalletTransactionsSkeleton() {
 
 export interface WalletTransactionsPageProps {
   address: string;
-  activeTab: WalletTabId;
-  currentPage: number;
-  historyFilters: WalletHistoryFilters;
   autoStartSync?: boolean;
 }
 
 export function WalletTransactionsPage({
   address,
-  activeTab,
-  currentPage,
-  historyFilters,
   autoStartSync = false,
 }: WalletTransactionsPageProps) {
+  const searchParams = useSearchParams();
+  const currentPage = parsePageParam(searchParams.get("page") ?? undefined);
+  const activeTab = parseWalletTabParam(searchParams.get("tab") ?? undefined);
+  const historyFilters = useMemo(
+    () => parseWalletHistoryFiltersFromSearchParams(searchParams),
+    [searchParams]
+  );
+
   const summaryQuery = useQuery(walletSummaryQueryOptions(address));
   const eventsQuery = useQuery({
     ...walletEventsQueryOptions(address, currentPage, historyFilters),
@@ -55,7 +62,8 @@ export function WalletTransactionsPage({
   });
 
   const isSummaryLoading = summaryQuery.isPending;
-  const isEventsLoading = activeTab === "events" && eventsQuery.isPending;
+  const isEventsLoading =
+    activeTab === "events" && (eventsQuery.isPending || eventsQuery.isPlaceholderData);
   const isLoading = isSummaryLoading || isEventsLoading;
   const isSyncing = summaryQuery.data?.syncState?.status === ChainSyncStatus.SYNCING;
 

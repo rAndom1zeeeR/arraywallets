@@ -7,6 +7,7 @@ import {
   getExplorerDateGroupLabel,
   getWalletActionTitle,
 } from "@/modules/wallet/domain/wallet-event-display.utils";
+import { EventTimeLabel } from "@/modules/wallet/presentation/components/EventTimeLabel";
 import type { WalletEventActionRow } from "@/modules/wallet/domain/wallet-events.types";
 import {
   formatEventActionAmount,
@@ -104,11 +105,6 @@ function buildGroupedRows(events: EventWithActions[]): ExplorerHistoryEntry[] {
 }
 
 function IncompleteEventRow({ event }: { event: EventWithActions }) {
-  const timeLabel = new Date(event.timestamp).toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
   return (
     <div className={explorerStyles.tableRow} role="row">
       <div className="col-span-1" role="cell">
@@ -129,7 +125,7 @@ function IncompleteEventRow({ event }: { event: EventWithActions }) {
         Run sync + repair
       </div>
       <div className="col-span-2 text-right" role="cell">
-        <span className="text-xs text-muted-foreground">{timeLabel}</span>
+        <EventTimeLabel timestamp={event.timestamp} className="text-xs text-muted-foreground" />
       </div>
     </div>
   );
@@ -150,11 +146,6 @@ function HistoryRow({ row }: { row: WalletEventFlatRow }) {
   const detailsText = getActionDetailsText(action);
   const amountPrefix =
     action.direction === "INCOMING" ? "+" : action.direction === "OUTGOING" ? "−" : "";
-  const timeLabel = new Date(event.timestamp).toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
   const displayAmount =
     (action.type === "JETTON_SWAP" || action.type === "INFERRED_SWAP") && tonInText && tonOutText
       ? `${amountPrefix}${amountText ?? ""} → +${tonOutText}`
@@ -211,7 +202,7 @@ function HistoryRow({ row }: { row: WalletEventFlatRow }) {
         )}
       </div>
       <div className="col-span-2 text-right" role="cell">
-        <span className="text-xs text-muted-foreground">{timeLabel}</span>
+        <EventTimeLabel timestamp={event.timestamp} className="text-xs text-muted-foreground" />
       </div>
     </div>
   );

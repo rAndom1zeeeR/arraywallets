@@ -1,4 +1,4 @@
-import { format, isValid, parseISO } from "date-fns";
+import { format, parseISO } from "date-fns";
 import type { Prisma } from "@/shared/infrastructure/api/prisma-client";
 import type { WalletHistoryFilters } from "@/modules/wallet/domain/wallet-events-filter.utils";
 
@@ -9,8 +9,17 @@ export function isWalletHistoryDateParam(value: string): boolean {
     return false;
   }
 
-  const parsed = parseISO(value);
-  return isValid(parsed) && format(parsed, "yyyy-MM-dd") === value;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || !Number.isFinite(day)) {
+    return false;
+  }
+
+  const parsed = new Date(Date.UTC(year, month - 1, day));
+  return (
+    parsed.getUTCFullYear() === year &&
+    parsed.getUTCMonth() === month - 1 &&
+    parsed.getUTCDate() === day
+  );
 }
 
 export function parseWalletHistoryDateParam(value: string | undefined): string | null {

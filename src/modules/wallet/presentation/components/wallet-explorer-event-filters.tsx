@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChevronDown, MoreVertical } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { WalletExplorerDateFilter } from "@/modules/wallet/presentation/components/wallet-explorer-date-filter";
 import {
   DropdownMenu,
@@ -42,7 +42,6 @@ const buildEventsPath = (
 
 export const WalletExplorerEventFilters = ({
   address,
-  currentPage,
   filters,
 }: WalletExplorerEventFiltersProps) => {
   const typeLabel =
@@ -66,7 +65,7 @@ export const WalletExplorerEventFilters = ({
           className={cn(
             explorerStyles.filterChip,
             filters.actionType !== WALLET_HISTORY_FILTER_ALL &&
-              "border-primary/40 bg-explorer-surface-2"
+            "border-primary/40 bg-explorer-surface-2"
           )}
         >
           {typeLabel}
@@ -94,7 +93,7 @@ export const WalletExplorerEventFilters = ({
           className={cn(
             explorerStyles.filterChip,
             filters.actionStatus !== WALLET_HISTORY_FILTER_ALL &&
-              "border-primary/40 bg-explorer-surface-2"
+            "border-primary/40 bg-explorer-surface-2"
           )}
         >
           {statusLabel}
@@ -122,7 +121,7 @@ export const WalletExplorerEventFilters = ({
           className={cn(
             explorerStyles.filterChip,
             filters.direction !== WALLET_HISTORY_FILTER_ALL &&
-              "border-primary/40 bg-explorer-surface-2"
+            "border-primary/40 bg-explorer-surface-2"
           )}
         >
           {directionLabel}
@@ -148,14 +147,6 @@ export const WalletExplorerEventFilters = ({
 
       <div className="ml-auto flex items-center gap-2">
         <span className="text-xs text-muted-foreground">Per page: 100</span>
-        <button
-          type="button"
-          className="flex size-8 items-center justify-center rounded-lg border border-border bg-explorer-surface text-muted-foreground"
-          aria-label="More options"
-          disabled
-        >
-          <MoreVertical className="size-3.5" aria-hidden />
-        </button>
       </div>
     </div>
   );

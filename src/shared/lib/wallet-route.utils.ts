@@ -63,6 +63,23 @@ export function parseWalletEventStatusParam(
   return parseWalletHistoryStatusFilter(typeof value === "string" ? value : undefined);
 }
 
+export interface WalletHistorySearchParamsReader {
+  get(name: string): string | null;
+}
+
+export function parseWalletHistoryFiltersFromSearchParams(
+  searchParams: WalletHistorySearchParamsReader
+): WalletHistoryFilters {
+  return parseWalletHistoryFilters({
+    type: searchParams.get("type") ?? undefined,
+    status: searchParams.get("status") ?? undefined,
+    direction: searchParams.get("direction") ?? undefined,
+    from: searchParams.get("from") ?? undefined,
+    to: searchParams.get("to") ?? undefined,
+    swaps: searchParams.get("swaps") ?? undefined,
+  });
+}
+
 export function parseWalletHistoryFilters(query: {
   type?: string | string[] | undefined;
   status?: string | string[] | undefined;
@@ -139,13 +156,58 @@ export function getWalletPagePath(address: string, options: WalletPageQueryOptio
 export function walletHistoryFiltersToQueryOptions(
   filters: WalletHistoryFilters
 ): Pick<WalletPageQueryOptions, "type" | "status" | "direction" | "from" | "to"> {
-  return {
-    type: filters.actionType,
-    status: filters.actionStatus,
-    direction: filters.direction,
-    from: filters.dateFrom ?? undefined,
-    to: filters.dateTo ?? undefined,
-  };
+  const options: Pick<WalletPageQueryOptions, "type" | "status" | "direction" | "from" | "to"> =
+    {};
+
+  if (filters.actionType !== WALLET_HISTORY_FILTER_ALL) {
+    options.type = filters.actionType;
+  }
+
+  if (filters.actionStatus !== WALLET_HISTORY_FILTER_ALL) {
+    options.status = filters.actionStatus;
+  }
+
+  if (filters.direction !== WALLET_HISTORY_FILTER_ALL) {
+    options.direction = filters.direction;
+  }
+
+  if (filters.dateFrom) {
+    options.from = filters.dateFrom;
+  }
+
+  if (filters.dateTo) {
+    options.to = filters.dateTo;
+  }
+
+  return options;
+}
+
+/** Writes active history filters into an existing {@link URLSearchParams} instance. */
+export function applyWalletHistoryFiltersToSearchParams(
+  params: URLSearchParams,
+  filters: WalletHistoryFilters
+): void {
+  const options = walletHistoryFiltersToQueryOptions(filters);
+
+  if (options.type) {
+    params.set("type", options.type);
+  }
+
+  if (options.status) {
+    params.set("status", options.status);
+  }
+
+  if (options.direction) {
+    params.set("direction", options.direction);
+  }
+
+  if (options.from) {
+    params.set("from", options.from);
+  }
+
+  if (options.to) {
+    params.set("to", options.to);
+  }
 }
 
 export { EMPTY_WALLET_HISTORY_FILTERS };

@@ -26,6 +26,10 @@ import {
   isTailBoundarySatisfied,
   type WalletSyncBoundaries,
 } from "@/modules/wallet/application/wallet-sync-boundaries";
+import {
+  backfillMissingAccountEvents,
+  countMissingTonEvents,
+} from "@/modules/wallet/application/wallet-missing-events.service";
 import { getWalletSwapStats, repairJettonSwapActionFields } from "@/modules/swap/application/swap-stats.service";
 
 const API_PAGE_SIZE = SYNC_BATCH_SIZE;
@@ -47,6 +51,7 @@ interface SyncTotals {
   saved: number;
   skipped: number;
   repaired: number;
+  backfilled: number;
   traceSwapsRepaired: number;
   swapsRepaired: number;
   errors: number;
@@ -60,6 +65,7 @@ function createTotals(): SyncTotals {
     saved: 0,
     skipped: 0,
     repaired: 0,
+    backfilled: 0,
     traceSwapsRepaired: 0,
     swapsRepaired: 0,
     errors: 0,
@@ -253,6 +259,7 @@ function buildSyncResponse(
     saved: totals.saved,
     skipped: totals.skipped,
     repaired: totals.repaired,
+    backfilled: totals.backfilled,
     traceSwapsRepaired: totals.traceSwapsRepaired,
     swapsRepaired: totals.swapsRepaired,
     errors: totals.errors,
@@ -326,8 +333,21 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     const incompleteEventsBeforeSync =
       shouldContinueFromLast && historyComplete ? await countIncompleteEvents(normalizedAddress) : 0;
 
+    const signal = request.signal;
+    const maxPages = fetchAll ? Number.POSITIVE_INFINITY : maxPagesPerRun;
+    const fetchEventsPage = (beforeLt?: bigint) => fetchAccountEventsPage(parsedAddress, signal, beforeLt);
+
+    const missingEventsBeforeSync =
+      shouldContinueFromLast && boundaries !== null
+        ? (await countMissingTonEvents(fetchEventsPage, normalizedAddress, maxPagesPerRun)).missing
+        : 0;
+
     incrementalOnly =
-      shouldContinueFromLast && boundaries !== null && historyComplete && incompleteEventsBeforeSync === 0;
+      shouldContinueFromLast &&
+      boundaries !== null &&
+      historyComplete &&
+      incompleteEventsBeforeSync === 0 &&
+      missingEventsBeforeSync === 0;
 
     await updateSyncState(normalizedAddress, { status: ChainSyncStatus.SYNCING });
 
@@ -351,8 +371,30 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       );
     }
 
-    const maxPages = fetchAll ? Number.POSITIVE_INFINITY : maxPagesPerRun;
-    const signal = request.signal;
+    if (shouldRunRepair || missingEventsBeforeSync > 0) {
+      const backfill = await backfillMissingAccountEvents(
+        fetchEventsPage,
+        normalizedAddress,
+        signal,
+        maxPages
+      );
+      totals.backfilled = backfill.saved;
+      totals.saved += backfill.saved;
+      totals.errors += backfill.errors;
+      totals.eventsFetched += backfill.scanned;
+      totals.actionsSaved += backfill.actionsSaved;
+
+      if (backfill.saved > 0) {
+        incrementalOnly = false;
+        historyComplete = false;
+      }
+
+      if (backfill.missing > 0) {
+        console.log(
+          `Backfilled ${backfill.saved}/${backfill.missing} missing events (scanned ${backfill.scanned} from TonAPI)`
+        );
+      }
+    }
 
     if (boundaries) {
       await syncNewestEvents(
@@ -380,6 +422,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         boundaries
       );
       historyComplete = !hasMore;
+    }
+
+    const missingEventsAfterSync = (await countMissingTonEvents(fetchEventsPage, normalizedAddress, maxPages)).missing;
+    if (missingEventsAfterSync > 0) {
+      historyComplete = false;
+      hasMore = true;
     }
 
     const finalStatus = totals.errors > 0 ? ChainSyncStatus.ERROR : ChainSyncStatus.COMPLETED;

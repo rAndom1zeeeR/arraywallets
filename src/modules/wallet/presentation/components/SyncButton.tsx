@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { walletQueryKeys } from "@/modules/wallet/api/wallet-query-keys";
 import { buttonStyles } from "@/shared/presentation/components/data-table/data-table.styles";
+import { explorerStyles } from "@/shared/presentation/components/explorer/explorer.styles";
 import { cn } from "@/shared/lib/utils";
 
 interface SyncButtonProps {
@@ -239,7 +240,10 @@ export function SyncButton({
           disabled={isSyncing}
           className={cn(
             embedded
-              ? "w-full rounded-none bg-explorer-sync py-3 text-sm font-semibold text-background hover:opacity-90"
+              ? cn(
+                  explorerStyles.syncFooter,
+                  "rounded-none bg-explorer-sync hover:opacity-90"
+                )
               : hasIncompleteEvents && !isSyncing
                 ? buttonStyles.warning
                 : buttonStyles.primary,
@@ -247,7 +251,7 @@ export function SyncButton({
           )}
         >
           {isSyncing ? (
-            <span className="flex items-center gap-2">
+            <span className="inline-flex items-center justify-center gap-2">
               <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" aria-hidden>
                 <circle
                   className="opacity-25"
@@ -282,14 +286,16 @@ export function SyncButton({
           </button>
         ) : null}
         {isSyncing && (
-          <button
-            type="button"
-            onClick={handleCancel}
-            aria-label="Отменить синхронизацию"
-            className={buttonStyles.danger}
-          >
-            Отмена
-          </button>
+          <div className={cn(embedded && "px-5 pb-5")}>
+            <button
+              type="button"
+              onClick={handleCancel}
+              aria-label="Отменить синхронизацию"
+              className={cn(buttonStyles.danger, embedded && "w-full")}
+            >
+              Отмена
+            </button>
+          </div>
         )}
       </div>
     </div>

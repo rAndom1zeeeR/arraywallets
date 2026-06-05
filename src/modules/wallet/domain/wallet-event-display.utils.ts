@@ -1,5 +1,35 @@
 import type { WalletEventActionRow } from "@/modules/wallet/domain/wallet-events.types";
 
+const EVENT_TIME_24H_OPTIONS: Intl.DateTimeFormatOptions = {
+  hour: "2-digit",
+  minute: "2-digit",
+  hour12: false,
+};
+
+const EVENT_DATETIME_FULL_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: false,
+};
+
+function toEventDate(isoTimestamp: string | Date): Date {
+  return isoTimestamp instanceof Date ? isoTimestamp : new Date(isoTimestamp);
+}
+
+/** Short wall-clock label for tables (24-hour, no seconds). */
+export function formatEventTime24h(isoTimestamp: string | Date): string {
+  return toEventDate(isoTimestamp).toLocaleTimeString(undefined, EVENT_TIME_24H_OPTIONS);
+}
+
+/** Full local date + time with seconds — for tooltips and detail views. */
+export function formatEventDateTimeFull(isoTimestamp: string | Date): string {
+  return toEventDate(isoTimestamp).toLocaleString(undefined, EVENT_DATETIME_FULL_OPTIONS);
+}
+
 const ACTION_TYPE_LABELS: Record<string, string> = {
   TON_TRANSFER: "TON transfer",
   JETTON_TRANSFER: "Jetton transfer",
@@ -43,7 +73,7 @@ export function getTransactionDateGroupLabel(isoTimestamp: string | Date, now: D
   startOfYesterday.setDate(startOfYesterday.getDate() - 1);
   const eventDay = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-  const timePart = date.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" });
+  const timePart = formatEventTime24h(date);
 
   if (eventDay.getTime() === startOfToday.getTime()) {
     return `Today at ${timePart}`;

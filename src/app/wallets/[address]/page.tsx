@@ -1,13 +1,10 @@
 import { Suspense } from "react";
 import { Address } from "@ton/core";
 import { WalletTransactionsPage } from "@/modules/wallet/presentation/pages/WalletTransactionsPage";
-import { parsePageParam } from "@/modules/wallet/domain/wallet-page.utils";
 import { normalizeWalletAddress } from "@/shared/lib/ton/ton-address";
-import {
-  decodeWalletAddressParam,
-  parseWalletHistoryFilters,
-  parseWalletTabParam,
-} from "@/shared/lib/wallet-route.utils";
+import { decodeWalletAddressParam } from "@/shared/lib/wallet-route.utils";
+
+export const dynamic = "force-dynamic";
 
 interface WalletPageProps {
   params: Promise<{ address: string }>;
@@ -34,9 +31,6 @@ export default async function WalletPage({ params, searchParams }: WalletPagePro
   }
 
   const addressString = normalizeWalletAddress(address.toString());
-  const currentPage = parsePageParam(query.page);
-  const activeTab = parseWalletTabParam(query.tab);
-  const historyFilters = parseWalletHistoryFilters(query);
   const autoStartSync = query.sync === "1";
 
   return (
@@ -47,13 +41,7 @@ export default async function WalletPage({ params, searchParams }: WalletPagePro
         </main>
       }
     >
-      <WalletTransactionsPage
-        address={addressString}
-        activeTab={activeTab}
-        currentPage={currentPage}
-        historyFilters={historyFilters}
-        autoStartSync={autoStartSync}
-      />
+      <WalletTransactionsPage address={addressString} autoStartSync={autoStartSync} />
     </Suspense>
   );
 }

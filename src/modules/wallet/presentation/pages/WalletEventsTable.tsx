@@ -10,6 +10,7 @@ import {
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
+import { EventTimeLabel } from "@/modules/wallet/presentation/components/EventTimeLabel";
 import { EventsPagination } from "@/modules/wallet/presentation/components/EventsPagination";
 import { resolveDisplayDetails } from "@/modules/wallet/domain/display-details.utils";
 import { TonviewerAccountLink } from "@/modules/wallet/presentation/components/TonviewerAccountLink";
@@ -162,7 +163,7 @@ export function WalletEventsTable({
           return (
             <>
               <div className="font-medium text-foreground">{new Date(event.timestamp).toLocaleDateString()}</div>
-              <div className="text-xs text-muted-foreground">{new Date(event.timestamp).toLocaleTimeString()}</div>
+              <EventTimeLabel timestamp={event.timestamp} className="text-xs text-muted-foreground" />
               <div className="mt-1">
                 <TonviewerTransactionLink tonEventId={event.tonEventId} rawData={event.rawData} />
               </div>

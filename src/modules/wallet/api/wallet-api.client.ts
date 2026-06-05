@@ -4,8 +4,8 @@ import { reviveWalletSwapStats, type SerializedWalletSwapStats } from "@/modules
 import type { WalletSwapStatsResult } from "@/modules/swap/application/swap-stats.service";
 import type { WalletHistoryFilters } from "@/modules/wallet/domain/wallet-events-filter.utils";
 import {
+  applyWalletHistoryFiltersToSearchParams,
   encodeWalletAddressParam,
-  walletHistoryFiltersToQueryOptions,
 } from "@/shared/lib/wallet-route.utils";
 
 interface WalletSummaryResponse {
@@ -44,23 +44,7 @@ export function fetchWalletEvents(
 ): Promise<WalletEventsPageData> {
   const params = new URLSearchParams();
   params.set("page", String(page));
-
-  const queryOptions = walletHistoryFiltersToQueryOptions(filters);
-  if (queryOptions.type) {
-    params.set("type", queryOptions.type);
-  }
-  if (queryOptions.status) {
-    params.set("status", queryOptions.status);
-  }
-  if (queryOptions.direction) {
-    params.set("direction", queryOptions.direction);
-  }
-  if (queryOptions.from) {
-    params.set("from", queryOptions.from);
-  }
-  if (queryOptions.to) {
-    params.set("to", queryOptions.to);
-  }
+  applyWalletHistoryFiltersToSearchParams(params, filters);
 
   return apiClient<WalletEventsPageData>(`${walletApiBase(address)}/events?${params.toString()}`);
 }
