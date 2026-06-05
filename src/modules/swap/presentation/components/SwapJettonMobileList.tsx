@@ -16,14 +16,7 @@ import {
 import type { JettonRelatedSwapItem } from "@/modules/swap/domain/swap-transaction-list.utils";
 import type { JettonSwapBreakdownFormatted } from "@/modules/swap/domain/swap-stats.utils";
 import { RelatedSwapsPanel } from "@/modules/swap/presentation/components/SwapJettonTable";
-import {
-  MobileList,
-  MobileListBody,
-  MobileListIcon,
-  MobileListItem,
-} from "@/shared/presentation/components/mobile-list/mobile-list";
-import { mobileListStyles } from "@/shared/presentation/components/mobile-list/mobile-list.styles";
-import { buttonStyles } from "@/shared/presentation/components/data-table/data-table.styles";
+import { explorerStyles } from "@/shared/presentation/components/explorer/explorer.styles";
 import { cn } from "@/shared/lib/utils";
 
 interface SwapJettonMobileListProps {
@@ -54,93 +47,104 @@ export function SwapJettonMobileList({ rows, relatedByJetton }: SwapJettonMobile
   return (
     <div>
       {needsLiveRates && isRatesError && (
-        <p className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+        <p className="mx-4 mb-3 rounded-lg border border-chart-5/30 bg-chart-5/10 px-3 py-2 text-xs text-chart-5">
           Failed to refresh prices — showing cached DB data (if available).
         </p>
       )}
-      <MobileList aria-label="Swap breakdown by jetton">
+      <div role="list" aria-label="Swap breakdown by jetton">
         {rows.map(row => {
           const rowId = row.jetton.address;
           const relatedSwaps = relatedByJetton[row.jetton.address.toLowerCase()] ?? [];
           const isExpanded = expandedRowIds[rowId] ?? false;
           const panelId = `${panelIdPrefix}-${rowId}`;
-          const rate =
-            row.jetton.price ?? getJettonRateQuote(rates, row.jetton.address);
+          const rate = row.jetton.price ?? getJettonRateQuote(rates, row.jetton.address);
 
           return (
-            <MobileListItem key={rowId}>
-              <MobileListIcon>
-                <Coins className="size-4" aria-hidden />
-              </MobileListIcon>
-              <MobileListBody>
-                <div className="flex items-start justify-between gap-2">
-                  <JettonAssetCell jetton={row.jetton} />
-                  <div className="text-right text-xs">
-                    <JettonPriceCell
-                      rate={rate}
-                      isLoading={
-                        needsLiveRates &&
-                        !hasDisplayableJettonPrice(row.jetton.price) &&
-                        isRatesLoading
-                      }
-                    />
-                  </div>
+            <div
+              key={rowId}
+              className="border-b border-border bg-background px-4 py-3 last:border-b-0"
+            >
+              <div className="flex items-start gap-3">
+                <div
+                  className={cn(explorerStyles.directionIcon, "mt-0.5 size-9")}
+                  aria-hidden
+                >
+                  <Coins className="size-4 text-muted-foreground" />
                 </div>
-                <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Sold</span>
-                    <div className="font-medium tabular-nums text-loss">
-                      {formatMoneyJetton(row.spentRaw, row.jetton.decimals, row.jetton.symbol)}
+
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-start justify-between gap-2">
+                    <JettonAssetCell jetton={row.jetton} />
+                    <div className="shrink-0 text-right text-xs">
+                      <JettonPriceCell
+                        rate={rate}
+                        isLoading={
+                          needsLiveRates &&
+                          !hasDisplayableJettonPrice(row.jetton.price) &&
+                          isRatesLoading
+                        }
+                      />
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="text-muted-foreground">Bought</span>
-                    <div className="font-medium tabular-nums text-profit">
-                      {formatMoneyJetton(row.receivedRaw, row.jetton.decimals, row.jetton.symbol)}
-                    </div>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">TON got</span>
-                    <div className="font-medium tabular-nums text-profit">
-                      {formatMoneyTonFromNanoton(row.tonReceivedNanoton)}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-muted-foreground">TON paid</span>
-                    <div className="font-medium tabular-nums text-loss">
-                      {formatMoneyTonFromNanoton(row.tonPaidNanoton)}
-                    </div>
-                  </div>
-                </div>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  sell {row.legsIn} · buy {row.legsOut}
-                </p>
-                {relatedSwaps.length > 0 && (
-                  <div className="mt-2">
-                    <button
-                      type="button"
-                      onClick={() => toggleExpandedRow(rowId)}
-                      aria-expanded={isExpanded}
-                      aria-controls={panelId}
-                      className={cn(buttonStyles.ghost, "w-full justify-center")}
-                    >
-                      {isExpanded ? "Hide swaps" : `Swaps (${relatedSwaps.length})`}
-                    </button>
-                    {isExpanded && (
-                      <div id={panelId} className="mt-2">
-                        <RelatedSwapsPanel
-                          jettonSymbol={row.jetton.symbol}
-                          relatedSwaps={relatedSwaps}
-                        />
+
+                  <div className="mt-2 grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Sold</span>
+                      <div className="font-semibold tabular-nums text-loss">
+                        {formatMoneyJetton(row.spentRaw, row.jetton.decimals, row.jetton.symbol)}
                       </div>
-                    )}
+                    </div>
+                    <div className="text-right">
+                      <span className="text-muted-foreground">Bought</span>
+                      <div className="font-semibold tabular-nums text-profit">
+                        {formatMoneyJetton(row.receivedRaw, row.jetton.decimals, row.jetton.symbol)}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">TON got</span>
+                      <div className="font-semibold tabular-nums text-profit">
+                        {formatMoneyTonFromNanoton(row.tonReceivedNanoton)}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-muted-foreground">TON paid</span>
+                      <div className="font-semibold tabular-nums text-loss">
+                        {formatMoneyTonFromNanoton(row.tonPaidNanoton)}
+                      </div>
+                    </div>
                   </div>
-                )}
-              </MobileListBody>
-            </MobileListItem>
+
+                  <p className="mt-1.5 text-xs text-muted-foreground">
+                    sell {row.legsIn} · buy {row.legsOut}
+                  </p>
+
+                  {relatedSwaps.length > 0 && (
+                    <div className="mt-2">
+                      <button
+                        type="button"
+                        onClick={() => toggleExpandedRow(rowId)}
+                        aria-expanded={isExpanded}
+                        aria-controls={panelId}
+                        className="w-full rounded-lg border border-border bg-explorer-surface-2 px-3 py-1.5 text-xs font-medium text-primary"
+                      >
+                        {isExpanded ? "Hide swaps" : `Swaps (${relatedSwaps.length})`}
+                      </button>
+                      {isExpanded && (
+                        <div id={panelId} className="mt-2">
+                          <RelatedSwapsPanel
+                            jettonSymbol={row.jetton.symbol}
+                            relatedSwaps={relatedSwaps}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           );
         })}
-      </MobileList>
+      </div>
     </div>
   );
 }

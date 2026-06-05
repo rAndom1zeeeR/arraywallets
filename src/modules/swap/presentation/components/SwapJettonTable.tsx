@@ -75,7 +75,7 @@ export function RelatedSwapsPanel({ jettonSymbol, relatedSwaps }: RelatedSwapsPa
           return (
             <li
               key={swap.id}
-              className="rounded-lg border border-border bg-secondary/40 px-3 py-2.5"
+              className="rounded-lg border border-border bg-explorer-surface-2/60 px-3 py-2.5"
             >
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <time className="text-xs text-muted-foreground" dateTime={swap.timestampIso}>
@@ -350,7 +350,7 @@ export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps)
   return (
     <div>
       {needsLiveRates && isRatesError && (
-        <p className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/10 px-3 py-2 text-xs text-amber-400">
+        <p className="mb-3 rounded-lg border border-chart-5/30 bg-chart-5/10 px-3 py-2 text-xs text-chart-5 lg:mx-0">
           Failed to refresh prices — showing cached DB data (if available).
         </p>
       )}

@@ -3,7 +3,9 @@
 import { useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { SwapSummaryPanel } from "@/modules/swap/presentation/components/SwapSummaryPanel";
+import { SwapJettonBreakdownPanel } from "@/modules/swap/presentation/components/SwapJettonBreakdownPanel";
+import { SwapRecentSwapsPanel } from "@/modules/swap/presentation/components/swap-recent-swaps-panel";
+import { SwapStatsSidebarPanel } from "@/modules/swap/presentation/components/swap-stats-sidebar-panel";
 import { WalletPnlPanel } from "@/modules/jetton/presentation/pages/WalletPnlPanel";
 import { walletEventsQueryOptions, walletSummaryQueryOptions } from "@/modules/wallet/presentation/hooks/wallet-query-options";
 import { WalletExplorerBreadcrumb } from "@/modules/wallet/presentation/components/wallet-explorer-breadcrumb";
@@ -104,6 +106,14 @@ export function WalletTransactionsPage({
             autoStartSync={autoStartSync}
           />
 
+          {activeTab === "swaps" && (
+            <SwapStatsSidebarPanel
+              address={address}
+              stats={swapStats}
+              className="mx-4 lg:hidden"
+            />
+          )}
+
           <aside className={cn(explorerStyles.sidebar, "hidden lg:flex")}>
             <WalletSidebarPanel
               address={address}
@@ -115,6 +125,9 @@ export function WalletTransactionsPage({
               address={address}
               trackedJettonCount={swapStats.byJetton.length}
             />
+            {activeTab === "swaps" && (
+              <SwapStatsSidebarPanel address={address} stats={swapStats} />
+            )}
           </aside>
 
           <div className={explorerStyles.main}>
@@ -201,9 +214,10 @@ export function WalletTransactionsPage({
                 id="wallet-tabpanel-swaps"
                 role="tabpanel"
                 aria-labelledby="wallet-tab-swaps"
-                className={cn(explorerStyles.tabPanel, explorerStyles.card, "mx-4 p-5 lg:mx-0")}
+                className={cn(explorerStyles.tabPanel, "mt-4 space-y-4 lg:mt-4")}
               >
-                <SwapSummaryPanel address={address} stats={swapStats} />
+                <SwapJettonBreakdownPanel stats={swapStats} className="mx-4 lg:mx-0" />
+                <SwapRecentSwapsPanel swaps={swapStats.swaps} className="mx-4 lg:mx-0" />
               </div>
             )}
 
