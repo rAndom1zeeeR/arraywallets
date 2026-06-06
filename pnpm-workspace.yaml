@@ -3,6 +3,8 @@ packages:
   - ../tonapi-js/packages/*
 overrides:
   "@ton/core": ^0.63.1
+  "@wagmi/core": 3.4.2
+  "@wagmi/connectors": 8.0.0
 allowBuilds:
   "@prisma/engines": true
   prisma: true
@@ -11,6 +13,7 @@ allowBuilds:
   msw: true
   sharp: true
   unrs-resolver: true
+  "@reown/appkit": true
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver

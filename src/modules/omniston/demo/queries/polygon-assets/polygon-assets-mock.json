@@ -1,0 +1,20 @@
+[
+  {
+    "address": "native",
+    "metadata": {
+      "decimals": 18,
+      "symbol": "POL",
+      "displayName": "Polygon",
+      "imageUrl": "https://assets.coingecko.com/asset_platforms/images/15/small/polygon_pos.png"
+    }
+  },
+  {
+    "address": "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB",
+    "metadata": {
+      "decimals": 6,
+      "symbol": "pUSD",
+      "displayName": "Polymarket USD",
+      "imageUrl": "https://assets.coingecko.com/coins/images/16762/standard/PUSD-purple-200.png?1696516335"
+    }
+  }
+]

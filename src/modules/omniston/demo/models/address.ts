@@ -1,0 +1,86 @@
+import type { AssetId, ChainAddress } from "@ston-fi/omniston-sdk";
+import z from "zod";
+
+import { trimStringWithEllipsis } from "@/modules/omniston/demo/lib/utils";
+import { isTonAddress } from "@/modules/omniston/demo/lib/ton/address";
+import { isErc20Address } from "@/modules/omniston/demo/lib/evm/address";
+
+import { Chain, EVM_CHAINS } from "./chain";
+
+export const addressSchema = z.object({
+  chain: z.discriminatedUnion("$case", [
+    z.object({
+      $case: z.literal(Chain.TON),
+      value: z.string().nonempty(),
+    }),
+    z.object({
+      $case: z.literal(EVM_CHAINS),
+      value: z.string().nonempty(),
+    }),
+  ]),
+}) satisfies z.ZodType<ChainAddress>;
+
+export function addressFromAssetId(assetId: AssetId): ChainAddress | null {
+  const chainCase = assetId.chain.$case;
+
+  switch (chainCase) {
+    case Chain.TON: {
+      switch (assetId.chain.value.kind.$case) {
+        case "jetton": {
+          return {
+            chain: {
+              $case: Chain.TON,
+              value: assetId.chain.value.kind.value,
+            },
+          };
+        }
+        default: {
+          return null;
+        }
+      }
+    }
+    case Chain.BASE:
+    case Chain.POLYGON:
+    case Chain.ETHEREUM:
+    case Chain.BNB: {
+      switch (assetId.chain.value.kind.$case) {
+        case "erc20": {
+          return {
+            chain: {
+              $case: chainCase,
+              value: assetId.chain.value.kind.value,
+            },
+          };
+        }
+        default: {
+          return null;
+        }
+      }
+    }
+    default: {
+      throw new Error(`Unexpected chain: ${chainCase}`);
+    }
+  }
+}
+
+export function isValidAddress(chain: Chain, src: string) {
+  switch (chain) {
+    case Chain.TON: {
+      return isTonAddress(src);
+    }
+    case Chain.BASE:
+    case Chain.POLYGON:
+    case Chain.ETHEREUM:
+    case Chain.BNB: {
+      return isErc20Address(src);
+    }
+    default: {
+      chain satisfies never;
+      throw new Error(`Unexpected chain: ${chain}`);
+    }
+  }
+}
+
+export function truncateAddress(address: ChainAddress): string {
+  return trimStringWithEllipsis(address.chain.value, 6, 4);
+}

@@ -1,0 +1,44 @@
+import { mainnet } from "@reown/appkit/networks";
+
+import type { Asset } from "@/modules/omniston/demo/models/asset";
+import { Chain } from "@/modules/omniston/demo/models/chain";
+import {
+  createEvmAssetQueryFactory,
+  resolveEvmAssetsMock,
+  type EvmAssetMock,
+} from "@/modules/omniston/demo/queries/evm-asset-factory";
+import { memoizePromise } from "@/modules/omniston/demo/lib/utils/promise";
+
+import ETHEREUM_ASSETS_MOCK from "./ethereum-assets-mock.json";
+
+const ETHEREUM_ASSETS_QUERY_KEY = "ethereum-assets";
+const ETHEREUM_ASSETS_SEARCH_QUERY_KEY = "ethereum-assets-search";
+
+export const ethereumAssetQueryFactory = createEvmAssetQueryFactory({
+  chain: Chain.ETHEREUM,
+  wagmiChainId: mainnet.id,
+  queryKey: ETHEREUM_ASSETS_QUERY_KEY,
+  searchQueryKey: ETHEREUM_ASSETS_SEARCH_QUERY_KEY,
+  getAssets: memoizePromise(async () =>
+    (await resolveEvmAssetsMock(Chain.ETHEREUM, ETHEREUM_ASSETS_MOCK)).map(transformToAsset),
+  ),
+});
+
+function transformToAsset(ethereumAsset: EvmAssetMock): Asset {
+  return {
+    id: {
+      chain: {
+        $case: Chain.ETHEREUM,
+        value: {
+          kind:
+            ethereumAsset.address === "native"
+              ? { $case: "native", value: {} }
+              : { $case: "erc20", value: ethereumAsset.address },
+        },
+      },
+    },
+    metadata: ethereumAsset.metadata,
+    balance: ethereumAsset.balance,
+    extra: {},
+  };
+}

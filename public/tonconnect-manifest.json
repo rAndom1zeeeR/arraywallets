@@ -1,7 +1,7 @@
 {
-  "url": "https://arrayton.com",
-  "name": "ArrayTON App",
-  "iconUrl": "https://arrayton.com/logo.png",
-  "termsOfUseUrl": "https://arrayton.com/terms-of-use",
-  "privacyPolicyUrl": "https://arrayton.com/privacy-policy"
+  "url": "https://ton-wallets.vercel.app",
+  "name": "Wallets App ArrayTON",
+  "iconUrl": "https://ton-wallets.vercel.app/logo.png",
+  "termsOfUseUrl": "https://ton-wallets.vercel.app/terms-of-use",
+  "privacyPolicyUrl": "https://ton-wallets.vercel.app/privacy-policy"
 }

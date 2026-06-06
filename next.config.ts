@@ -7,7 +7,16 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     "/*": ["./generated/prisma/**/*"],
   },
-  transpilePackages: ["@random1ze/ton-api-client"],
+  transpilePackages: [
+    "@random1ze/ton-api-client",
+    "@ston-fi/omniston-sdk",
+    "@ston-fi/omniston-sdk-react",
+    "@ston-fi/api",
+    "@reown/appkit",
+    "@reown/appkit-adapter-wagmi",
+    "wagmi",
+    "viem",
+  ],
   turbopack: {},
   webpack: config => {
     config.resolve.alias = {

@@ -21,6 +21,7 @@
 /build
 
 # misc
+.tmp-omniston-sdk/
 .DS_Store
 *.pem
 

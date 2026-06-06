@@ -14,6 +14,7 @@ interface AuthProviderProps {
  * NextAuth session + TON Connect UI (same layout as ArrayTonV16 auth-provider).
  */
 export const AuthProvider = ({ children }: AuthProviderProps) => {
+  console.log("TON_CONNECT_MANIFEST_URL", TON_CONNECT_MANIFEST_URL);
   return (
     <SessionProvider refetchOnWindowFocus={false}>
       <TonConnectUIProvider manifestUrl={TON_CONNECT_MANIFEST_URL} analytics={{ mode: "off" }}>

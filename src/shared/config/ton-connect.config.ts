@@ -3,7 +3,7 @@
  * Dev uses production HTTPS manifest so wallets accept it; proof domain must be allowed in auth.config.
  */
 
-const DEFAULT_APP_URL = "https://wallets.arrayton.com";
+const DEFAULT_APP_URL = "https://ton-wallets.vercel.app";
 
 const TON_CONNECT_PROD_MANIFEST_URL = `${DEFAULT_APP_URL}/tonconnect-manifest.json`;
 
