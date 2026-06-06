@@ -3,10 +3,11 @@
 import { useTonConnectUI } from "@tonconnect/ui-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { CircleUser, LogOut, UserRound, Wallet } from "lucide-react";
 import { useCallback, useState } from "react";
-import { useTonWalletSignIn } from "@/modules/auth/presentation/hooks/use-ton-wallet-sign-in";
+import { UserAuthMenuEvmItems } from "@/modules/auth/presentation/components/UserAuthMenuEvmItems";
+import { useTonWalletConnect } from "@/modules/auth/presentation/hooks/use-ton-wallet-connect";
+import { useTonWalletSignInContext } from "@/modules/auth/presentation/providers/TonWalletSignInProvider";
 import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
 import { Button } from "@/shared/components/ui/button";
 import {
@@ -82,11 +83,14 @@ const CopyableWalletAddress = ({ address }: CopyableWalletAddressProps) => {
 };
 
 export const UserAuthMenu = () => {
-  const pathname = usePathname();
   const { data: session, status } = useSession();
   const [tonConnectUI] = useTonConnectUI();
-  const callbackUrl = pathname && pathname !== "/sign-in" ? pathname : "/";
-  const { isConnecting, openTonConnectModal } = useTonWalletSignIn({ callbackUrl });
+  const { isConnecting, openTonConnectModal } = useTonWalletSignInContext();
+  const {
+    address: tonWalletAddress,
+    isConnected: isTonWalletConnected,
+    disconnect: disconnectTonWallet,
+  } = useTonWalletConnect();
 
   const handleSignOut = async () => {
     if (tonConnectUI?.connected) {
@@ -97,10 +101,12 @@ export const UserAuthMenu = () => {
   };
 
   const isAuthenticated = Boolean(session?.user);
-  const walletAddress = session?.user?.walletAddress;
+  const walletAddress = session?.user?.walletAddress ?? tonWalletAddress;
   const displayName = session?.user
     ? getSessionDisplayName(session.user.name, session.user.email)
-    : "Account";
+    : tonWalletAddress
+      ? formatWalletShort(tonWalletAddress)
+      : "Account";
   const roleLabel =
     session?.user?.role === "ADMIN" ? "Admin" : session?.user ? "User" : "Guest";
 
@@ -145,6 +151,7 @@ export const UserAuthMenu = () => {
                 </Link>
               </DropdownMenuItem>
             ) : null}
+            <UserAuthMenuEvmItems showSeparatorBefore />
             <DropdownMenuSeparator />
             <DropdownMenuItem
               variant="destructive"
@@ -157,16 +164,33 @@ export const UserAuthMenu = () => {
             </DropdownMenuItem>
           </>
         ) : (
-          <DropdownMenuItem
-            disabled={isConnecting}
-            onSelect={event => {
-              event.preventDefault();
-              void openTonConnectModal();
-            }}
-          >
-            <Wallet aria-hidden />
-            {isConnecting ? "Connecting…" : "Sign in with TON Connect"}
-          </DropdownMenuItem>
+          <>
+            <DropdownMenuItem
+              disabled={isConnecting}
+              onSelect={event => {
+                event.preventDefault();
+                void openTonConnectModal();
+              }}
+            >
+              <Wallet aria-hidden />
+              {isConnecting
+                ? "Connecting…"
+                : isTonWalletConnected
+                  ? "Complete sign in"
+                  : "Connect TON wallet"}
+            </DropdownMenuItem>
+            {isTonWalletConnected ? (
+              <DropdownMenuItem
+                onSelect={event => {
+                  event.preventDefault();
+                  void disconnectTonWallet();
+                }}
+              >
+                Disconnect TON wallet
+              </DropdownMenuItem>
+            ) : null}
+            <UserAuthMenuEvmItems />
+          </>
         )}
       </DropdownMenuContent>
     </DropdownMenu>

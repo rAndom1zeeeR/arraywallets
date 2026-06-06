@@ -83,9 +83,13 @@ export const ActiveOrderList = ({ className }: { className?: string }) => {
 };
 
 function ActiveOrderListItem({ order }: { order: ActiveOrder }) {
-  const { inputAsset, inputNativeAsset, outputAsset, outputNativeAsset } = useQuoteAssets(
-    order.quote,
-  );
+  const quoteAssets = useQuoteAssets(order.quote);
+
+  if (!quoteAssets) {
+    return null;
+  }
+
+  const { inputAsset, outputAsset } = quoteAssets;
 
   return (
     <li className="flex flex-col gap-2 rounded-md border p-4">

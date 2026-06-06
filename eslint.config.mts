@@ -26,6 +26,7 @@ export default defineConfig([
     rules: {
       eqeqeq: "off",
       "no-unused-vars": "warn",
+      "@typescript-eslint/no-unused-vars": "warn",
       "no-undef": "off",
       "prefer-const": ["error", { ignoreReadBeforeAssign: true }],
       "react/prop-types": "off",

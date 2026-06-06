@@ -14,7 +14,13 @@ export function QuotePresenter({
 }: React.ComponentProps<typeof DescriptionList> & {
   quote: Quote;
 }) {
-  const { inputAsset, inputNativeAsset, outputAsset, outputNativeAsset } = useQuoteAssets(quote);
+  const quoteAssets = useQuoteAssets(quote);
+
+  if (!quoteAssets) {
+    return null;
+  }
+
+  const { inputAsset, inputNativeAsset, outputAsset, outputNativeAsset } = quoteAssets;
 
   const {
     rfqId,

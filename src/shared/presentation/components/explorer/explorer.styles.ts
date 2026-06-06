@@ -41,7 +41,7 @@ export const explorerStyles = {
 } as const;
 
 export const explorerHeaderStyles = {
-  root: "flex flex-wrap items-center justify-between gap-3 border-b border-border bg-explorer-surface px-4 py-3 sm:px-8",
+  root: "flex items-center justify-between gap-3 border-b border-border bg-explorer-surface px-4 py-3 sm:px-8",
   brand: "text-base font-semibold text-foreground",
   nav: "flex items-center gap-1 overflow-x-auto scrollbar-thin-x",
   navLink: "shrink-0 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",

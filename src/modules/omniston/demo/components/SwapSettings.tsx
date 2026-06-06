@@ -22,6 +22,8 @@ import {
   MAX_SLIPPAGE_TOLERANCE_PERCENT,
   useSwapSettings,
 } from "@/modules/omniston/demo/providers/swap-settings";
+import { OmnistonMode } from "@/modules/omniston/presentation/omniston-mode.types";
+import { useOmnistonMode } from "@/modules/omniston/presentation/providers/OmnistonModeProvider";
 
 export function SwapSettings({
   trigger = (
@@ -32,20 +34,27 @@ export function SwapSettings({
 }: React.ComponentProps<"div"> & {
   trigger?: React.ReactNode;
 }) {
+  const { mode } = useOmnistonMode();
+  const isTransferMode = mode === OmnistonMode.TRANSFER;
+
   return (
     <Dialog>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Swap Settings</DialogTitle>
+          <DialogTitle>{isTransferMode ? "Transfer Settings" : "Swap Settings"}</DialogTitle>
         </DialogHeader>
-        <SettlementMethodsSection />
-        <hr />
-        <SwapSlippageToleranceSection />
-        <SwapIntegratorFeeSection />
-        <SwapIntegratorFlexibleFeeSection />
-        <hr />
-        <OrderHtlcMaxExecutionsSection />
+        {isTransferMode ? <SettlementMethodsSection /> : null}
+        {isTransferMode ? <hr /> : null}
+        <SwapSlippageToleranceSection forceSwapSettlement={!isTransferMode} />
+        <SwapIntegratorFeeSection forceSwapSettlement={!isTransferMode} />
+        <SwapIntegratorFlexibleFeeSection forceSwapSettlement={!isTransferMode} />
+        {isTransferMode ? (
+          <>
+            <hr />
+            <OrderHtlcMaxExecutionsSection />
+          </>
+        ) : null}
       </DialogContent>
     </Dialog>
   );
@@ -85,7 +94,11 @@ const SettlementMethodsSection = () => {
   );
 };
 
-const SwapSlippageToleranceSection = () => {
+const SwapSlippageToleranceSection = ({
+  forceSwapSettlement = false,
+}: {
+  forceSwapSettlement?: boolean;
+}) => {
   const {
     settlementMethods,
     slippageTolerancePercent,
@@ -95,9 +108,9 @@ const SwapSlippageToleranceSection = () => {
   } = useSwapSettings();
 
   const inputId = useId();
-  const isSwapSettlementMethod = !!settlementMethods.find(
-    (method) => method === SettlementMethod.SWAP,
-  );
+  const isSwapSettlementMethod =
+    forceSwapSettlement ||
+    !!settlementMethods.find((method) => method === SettlementMethod.SWAP);
 
   const disabled = !isSwapSettlementMethod;
 
@@ -155,7 +168,11 @@ const SwapSlippageToleranceSection = () => {
   );
 };
 
-const SwapIntegratorFeeSection = () => {
+const SwapIntegratorFeeSection = ({
+  forceSwapSettlement = false,
+}: {
+  forceSwapSettlement?: boolean;
+}) => {
   const {
     settlementMethods,
     integratorAddress,
@@ -167,9 +184,9 @@ const SwapIntegratorFeeSection = () => {
   const addressInputId = useId();
   const feeInputId = useId();
 
-  const isSwapSettlementMethod = !!settlementMethods.find(
-    (method) => method === SettlementMethod.SWAP,
-  );
+  const isSwapSettlementMethod =
+    forceSwapSettlement ||
+    !!settlementMethods.find((method) => method === SettlementMethod.SWAP);
 
   const disabled = !isSwapSettlementMethod;
   const isIntegratorAddressValid =
@@ -227,12 +244,16 @@ const SwapIntegratorFeeSection = () => {
   );
 };
 
-const SwapIntegratorFlexibleFeeSection = () => {
+const SwapIntegratorFlexibleFeeSection = ({
+  forceSwapSettlement = false,
+}: {
+  forceSwapSettlement?: boolean;
+}) => {
   const { settlementMethods, flexibleIntegratorFee, setFlexibleIntegratorFee } = useSwapSettings();
 
-  const isSwapSettlementMethod = !!settlementMethods.find(
-    (method) => method === SettlementMethod.SWAP,
-  );
+  const isSwapSettlementMethod =
+    forceSwapSettlement ||
+    !!settlementMethods.find((method) => method === SettlementMethod.SWAP);
   const disabled = !isSwapSettlementMethod;
 
   return (

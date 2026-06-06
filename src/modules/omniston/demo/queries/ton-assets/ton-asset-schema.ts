@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { Asset } from "@/modules/omniston/demo/models/asset";
 import { tonAddressSchema } from "@/modules/omniston/demo/lib/ton/address";
 import { Chain } from "@/modules/omniston/demo/models/chain";
+import { normalizeWalletAddress } from "@/shared/lib/ton/ton-address";
 
 export const tonAssetSchema = z.object({
   kind: z.literal(["Ton", "Jetton", "Wton"] as const),
@@ -21,6 +22,17 @@ export const tonAssetSchema = z.object({
 export type TonAsset = z.infer<typeof tonAssetSchema>;
 
 export function transformToAsset(tonAsset: TonAsset): Asset {
+  const jettonAddress =
+    tonAsset.kind === "Ton"
+      ? undefined
+      : (() => {
+          try {
+            return normalizeWalletAddress(tonAsset.contractAddress);
+          } catch {
+            return tonAsset.contractAddress;
+          }
+        })();
+
   return {
     id: {
       chain: {
@@ -29,7 +41,7 @@ export function transformToAsset(tonAsset: TonAsset): Asset {
           kind:
             tonAsset.kind === "Ton"
               ? { $case: "native", value: {} }
-              : { $case: "jetton", value: tonAsset.contractAddress },
+              : { $case: "jetton", value: jettonAddress! },
         },
       },
     },

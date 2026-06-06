@@ -2,6 +2,7 @@
 
 import { type Asset } from "@/modules/omniston/demo/models/asset";
 import { stonApiClient } from "@/modules/omniston/demo/lib/ston-api-client";
+import { withStonApiRetry } from "@/modules/omniston/demo/lib/ston-api-retry";
 import { tonAssetSchema, transformToAsset } from "./ton-asset-schema";
 
 const ASSET_SEARCH_CONDITION =
@@ -21,13 +22,15 @@ export async function searchTonAssets({
   walletAddress?: string;
   limit?: number;
 }): Promise<Asset[]> {
-  const response = await stonApiClient.queryAssets({
-    limit,
-    searchTerms,
-    condition: condition ? `${ASSET_SEARCH_CONDITION} & ${condition}` : ASSET_SEARCH_CONDITION,
-    walletAddress,
-    unconditionalAssets,
-  });
+  const response = await withStonApiRetry(() =>
+    stonApiClient.queryAssets({
+      limit,
+      searchTerms,
+      condition: condition ? `${ASSET_SEARCH_CONDITION} & ${condition}` : ASSET_SEARCH_CONDITION,
+      walletAddress,
+      unconditionalAssets,
+    }),
+  );
 
   const assets = response.reduce<Asset[]>((acc, asset) => {
     const parsedData = tonAssetSchema.safeParse(asset);

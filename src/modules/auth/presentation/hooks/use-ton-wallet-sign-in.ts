@@ -3,10 +3,9 @@
 import type { Wallet } from "@tonconnect/sdk";
 import { CHAIN, useTonConnectUI } from "@tonconnect/ui-react";
 import { useRouter } from "next/navigation";
-import { getSession, signIn, useSession } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TON_CREDENTIALS_PROVIDER_ID } from "@/modules/auth/domain/ton-connect.constants";
-import { TON_PROOF_PAYLOAD_REFRESH_MS } from "@/shared/config/ton-connect.config";
 import { apiClient } from "@/shared/infrastructure/api/client";
 
 interface TonProofPayloadResponse {
@@ -44,16 +43,23 @@ const mapSignInError = (code: string | undefined): string => {
 /**
  * TON Connect sign-in: ton_proof payload, modal, and NextAuth credentials flow.
  */
+export interface UseTonWalletSignInResult {
+  isConnecting: boolean;
+  error: string | null;
+  openTonConnectModal: () => Promise<void>;
+}
+
 export const useTonWalletSignIn = ({
   callbackUrl = "/",
   initialTonProofPayload = null,
-}: UseTonWalletSignInOptions = {}) => {
+}: UseTonWalletSignInOptions = {}): UseTonWalletSignInResult => {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const [tonConnectUI] = useTonConnectUI();
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const initialPayloadApplied = useRef(false);
+  const signInIntentRef = useRef(false);
 
   const setTonProofParams = useCallback(async () => {
     if (!tonConnectUI) {
@@ -87,16 +93,7 @@ export const useTonWalletSignIn = ({
         value: { tonProof: initialTonProofPayload },
       });
     }
-
-    void setTonProofParams();
-    const intervalId = window.setInterval(() => {
-      void setTonProofParams();
-    }, TON_PROOF_PAYLOAD_REFRESH_MS);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [setTonProofParams, initialTonProofPayload, tonConnectUI]);
+  }, [initialTonProofPayload, tonConnectUI]);
 
   const handleTonConnectAuth = useCallback(
     async (wallet: Wallet) => {
@@ -149,17 +146,19 @@ export const useTonWalletSignIn = ({
         }
 
         if (result?.ok) {
-          await new Promise(resolve => setTimeout(resolve, 150));
-          await getSession();
-          router.push(callbackUrl);
+          await updateSession();
           router.refresh();
+
+          if (window.location.pathname !== callbackUrl) {
+            router.push(callbackUrl);
+          }
         }
       } finally {
         tonWalletAuthInProgress = false;
         setIsConnecting(false);
       }
     },
-    [callbackUrl, router, tonConnectUI]
+    [callbackUrl, router, tonConnectUI, updateSession]
   );
 
   useEffect(() => {
@@ -168,10 +167,11 @@ export const useTonWalletSignIn = ({
     }
 
     const unsubscribe = tonConnectUI.onStatusChange(async wallet => {
-      if (!wallet || session?.user) {
+      if (!wallet || session?.user || !signInIntentRef.current) {
         return;
       }
 
+      signInIntentRef.current = false;
       await handleTonConnectAuth(wallet);
     });
 
@@ -185,6 +185,7 @@ export const useTonWalletSignIn = ({
 
     setError(null);
     setIsConnecting(true);
+    signInIntentRef.current = true;
 
     try {
       await setTonProofParams();

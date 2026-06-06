@@ -11,15 +11,19 @@ import {
 
 import { useDebounce } from "@/modules/omniston/demo/hooks/useDebounce";
 import { isValidAddress } from "@/modules/omniston/demo/models/address";
+import { Chain } from "@/modules/omniston/demo/models/chain";
 import { floatToBigNumber } from "@/modules/omniston/demo/lib/utils";
 import { percentToPips } from "@/modules/omniston/demo/lib/utils/percent";
 import { useAssets } from "@/modules/omniston/demo/providers/assets";
 import { useSwapForm } from "@/modules/omniston/demo/providers/swap-form";
 import { useSwapSettings } from "@/modules/omniston/demo/providers/swap-settings";
 import { useTradeTrackState } from "@/modules/omniston/demo/providers/trade-track";
+import { OmnistonMode } from "@/modules/omniston/presentation/omniston-mode.types";
+import { useOmnistonMode } from "@/modules/omniston/presentation/providers/OmnistonModeProvider";
 
 export const useRfq = () => {
   const { getAssetById } = useAssets();
+  const { mode } = useOmnistonMode();
 
   const swapForm = useSwapForm();
   const swapSettings = useSwapSettings();
@@ -31,6 +35,15 @@ export const useRfq = () => {
     const outputAsset = swapForm.outputAssetId ? getAssetById(swapForm.outputAssetId) : undefined;
 
     if (!inputAsset || !outputAsset) return undefined;
+
+    if (mode === OmnistonMode.SWAP) {
+      if (
+        inputAsset.id.chain.$case !== Chain.TON ||
+        outputAsset.id.chain.$case !== Chain.TON
+      ) {
+        return undefined;
+      }
+    }
 
     let amount: QuoteRequest["amount"] | undefined;
 
@@ -69,31 +82,43 @@ export const useRfq = () => {
 
     const settlementParams: SettlementParams[] = [];
 
-    for (const settlementMethod of swapSettings.settlementMethods) {
-      switch (settlementMethod) {
-        case SettlementMethod.SWAP: {
-          settlementParams.push({
-            params: {
-              $case: "swap",
-              value: {
-                flexibleIntegratorFee: swapSettings.flexibleIntegratorFee,
-                maxPriceSlippagePips: percentToPips(swapSettings.slippageTolerancePercent),
-              } satisfies SwapSettlementParams,
-            },
-          });
-          break;
-        }
-        case SettlementMethod.ORDER: {
-          settlementParams.push({
-            params: {
-              $case: "order",
-              value: {} satisfies OrderSettlementParams,
-            },
-          });
-          break;
-        }
-        default: {
-          throw new Error(`Unsupported settlement method: ${settlementMethod}`);
+    if (mode === OmnistonMode.SWAP) {
+      settlementParams.push({
+        params: {
+          $case: "swap",
+          value: {
+            flexibleIntegratorFee: swapSettings.flexibleIntegratorFee,
+            maxPriceSlippagePips: percentToPips(swapSettings.slippageTolerancePercent),
+          } satisfies SwapSettlementParams,
+        },
+      });
+    } else {
+      for (const settlementMethod of swapSettings.settlementMethods) {
+        switch (settlementMethod) {
+          case SettlementMethod.SWAP: {
+            settlementParams.push({
+              params: {
+                $case: "swap",
+                value: {
+                  flexibleIntegratorFee: swapSettings.flexibleIntegratorFee,
+                  maxPriceSlippagePips: percentToPips(swapSettings.slippageTolerancePercent),
+                } satisfies SwapSettlementParams,
+              },
+            });
+            break;
+          }
+          case SettlementMethod.ORDER: {
+            settlementParams.push({
+              params: {
+                $case: "order",
+                value: {} satisfies OrderSettlementParams,
+              },
+            });
+            break;
+          }
+          default: {
+            throw new Error(`Unsupported settlement method: ${settlementMethod}`);
+          }
         }
       }
     }
@@ -108,7 +133,7 @@ export const useRfq = () => {
       integratorFeePips,
       settlementParams,
     };
-  }, [swapForm, swapSettings, getAssetById]);
+  }, [swapForm, swapSettings, getAssetById, mode]);
 
   const [debouncedQuoteRequest] = useDebounce(quoteRequest, 300);
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useTonWalletSignIn } from "@/modules/auth/presentation/hooks/use-ton-wallet-sign-in";
+import { useTonWalletSignInContext } from "@/modules/auth/presentation/providers/TonWalletSignInProvider";
 import { Button } from "@/shared/components/ui/button";
 
 interface TonWalletSignInProps {
@@ -11,14 +11,8 @@ interface TonWalletSignInProps {
 /**
  * TON Connect sign-in (ArrayTonV16 auth-button flow, Next.js API routes).
  */
-export const TonWalletSignIn = ({
-  callbackUrl = "/",
-  initialTonProofPayload = null,
-}: TonWalletSignInProps) => {
-  const { isConnecting, error, openTonConnectModal } = useTonWalletSignIn({
-    callbackUrl,
-    initialTonProofPayload,
-  });
+export const TonWalletSignIn = (_props: TonWalletSignInProps) => {
+  const { isConnecting, error, openTonConnectModal } = useTonWalletSignInContext();
 
   return (
     <div className="flex w-full max-w-sm flex-col gap-2">

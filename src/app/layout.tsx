@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { AuthProvider } from "@/modules/auth";
 import { ExplorerAppHeader } from "@/modules/auth/presentation/components/explorer-app-header";
-import { OmnistonProviders } from "@/modules/omniston/presentation/providers/OmnistonProviders";
 import { QueryProvider } from "@/shared/providers/QueryProvider";
+import { AppShellProviders } from "@/shared/providers/AppShellProviders";
 import { ThemeProvider } from "@/shared/components/theme-provider";
 import { cn } from "@/shared/lib/utils";
 import "./globals.css";
@@ -54,10 +54,10 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <AuthProvider>
             <QueryProvider>
-              <OmnistonProviders>
+              <AppShellProviders>
                 <ExplorerAppHeader />
                 {children}
-              </OmnistonProviders>
+              </AppShellProviders>
             </QueryProvider>
           </AuthProvider>
         </ThemeProvider>

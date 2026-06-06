@@ -1,30 +1,70 @@
 "use client";
 
-import { AppKitButton } from "@reown/appkit/react";
+import { useAppKit } from "@reown/appkit/react";
+import { useDisconnect, useAccount } from "wagmi";
+
+import { CHAIN_METADATA, Chain } from "@/modules/omniston/demo/models/chain";
+import { ChainWalletConnectButton } from "@/shared/presentation/components/ChainWalletConnectButton";
+import { useClientMounted } from "@/shared/presentation/hooks/use-client-mounted";
 import { isWalletConnectConfigured } from "@/shared/config/env.public.config";
-import { Button } from "@/modules/omniston/demo/components/ui/button";
+
+const EVM_CHAIN_ICON = CHAIN_METADATA[Chain.ETHEREUM].imageUrl;
 
 interface EvmWalletButtonProps {
-  size?: "md" | "sm";
+  className?: string;
 }
 
+interface EvmWalletButtonActiveProps {
+  chainIconUrl: string;
+  className?: string;
+}
+
+const EvmWalletButtonActive = ({ chainIconUrl, className }: EvmWalletButtonActiveProps) => {
+  const { open: openAppKit } = useAppKit();
+  const { address, isConnected } = useAccount();
+  const { disconnect } = useDisconnect();
+
+  return (
+    <ChainWalletConnectButton
+      chainLabel="EVM"
+      chainIconUrl={chainIconUrl}
+      address={isConnected ? address : undefined}
+      onConnect={() => openAppKit({ view: "Connect" })}
+      onDisconnect={() => disconnect()}
+      className={className}
+    />
+  );
+};
+
 /**
- * Reown AppKit connect button; disabled placeholder when project id is not configured.
+ * EVM wallet connect (Reown AppKit) — same visual style as TON button.
  */
-export const EvmWalletButton = ({ size = "md" }: EvmWalletButtonProps) => {
+export const EvmWalletButton = ({ className }: EvmWalletButtonProps) => {
+  const isClientMounted = useClientMounted();
+
   if (!isWalletConnectConfigured) {
     return (
-      <Button
-        type="button"
-        variant="outline"
-        size={size === "sm" ? "sm" : "default"}
+      <ChainWalletConnectButton
+        chainLabel="EVM"
+        chainIconUrl={EVM_CHAIN_ICON}
         disabled
-        title="Set NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID in .env (https://cloud.reown.com)"
-      >
-        EVM wallet
-      </Button>
+        onConnect={() => undefined}
+        className={className}
+      />
     );
   }
 
-  return <AppKitButton size={size} balance="hide" />;
+  if (!isClientMounted) {
+    return (
+      <ChainWalletConnectButton
+        chainLabel="EVM"
+        chainIconUrl={EVM_CHAIN_ICON}
+        disabled
+        onConnect={() => undefined}
+        className={className}
+      />
+    );
+  }
+
+  return <EvmWalletButtonActive chainIconUrl={EVM_CHAIN_ICON} className={className} />;
 };

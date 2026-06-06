@@ -78,7 +78,7 @@ function OrderEventView({
   order: Order;
   className?: string;
 }) {
-  const { inputAsset, inputNativeAsset, outputAsset, outputNativeAsset } = useQuoteAssets(quote);
+  const quoteAssets = useQuoteAssets(quote);
 
   const {
     status,
@@ -87,6 +87,16 @@ function OrderEventView({
     protocolContractAddress,
     remainingInputUnits,
   } = order;
+
+  if (!quoteAssets) {
+    return (
+      <TradeTrackOrderCard className={props.className}>
+        <Skeleton className="h-[88px] w-full" />
+      </TradeTrackOrderCard>
+    );
+  }
+
+  const { inputAsset } = quoteAssets;
 
   return (
     <div className={cn("flex flex-col gap-2 p-4 border rounded-md", props.className)}>
@@ -141,7 +151,7 @@ function EscrowExecution({
   executions: Execution[];
   execution: Execution;
 }) {
-  const { inputAsset, inputNativeAsset, outputAsset, outputNativeAsset } = useQuoteAssets(quote);
+  const quoteAssets = useQuoteAssets(quote);
 
   const {
     index,
@@ -160,6 +170,11 @@ function EscrowExecution({
     outputPositionPhaseTimestamps,
   } = execution;
 
+  if (!quoteAssets) {
+    return <Skeleton className="h-16 w-full" />;
+  }
+
+  const { inputAsset, inputNativeAsset, outputAsset, outputNativeAsset } = quoteAssets;
   const secretHashStr = secretHash?.toString();
 
   return (

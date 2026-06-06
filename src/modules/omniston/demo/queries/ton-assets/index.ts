@@ -22,6 +22,8 @@ export const tonAssetQueryFactory = {
   }) => {
     return queryOptions({
       queryKey: [TON_ASSETS_QUERY_KEY, walletAddress, condition, unconditionalAssets],
+      retry: 2,
+      retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 4_000),
       queryFn: async () => {
         const assets = await fetchTonAssets({
           condition: condition ? condition : undefined,
@@ -61,6 +63,8 @@ export const tonAssetQueryFactory = {
         condition,
         unconditionalAssets,
       ],
+      retry: 2,
+      retryDelay: (attempt) => Math.min(500 * 2 ** attempt, 4_000),
       queryFn: async () => {
         const assets = await searchTonAssets({
           searchTerms,

@@ -24,6 +24,16 @@ type AssetsContextValue = {
 
 const AssetsContext = createContext<AssetsContextValue | undefined>(undefined);
 
+function mergeAssetLists(existing: Asset[] | undefined, incoming: Asset[]): Asset[] {
+  const byId = new Map((existing ?? []).map((asset) => [serializeAssetId(asset.id), asset]));
+
+  for (const asset of incoming) {
+    byId.set(serializeAssetId(asset.id), asset);
+  }
+
+  return Array.from(byId.values());
+}
+
 export const AssetsProvider = ({ children }: React.PropsWithChildren) => {
   const queryClient = useQueryClient();
 
@@ -246,14 +256,24 @@ export const AssetsProvider = ({ children }: React.PropsWithChildren) => {
       }
     });
 
-    setUnconditionalTonAssetIdList(nextUnconditionalTonAssetIdList);
+    const currentTonAssetsQuery = tonAssetQueryFactory.fetch({
+      unconditionalAssets: unconditionalTonAssetIdList,
+      walletAddress: tonWalletAddress,
+    });
 
-    await queryClient.fetchQuery(
+    const fetchedAssets = await queryClient.fetchQuery(
       tonAssetQueryFactory.fetch({
         unconditionalAssets: nextUnconditionalTonAssetIdList,
         walletAddress: tonWalletAddress,
       }),
     );
+
+    // Merge into the active query cache immediately — setState updates queryKey on next render.
+    queryClient.setQueryData<Asset[]>(currentTonAssetsQuery.queryKey, (existing) =>
+      mergeAssetLists(existing, fetchedAssets),
+    );
+
+    setUnconditionalTonAssetIdList(nextUnconditionalTonAssetIdList);
   };
 
   return (

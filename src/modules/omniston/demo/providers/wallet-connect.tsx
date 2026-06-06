@@ -4,12 +4,29 @@ import { createAppKit } from "@reown/appkit/react";
 import { base, bsc, mainnet, polygon, type AppKitNetwork } from "@reown/appkit/networks";
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 import { injected } from "@wagmi/connectors";
-import React, { useEffect, useRef } from "react";
+import React, { useRef } from "react";
 import { createConfig, http, type Config, WagmiProvider } from "wagmi";
 
 let isAppKitCreated = false;
 
 const networks = [mainnet, base, polygon, bsc] satisfies [AppKitNetwork, ...AppKitNetwork[]];
+
+const ensureAppKit = (projectId: string, wagmiAdapter: WagmiAdapter): void => {
+  if (isAppKitCreated || typeof window === "undefined") {
+    return;
+  }
+
+  createAppKit({
+    adapters: [wagmiAdapter],
+    networks,
+    projectId,
+    showWallets: true,
+    defaultNetwork: base,
+    themeMode: "light",
+  });
+
+  isAppKitCreated = true;
+};
 
 const createFallbackWagmiConfig = (): Config =>
   createConfig({
@@ -40,20 +57,9 @@ export function WalletConnectProvider({
   );
   const fallbackConfig = useRef(projectId ? null : createFallbackWagmiConfig());
 
-  useEffect(() => {
-    if (!projectId || isAppKitCreated) return;
-
-    createAppKit({
-      adapters: [wagmiAdapter.current!],
-      networks,
-      projectId,
-      showWallets: true,
-      defaultNetwork: base,
-      themeMode: "light",
-    });
-
-    isAppKitCreated = true;
-  }, [projectId]);
+  if (projectId && wagmiAdapter.current) {
+    ensureAppKit(projectId, wagmiAdapter.current);
+  }
 
   const config = projectId ? wagmiAdapter.current!.wagmiConfig : fallbackConfig.current!;
 

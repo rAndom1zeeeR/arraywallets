@@ -1,7 +1,8 @@
 "use client";
 
-import { useTonConnectModal, useTonWallet } from "@tonconnect/ui-react";
+import { useTonWallet } from "@tonconnect/ui-react";
 import { useCallback, useState } from "react";
+import { useTonWalletConnect } from "@/modules/auth/presentation/hooks/use-ton-wallet-connect";
 import { matchQuoteByType } from "@ston-fi/omniston-sdk-react";
 
 import { cn } from "@/modules/omniston/demo/lib/utils";
@@ -96,20 +97,20 @@ const _QuoteActionTon = (props: Omit<ButtonProps, "children">) => {
 };
 
 function withTonWalletGuard(Component: React.ComponentType<ButtonProps>) {
-  return (props: ButtonProps) => {
+  return function TonWalletGuardedButton(props: ButtonProps) {
     const wallet = useTonWallet();
+    const { openModal } = useTonWalletConnect();
 
     if (!wallet) {
       return (
         <Button
           {...props}
-          onClick={(e) => {
-            const tonConnectModal = useTonConnectModal();
-            tonConnectModal.open();
-            props.onClick?.(e);
+          onClick={(event) => {
+            void openModal();
+            props.onClick?.(event);
           }}
         >
-          Connect wallet
+          Connect Wallet
         </Button>
       );
     }

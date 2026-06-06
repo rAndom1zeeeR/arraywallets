@@ -3,6 +3,7 @@
 import type { Asset } from "@/modules/omniston/demo/models/asset";
 
 import { stonApiClient } from "@/modules/omniston/demo/lib/ston-api-client";
+import { withStonApiRetry } from "@/modules/omniston/demo/lib/ston-api-retry";
 import { tonAssetSchema, transformToAsset } from "./ton-asset-schema";
 
 const ASSET_QUERY_CONDITION =
@@ -18,11 +19,13 @@ export async function fetchTonAssets({
   unconditionalAssets?: string[];
   walletAddress?: string;
 }): Promise<Asset[]> {
-  const response = await stonApiClient.queryAssets({
-    condition: condition ? `${ASSET_QUERY_CONDITION} & ${condition}` : ASSET_QUERY_CONDITION,
-    walletAddress,
-    unconditionalAssets,
-  });
+  const response = await withStonApiRetry(() =>
+    stonApiClient.queryAssets({
+      condition: condition ? `${ASSET_QUERY_CONDITION} & ${condition}` : ASSET_QUERY_CONDITION,
+      walletAddress,
+      unconditionalAssets,
+    }),
+  );
 
   const assets = response.reduce<Asset[]>((acc, asset) => {
     const parsedData = tonAssetSchema.safeParse(asset);

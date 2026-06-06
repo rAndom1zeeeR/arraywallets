@@ -49,7 +49,13 @@ function OrderSettlementDataPresenter({
 }: React.ComponentProps<typeof DescriptionList> & {
   quote: OrderQuote;
 }) {
-  const { inputAsset, inputNativeAsset, outputAsset, outputNativeAsset } = useQuoteAssets(quote);
+  const quoteAssets = useQuoteAssets(quote);
+
+  if (!quoteAssets) {
+    return null;
+  }
+
+  const { inputAsset, inputNativeAsset, outputAsset, outputNativeAsset } = quoteAssets;
 
   const orderSettlementData = quote.settlementData.value;
 
