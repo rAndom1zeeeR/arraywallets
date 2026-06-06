@@ -1,4 +1,5 @@
 import type { JettonSwapBreakdownFormatted } from "@/modules/swap/domain/swap-stats.utils";
+import { WalletJettonTradeButton } from "@/modules/wallet/presentation/components/wallet-jetton-trade-dialog";
 import { explorerStyles } from "@/shared/presentation/components/explorer/explorer.styles";
 import { cn } from "@/shared/lib/utils";
 
@@ -60,9 +61,9 @@ export const WalletTokenHoldings = ({
           return (
             <div
               key={row.jetton.address}
-              className="flex items-center justify-between border-b border-border px-5 py-3 last:border-0"
+              className="flex items-center gap-3 border-b border-border px-4 py-3 last:border-0 sm:gap-4 sm:px-5"
             >
-              <div className="flex min-w-0 items-center gap-3">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
                 <div
                   className={cn(
                     "flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-explorer-surface-2 text-xs font-semibold text-foreground"
@@ -75,7 +76,8 @@ export const WalletTokenHoldings = ({
                   <p className="truncate text-xs text-muted-foreground">{row.jetton.name}</p>
                 </div>
               </div>
-              <div className="text-right">
+
+              <div className="shrink-0 text-right">
                 <p className="text-sm font-semibold text-foreground tabular-nums">{row.received}</p>
                 <p className="flex items-center justify-end gap-1 text-xs tabular-nums">
                   <span className="text-muted-foreground">spent {row.spent}</span>
@@ -84,6 +86,13 @@ export const WalletTokenHoldings = ({
                   </span>
                 </p>
               </div>
+
+              {showAll ? (
+                <WalletJettonTradeButton
+                  jettonAddress={row.jetton.address}
+                  jettonSymbol={row.jetton.symbol}
+                />
+              ) : null}
             </div>
           );
         })}

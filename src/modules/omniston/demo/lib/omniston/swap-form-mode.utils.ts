@@ -1,7 +1,7 @@
 import type { AssetId } from "@ston-fi/omniston-sdk-react";
 
 import { Chain } from "@/modules/omniston/demo/models/chain";
-import { isAssetIdEqual } from "@/modules/omniston/demo/models/asset-id";
+import { isAssetIdEqual, normalizeAssetId } from "@/modules/omniston/demo/models/asset-id";
 import { OmnistonMode } from "@/modules/omniston/presentation/omniston-mode.types";
 import {
   getOmnistonDefaultInputAssetIdForOutput,
@@ -24,6 +24,31 @@ export const TON_NATIVE_ASSET_ID: AssetId = {
     value: { kind: { $case: "native", value: {} } },
   },
 };
+
+/** Builds a TON jetton {@link AssetId} from a jetton master contract address. */
+export function buildTonJettonAssetId(jettonAddress: string): AssetId {
+  return normalizeAssetId({
+    chain: {
+      $case: Chain.TON,
+      value: {
+        kind: {
+          $case: "jetton",
+          value: jettonAddress,
+        },
+      },
+    },
+  });
+}
+
+/** Preset swap form state: jetton → native TON. */
+export function buildJettonToTonSwapFormState(jettonAddress: string): SwapFormState {
+  return sanitizeTonSwapFormState({
+    inputAssetId: buildTonJettonAssetId(jettonAddress),
+    inputUnits: "",
+    outputAssetId: TON_NATIVE_ASSET_ID,
+    outputUnits: "",
+  });
+}
 
 export function getTonUsdtAssetId(): AssetId {
   return getOmnistonSupportedAssetIdForChain(Chain.TON) ?? TON_NATIVE_ASSET_ID;

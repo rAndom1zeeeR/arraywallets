@@ -420,16 +420,21 @@ function loadStoredFormState(mode: OmnistonMode): SwapState {
 
 
 
-export const SwapFormProvider = ({ children }: React.PropsWithChildren) => {
+interface SwapFormProviderProps extends React.PropsWithChildren {
+  initialState?: SwapState;
+  persist?: boolean;
+}
 
+export const SwapFormProvider = ({
+  children,
+  initialState,
+  persist = true,
+}: SwapFormProviderProps) => {
   const { mode } = useOmnistonMode();
 
   const [state, rawDispatch] = useReducer(
-
     (current: SwapState, action: IAction) => swapReducer(current, action, mode),
-
-    getDefaultSwapFormState(mode),
-
+    initialState ?? getDefaultSwapFormState(mode),
   );
 
   const hydrated = useRef(false);
@@ -446,12 +451,12 @@ export const SwapFormProvider = ({ children }: React.PropsWithChildren) => {
 
     if (!hydrated.current) {
 
+      const payload =
+        initialState ?? (persist ? loadStoredFormState(mode) : getDefaultSwapFormState(mode));
+
       dispatch({
-
         type: "INITIALIZE_FROM_STORAGE",
-
-        payload: loadStoredFormState(mode),
-
+        payload,
       });
 
       hydrated.current = true;
@@ -468,8 +473,10 @@ export const SwapFormProvider = ({ children }: React.PropsWithChildren) => {
 
       const payload =
         mode === OmnistonMode.SWAP
-          ? OMNISTON_TON_SWAP_DEFAULT_STATE
-          : loadStoredFormState(mode);
+          ? (initialState ?? OMNISTON_TON_SWAP_DEFAULT_STATE)
+          : persist
+            ? loadStoredFormState(mode)
+            : getDefaultSwapFormState(mode);
 
       dispatch({
 
@@ -483,33 +490,17 @@ export const SwapFormProvider = ({ children }: React.PropsWithChildren) => {
 
     }
 
-  }, [mode]);
-
-
+  }, [initialState, mode, persist]);
 
   useEffect(() => {
-
-    if (!hydrated.current) return;
-
-
+    if (!hydrated.current || !persist) return;
 
     try {
-
-      localStorage.setItem(
-
-        getSwapFormStorageKey(mode),
-
-        JSON.stringify(state),
-
-      );
-
+      localStorage.setItem(getSwapFormStorageKey(mode), JSON.stringify(state));
     } catch {
-
       //
-
     }
-
-  }, [state, mode]);
+  }, [persist, state, mode]);
 
 
 

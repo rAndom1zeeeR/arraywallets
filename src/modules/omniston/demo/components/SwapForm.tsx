@@ -140,7 +140,12 @@ const useTonSwapChainConfigs = (): [ChainTabConfig, ...ChainTabConfig[]] => {
   ];
 };
 
-export const SwapForm = (props: { className?: string }) => {
+interface SwapFormProps {
+  className?: string;
+  hideModeTabs?: boolean;
+}
+
+export const SwapForm = (props: SwapFormProps) => {
   useSyncQuoteToSwapForm();
 
   const { mode } = useOmnistonMode();
@@ -149,7 +154,7 @@ export const SwapForm = (props: { className?: string }) => {
   return (
     <Card {...props} className={cn("overflow-hidden border-border/50 bg-card/80", props.className)}>
       <CardContent className="flex flex-col gap-3 p-3 sm:p-4">
-        <OmnistonModeTabs />
+        {!props.hideModeTabs ? <OmnistonModeTabs /> : null}
 
         <AssetPickerFieldProvider>
           <div className="flex flex-col gap-1">

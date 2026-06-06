@@ -20,10 +20,14 @@ const OmnistonModeContext = createContext<OmnistonModeContextValue | null>(null)
 
 interface OmnistonModeProviderProps {
   children: ReactNode;
+  initialMode?: OmnistonMode;
 }
 
-export const OmnistonModeProvider = ({ children }: OmnistonModeProviderProps) => {
-  const [mode, setModeState] = useState<OmnistonMode>(OmnistonMode.TRANSFER);
+export const OmnistonModeProvider = ({
+  children,
+  initialMode = OmnistonMode.TRANSFER,
+}: OmnistonModeProviderProps) => {
+  const [mode, setModeState] = useState<OmnistonMode>(initialMode);
 
   const setMode = useCallback((nextMode: OmnistonMode) => {
     setModeState(nextMode);
