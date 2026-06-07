@@ -824,7 +824,7 @@ export async function updateSyncState(
     lastLt?: string;
     lastTimestamp?: Date;
     lastTonEventId?: string;
-    error?: string;
+    error?: string | null;
     eventsSynced?: number;
     actionsSynced?: number;
     historyComplete?: boolean;

@@ -1,4 +1,5 @@
 # TON Wallets — Hackathon Presentation
+
 ## STON.fi Vibe Coding Hackathon Wave 2
 
 ---
@@ -8,23 +9,23 @@
 **EN:** TON Wallets — Smart Wallet Analytics & Cross-Chain Swaps on TON  
 **RU:** TON Wallets — Умная аналитика кошельков и кросс-чейн свапы на TON
 
-*Subtitle:*  
+_Subtitle:_  
 **EN:** Built for STON.fi Vibe Coding Hackathon Wave 2 — STON.fi Track + Mira Track  
 **RU:** Создано для STON.fi Vibe Coding Hackathon Wave 2 — STON.fi Track + Mira Track
 
-**Visual:** Dark futuristic background with glowing TON diamond logo, STON.fi gradient wave, and Mira AI icon. Bold title "TON Wallets" in white. Hackathon badge "STON.fi Vibe Coding Hackathon Wave 2".
-
----
+## **Visual:** Dark futuristic background with glowing TON diamond logo, STON.fi gradient wave, and Mira AI icon. Bold title "TON Wallets" in white. Hackathon badge "STON.fi Vibe Coding Hackathon Wave 2".
 
 ## Slide 2: The Problem
 
 **EN:**
+
 - TON blockchain has 50M+ wallets, but **no unified analytics dashboard**
 - Users can't track portfolio PnL, swap performance, or jetton price changes in one place
 - Cross-chain swaps require navigating multiple DEXs and bridges — **fragmented UX**
 - Wallet data is scattered across TonAPI endpoints with no aggregated view
 
 **RU:**
+
 - У TON 50M+ кошельков, но **нет единого дашборда аналитики**
 - Пользователи не могут отслеживать PnL портфеля, эффективность свапов и цены жеттонов в одном месте
 - Кросс-чейн свапы требуют навигации по нескольким DEX и мостам — **фрагментированный UX**
@@ -38,14 +39,16 @@
 
 **EN:**
 **TON Wallets** — an all-in-one platform that combines:
+
 1. **Wallet Explorer** — browse, search, and analyze any TON wallet
 2. **Jetton Portfolio & PnL** — real-time price tracking with 24h/7d/30d diffs
 3. **Swap Analytics** — inferred swap detection, PnL per jetton
 4. **Cross-Chain Swaps** — Omnistone integration for seamless multi-chain swaps
-5. **AI-Powered Insights** — Mira AI agent for wallet analysis and on-chain actions
+5. **AI-Powered Insights** — Mira AI agent for media content and documentations
 
 **RU:**
 **TON Wallets** — платформа «всё-в-одном», объединяющая:
+
 1. **Обозреватель кошельков** — поиск и анализ любого кошелька TON
 2. **Портфель жеттонов и PnL** — отслеживание цен в реальном времени (24ч/7д/30д)
 3. **Аналитика свапов** — автоматическое определение свапов, PnL по жеттонам
@@ -60,31 +63,31 @@
 
 **EN:**
 
-| Layer | Technology |
-|-------|------------|
-| Framework | Next.js 16 (App Router) |
-| Database | PostgreSQL + Prisma 7 |
-| Auth | Auth.js v5 + TON Connect |
-| Blockchain | @ton/core, TonAPI |
-| Cross-chain | STON.fi Omniston SDK v1beta8 |
-| EVM Connect | Reown AppKit (WalletConnect) |
-| AI Agent | Mira (@mira) |
-| UI | Radix UI, shadcn/ui, Tailwind CSS 4 |
-| Deployment | Docker / Vercel |
+| Layer       | Technology                          |
+| ----------- | ----------------------------------- |
+| Framework   | Next.js 16 (App Router)             |
+| Database    | PostgreSQL + Prisma 7               |
+| Auth        | Auth.js v5 + TON Connect            |
+| Blockchain  | @ton/core, TonAPI                   |
+| Cross-chain | STON.fi Omniston SDK v1beta8        |
+| EVM Connect | Reown AppKit (WalletConnect)        |
+| AI Agent    | Mira (@mira)                        |
+| UI          | Radix UI, shadcn/ui, Tailwind CSS 4 |
+| Deployment  | Docker / Vercel                     |
 
 **RU:**
 
-| Слой | Технология |
-|------|-----------|
-| Фреймворк | Next.js 16 (App Router) |
-| База данных | PostgreSQL + Prisma 7 |
-| Авторизация | Auth.js v5 + TON Connect |
-| Блокчейн | @ton/core, TonAPI |
-| Кросс-чейн | STON.fi Omniston SDK v1beta8 |
-| EVM-подключение | Reown AppKit (WalletConnect) |
-| AI-агент | Mira (@mira) |
-| UI | Radix UI, shadcn/ui, Tailwind CSS 4 |
-| Деплой | Docker / Vercel |
+| Слой            | Технология                          |
+| --------------- | ----------------------------------- |
+| Фреймворк       | Next.js 16 (App Router)             |
+| База данных     | PostgreSQL + Prisma 7               |
+| Авторизация     | Auth.js v5 + TON Connect            |
+| Блокчейн        | @ton/core, TonAPI                   |
+| Кросс-чейн      | STON.fi Omniston SDK v1beta8        |
+| EVM-подключение | Reown AppKit (WalletConnect)        |
+| AI-агент        | Mira (@mira)                        |
+| UI              | Radix UI, shadcn/ui, Tailwind CSS 4 |
+| Деплой          | Docker / Vercel                     |
 
 **Visual:** Hexagonal tech stack diagram with logos. Dark theme, neon accents matching STON.fi brand colors.
 
@@ -292,18 +295,21 @@ TonAPI (блокчейн)         Дашборд UI
 **Track qualification checklist**
 
 ✅ **STON.fi Track**
+
 - Omniston SDK v1beta8 integrated (`@ston-fi/omniston-sdk`)
 - Cross-chain swap functionality on `/omnistone` page
 - Production WebSocket endpoint (`wss://omni-ws.ston.fi`)
 - EVM wallet connection via Reown AppKit
 
 ✅ **Mira Track**
+
 - All project documentation (README, presentation) created with @mira
 - Mira used for code scaffolding, debugging, and integration assistance
 - Mira's TON wallet skill available for on-chain analysis
 - Mira embedded in the development workflow throughout the hackathon
 
 ✅ **General Requirements**
+
 - Functional working app: ✅ ton-wallets.vercel.app
 - Clear use case: ✅ Wallet analytics + cross-chain swaps
 - GitHub repository: ✅ github.com/rAndom1zeeeR/ton-wallets
@@ -313,18 +319,21 @@ TonAPI (блокчейн)         Дашборд UI
 **Чеклист соответствия трекам**
 
 ✅ **STON.fi Track**
+
 - Omniston SDK v1beta8 интегрирован (`@ston-fi/omniston-sdk`)
 - Функциональность кросс-чейн свапов на странице `/omnistone`
 - Боевой WebSocket endpoint (`wss://omni-ws.ston.fi`)
 - Подключение EVM-кошельков через Reown AppKit
 
 ✅ **Mira Track**
+
 - Вся документация проекта (README, презентация) создана с помощью @mira
 - Mira использовалась для создания кода, отладки и помощи в интеграции
 - Навык Mira для TON-кошельков доступен для on-chain анализа
 - Mira встроена в процесс разработки на протяжении всего хакатона
 
 ✅ **Общие требования**
+
 - Работающее приложение: ✅ ton-wallets.vercel.app
 - Чёткий use case: ✅ Аналитика кошельков + кросс-чейн свапы
 - GitHub-репозиторий: ✅ github.com/rAndom1zeeeR/ton-wallets
@@ -413,14 +422,15 @@ TonAPI (блокчейн)         Дашборд UI
 **EN:**
 **REST API — programmatic access to wallet data**
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/health` | Liveness probe — checks DB connection |
-| `GET` | `/api/wallets/:address/summary` | Wallet summary: balances, PnL, jetton holdings |
-| `GET` | `/api/wallets/:address/events` | Paginated event history with action classification |
-| `POST` | `/api/sync` | Trigger TonAPI sync → Postgres for a wallet |
+| Method | Endpoint                        | Description                                        |
+| ------ | ------------------------------- | -------------------------------------------------- |
+| `GET`  | `/api/health`                   | Liveness probe — checks DB connection              |
+| `GET`  | `/api/wallets/:address/summary` | Wallet summary: balances, PnL, jetton holdings     |
+| `GET`  | `/api/wallets/:address/events`  | Paginated event history with action classification |
+| `POST` | `/api/sync`                     | Trigger TonAPI sync → Postgres for a wallet        |
 
 **Example — Wallet Summary:**
+
 ```json
 GET /api/wallets/EQD_VOCk...7Bl/summary
 → {
@@ -432,6 +442,7 @@ GET /api/wallets/EQD_VOCk...7Bl/summary
 ```
 
 **Example — Events:**
+
 ```json
 GET /api/wallets/EQD_VOCk...7Bl/events?limit=5
 → [
@@ -443,12 +454,12 @@ GET /api/wallets/EQD_VOCk...7Bl/events?limit=5
 **RU:**
 **REST API — программный доступ к данным кошельков**
 
-| Метод | Эндпоинт | Описание |
-|-------|----------|----------|
-| `GET` | `/api/health` | Проверка доступности — проверяет подключение к БД |
-| `GET` | `/api/wallets/:address/summary` | Сводка по кошельку: балансы, PnL, холдинги жеттонов |
-| `GET` | `/api/wallets/:address/events` | Пагинированная история событий с классификацией |
-| `POST` | `/api/sync` | Запуск синхронизации TonAPI → Postgres для кошелька |
+| Метод  | Эндпоинт                        | Описание                                            |
+| ------ | ------------------------------- | --------------------------------------------------- |
+| `GET`  | `/api/health`                   | Проверка доступности — проверяет подключение к БД   |
+| `GET`  | `/api/wallets/:address/summary` | Сводка по кошельку: балансы, PnL, холдинги жеттонов |
+| `GET`  | `/api/wallets/:address/events`  | Пагинированная история событий с классификацией     |
+| `POST` | `/api/sync`                     | Запуск синхронизации TonAPI → Postgres для кошелька |
 
 **Visual:** Dark terminal-style code block with syntax-highlighted JSON responses. API route diagram on the side. Green/blue accent colors.
 
@@ -490,12 +501,14 @@ GET /api/wallets/EQD_VOCk...7Bl/events?limit=5
 **Real profit & loss tracking — not just balances**
 
 **How it works:**
+
 1. **Sync** — TonAPI events are parsed and stored in PostgreSQL
 2. **Detect** — Swap actions are identified within transaction events
 3. **Calculate** — For each jetton: cost basis (avg buy price) vs current price
 4. **Display** — PnL shown per jetton with 24h / 7d / 30d price diffs
 
 **Example — Jetton PnL card:**
+
 ```
 jUSDC
 Holdings: 1,500 jUSDC ($1,498.50)
@@ -510,6 +523,7 @@ PnL: +$1.50 (+0.10%)
 **Реальное отслеживание прибыли и убытков — не просто балансы**
 
 **Как это работает:**
+
 1. **Синхронизация** — События TonAPI парсятся и сохраняются в PostgreSQL
 2. **Детекция** — Свап-действия определяются в транзакциях
 3. **Расчёт** — Для каждого жеттона: средняя цена покупки vs текущая цена
@@ -601,22 +615,26 @@ TonAPI (данные блокчейна в реальном времени)
 **What you'll see on ton-wallets.vercel.app**
 
 **Screen 1 — Wallet List**
+
 - Search bar for any TON address
 - Wallet cards with balance, event count, last activity
 - Quick filters: recently synced, top by balance
 
 **Screen 2 — Wallet Detail**
+
 - Full balance breakdown: TON + all jettons
 - Event timeline with action icons (swap, transfer, stake)
 - PnL summary per jetton holding
 
 **Screen 3 — Omnistone Swap**
+
 - Token selector: source (TON chain) → destination (EVM chain)
 - Connected wallets indicator: TON wallet + EVM wallet
 - Real-time quote with route details and fees
 - One-click execution with status tracking
 
 **Screen 4 — Sign-in**
+
 - TON Connect QR / deep link
 - GitHub & Google OAuth buttons
 - Role badge (Admin / User) after authentication
@@ -625,22 +643,26 @@ TonAPI (данные блокчейна в реальном времени)
 **Что вы увидите на ton-wallets.vercel.app**
 
 **Экран 1 — Список кошельков**
+
 - Строка поиска любого TON-адреса
 - Карточки кошельков с балансом, количеством событий, последней активностью
 - Быстрые фильтры: недавно синхронизированные, топ по балансу
 
 **Экран 2 — Детали кошелька**
+
 - Полная разбивка баланса: TON + все жеттоны
 - Таймлайн событий с иконками (свап, перевод, стейкинг)
 - Сводка PnL по каждому жеттону
 
 **Экран 3 — Свап Omnistone**
+
 - Выбор токенов: исходный (TON) → целевой (EVM-цепочка)
 - Индикатор подключённых кошельков: TON + EVM
 - Котировка в реальном времени с деталями маршрута и комиссиями
 - Исполнение в один клик с отслеживанием статуса
 
 **Экран 4 — Авторизация**
+
 - TON Connect QR / deep link
 - Кнопки GitHub и Google OAuth
 - Бейдж роли (Admin / User) после входа
@@ -651,25 +673,25 @@ TonAPI (данные блокчейна в реальном времени)
 
 ## Visual Descriptions Summary (for image generation)
 
-| Slide | Visual Description (English, for image generation) |
-|-------|-----------------------------------------------------|
-| 1 | Dark futuristic background with glowing TON blockchain diamond logo, STON.fi gradient wave, and Mira AI icon. Bold title "TON Wallets" in white. Subtitle "Smart Wallet Analytics & Cross-Chain Swaps". Hackathon badge "STON.fi Vibe Coding Hackathon Wave 2". |
-| 2 | Split screen: left side shows chaotic scattered data points, broken charts, question marks in muted gray. Right side shows a frustrated user silhouette. Title overlay: "The Problem". |
-| 3 | Clean dashboard mockup showing 5 feature cards: Wallet Explorer, Jetton Portfolio, Swap Analytics, Cross-Chain Swaps, AI Insights. Bright accent colors on dark background. Title: "Our Solution". |
-| 4 | Hexagonal tech stack diagram with logos: Next.js, PostgreSQL, Prisma, Auth.js, TON, STON.fi Omniston, Reown, Mira, Docker. Dark theme with neon blue and purple accents. |
-| 5 | Swap flow diagram: TON wallet icon → Omniston SDK box → Multiple blockchain icons (Ethereum, BSC, etc.) → Best route highlighted in green. STON.fi branding. Title: "Omniston Integration". |
-| 6 | Mira AI icon centered with radiating connections to: Code Editor, Telegram Chat, Wallet Dashboard, Documentation icons. Glowing purple effect. Title: "Mira AI Integration". |
-| 7 | Data flow diagram: TonAPI cloud icon → Sync Engine gear → PostgreSQL cylinder → Dashboard UI screen. Lock icon on API key. Blue/teal color scheme. Title: "TonAPI Integration". |
-| 8 | Dashboard screenshot mockup: wallet address search bar, event list with pagination, jetton cards with green/red PnL indicators. Clean dark UI. Title: "Wallet Explorer & PnL". |
-| 9 | Auth flow diagram: 3 login method icons (TON Connect wallet, GitHub, Google) → JWT token → Role check shield → Dashboard. Secure feel with lock icons. Title: "Authentication & Security". |
-| 10 | Architecture diagram with colored boxes and arrows: Browser → Next.js → Server (Auth.js, TonAPI, Omniston, Prisma) → PostgreSQL. TonAPI cloud above. Clean technical style. |
-| 11 | Collage of 4-5 app screenshots in a clean grid layout with subtle shadows. Title: "Live Demo". URL badge: ton-wallets.vercel.app. |
-| 12 | Checklist with green checkmarks. Two track badges: "STON.fi Track" and "Mira Track". Clean, confident layout. Title: "Track Compliance". |
-| 13 | 6 feature cards in 2x3 grid: All-in-one, Real PnL, Cross-chain native, AI-assisted, Production-ready, Open architecture. Each with icon and short text. Bold accent colors. |
-| 14 | Horizontal timeline with 4 phases as milestones connected by gradient line. Icons for each phase. Title: "Roadmap". |
-| 15 | Dark background. TON Wallets logo centered. Links below. STON.fi + Mira badges side by side. Large "Vote for us! 🚀" CTA. |
-| 16 | Dark terminal-style code block with syntax-highlighted JSON responses. API route diagram on the side. Green/blue accent colors. Title: "API Endpoints". |
-| 17 | Step-by-step flow diagram with numbered stages. Two wallet icons (TON + EVM) at top, Omniston routing engine in the middle, blockchain icons at bottom. Arrows showing token flow. Title: "Cross-Chain Swap Flow". |
-| 18 | Jetton PnL card mockup with green/red indicators. Mini sparkline charts for 24h/7d/30d. Clean dark UI with data visualization feel. Title: "Jetton PnL Engine". |
-| 19 | Vertical data pipeline diagram with colored stages. Database schema icons. Arrows showing data flow from TonAPI through Sync Engine to PostgreSQL to Dashboard. Blue/teal gradient. Title: "Sync Engine & Data Pipeline". |
-| 20 | 4-panel mockup showing each screen: Wallet List, Wallet Detail, Omnistone Swap, Sign-in. Clean dark UI with realistic data. Numbered labels. Title: "Live Demo — Key Screens". |
+| Slide | Visual Description (English, for image generation)                                                                                                                                                                                                              |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Dark futuristic background with glowing TON blockchain diamond logo, STON.fi gradient wave, and Mira AI icon. Bold title "TON Wallets" in white. Subtitle "Smart Wallet Analytics & Cross-Chain Swaps". Hackathon badge "STON.fi Vibe Coding Hackathon Wave 2". |
+| 2     | Split screen: left side shows chaotic scattered data points, broken charts, question marks in muted gray. Right side shows a frustrated user silhouette. Title overlay: "The Problem".                                                                          |
+| 3     | Clean dashboard mockup showing 5 feature cards: Wallet Explorer, Jetton Portfolio, Swap Analytics, Cross-Chain Swaps, AI Insights. Bright accent colors on dark background. Title: "Our Solution".                                                              |
+| 4     | Hexagonal tech stack diagram with logos: Next.js, PostgreSQL, Prisma, Auth.js, TON, STON.fi Omniston, Reown, Mira, Docker. Dark theme with neon blue and purple accents.                                                                                        |
+| 5     | Swap flow diagram: TON wallet icon → Omniston SDK box → Multiple blockchain icons (Ethereum, BSC, etc.) → Best route highlighted in green. STON.fi branding. Title: "Omniston Integration".                                                                     |
+| 6     | Mira AI icon centered with radiating connections to: Code Editor, Telegram Chat, Wallet Dashboard, Documentation icons. Glowing purple effect. Title: "Mira AI Integration".                                                                                    |
+| 7     | Data flow diagram: TonAPI cloud icon → Sync Engine gear → PostgreSQL cylinder → Dashboard UI screen. Lock icon on API key. Blue/teal color scheme. Title: "TonAPI Integration".                                                                                 |
+| 8     | Dashboard screenshot mockup: wallet address search bar, event list with pagination, jetton cards with green/red PnL indicators. Clean dark UI. Title: "Wallet Explorer & PnL".                                                                                  |
+| 9     | Auth flow diagram: 3 login method icons (TON Connect wallet, GitHub, Google) → JWT token → Role check shield → Dashboard. Secure feel with lock icons. Title: "Authentication & Security".                                                                      |
+| 10    | Architecture diagram with colored boxes and arrows: Browser → Next.js → Server (Auth.js, TonAPI, Omniston, Prisma) → PostgreSQL. TonAPI cloud above. Clean technical style.                                                                                     |
+| 11    | Collage of 4-5 app screenshots in a clean grid layout with subtle shadows. Title: "Live Demo". URL badge: ton-wallets.vercel.app.                                                                                                                               |
+| 12    | Checklist with green checkmarks. Two track badges: "STON.fi Track" and "Mira Track". Clean, confident layout. Title: "Track Compliance".                                                                                                                        |
+| 13    | 6 feature cards in 2x3 grid: All-in-one, Real PnL, Cross-chain native, AI-assisted, Production-ready, Open architecture. Each with icon and short text. Bold accent colors.                                                                                     |
+| 14    | Horizontal timeline with 4 phases as milestones connected by gradient line. Icons for each phase. Title: "Roadmap".                                                                                                                                             |
+| 15    | Dark background. TON Wallets logo centered. Links below. STON.fi + Mira badges side by side. Large "Vote for us! 🚀" CTA.                                                                                                                                       |
+| 16    | Dark terminal-style code block with syntax-highlighted JSON responses. API route diagram on the side. Green/blue accent colors. Title: "API Endpoints".                                                                                                         |
+| 17    | Step-by-step flow diagram with numbered stages. Two wallet icons (TON + EVM) at top, Omniston routing engine in the middle, blockchain icons at bottom. Arrows showing token flow. Title: "Cross-Chain Swap Flow".                                              |
+| 18    | Jetton PnL card mockup with green/red indicators. Mini sparkline charts for 24h/7d/30d. Clean dark UI with data visualization feel. Title: "Jetton PnL Engine".                                                                                                 |
+| 19    | Vertical data pipeline diagram with colored stages. Database schema icons. Arrows showing data flow from TonAPI through Sync Engine to PostgreSQL to Dashboard. Blue/teal gradient. Title: "Sync Engine & Data Pipeline".                                       |
+| 20    | 4-panel mockup showing each screen: Wallet List, Wallet Detail, Omnistone Swap, Sign-in. Clean dark UI with realistic data. Numbered labels. Title: "Live Demo — Key Screens".                                                                                  |

@@ -12,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/shared/components/ui/dropdown-menu";
+import { AppLogo } from "@/shared/presentation/components/AppLogo";
 import { explorerHeaderStyles } from "@/shared/presentation/components/explorer/explorer.styles";
 import { cn } from "@/shared/lib/utils";
 
@@ -75,8 +76,15 @@ export const ExplorerAppHeader = () => {
       )}
     >
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-6">
-        <Link href="/wallets" className={cn(explorerHeaderStyles.brand, "shrink-0")}>
-          TON Wallets
+        <Link
+          href="/wallets"
+          aria-label="Wallets App"
+          className={cn(explorerHeaderStyles.brand, "flex shrink-0 items-center gap-2")}
+        >
+          <AppLogo alt="" />
+          <span className="hidden md:inline" aria-hidden>
+            WALLETS APP
+          </span>
         </Link>
 
         <nav className={cn(explorerHeaderStyles.nav, "hidden md:flex")} aria-label="Main navigation">

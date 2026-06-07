@@ -430,18 +430,29 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       hasMore = true;
     }
 
-    const finalStatus = totals.errors > 0 ? ChainSyncStatus.ERROR : ChainSyncStatus.COMPLETED;
+    const stats = await getWalletStats(normalizedAddress).catch(error => {
+      console.error("getWalletStats after sync failed:", error);
+      return undefined;
+    });
+
+    const syncError =
+      totals.errors > 0
+        ? `${totals.errors} events failed`
+        : stats && stats.incompleteEvents > 0
+          ? `${stats.incompleteEvents} incomplete events`
+          : null;
+
+    const finalStatus =
+      totals.errors > 0 || (stats?.incompleteEvents ?? 0) > 0
+        ? ChainSyncStatus.ERROR
+        : ChainSyncStatus.COMPLETED;
+
     await updateSyncState(normalizedAddress, {
       status: finalStatus,
       eventsSynced: totals.saved,
       actionsSynced: totals.actionsSaved,
-      error: totals.errors > 0 ? `${totals.errors} events failed` : undefined,
+      error: syncError,
       historyComplete,
-    });
-
-    const stats = await getWalletStats(normalizedAddress).catch(error => {
-      console.error("getWalletStats after sync failed:", error);
-      return undefined;
     });
 
     const shouldRefreshPnl = totals.saved > 0 || totals.repaired > 0;
@@ -469,7 +480,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
           status: ChainSyncStatus.PAUSED,
           eventsSynced: totals.saved,
           actionsSynced: totals.actionsSaved,
-          error: undefined,
+          error: null,
         });
       }
 

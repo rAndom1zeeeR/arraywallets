@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { UserAuthMenu } from "@/modules/auth/presentation/components/UserAuthMenu";
 import { ModeToggle } from "@/shared/components/mode-toggle";
+import { AppLogo } from "@/shared/presentation/components/AppLogo";
 
 export const WalletMobileToolbar = () => {
   return (
@@ -15,7 +16,7 @@ export const WalletMobileToolbar = () => {
         <ChevronLeft className="size-3.5 shrink-0" aria-hidden />
         All wallets
       </Link>
-      <span className="text-sm font-semibold text-foreground">TON Wallet</span>
+      <AppLogo size={28} />
       <div className="flex min-w-[4.5rem] items-center justify-end gap-2">
         <div className="[&_button]:size-8 [&_button]:rounded-lg [&_button]:border-border [&_button]:bg-explorer-surface-2">
           <ModeToggle />

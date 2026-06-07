@@ -1,7 +1,27 @@
 import { prisma } from "@/shared/infrastructure/api/prisma";
-import type { ChainSyncStatusValue } from "@/shared/constants/chain-prisma.enums";
+import { ChainSyncStatus, type ChainSyncStatusValue } from "@/shared/constants/chain-prisma.enums";
 import { normalizeWalletAddress, tryToRawTonAddress } from "@/shared/lib/ton/ton-address";
 import type { AnalyzedWalletListItem } from "@/modules/wallet/domain/wallets-list.types";
+
+/**
+ * Clears stale `error` on wallets marked COMPLETED (Prisma skips `undefined` on update).
+ */
+async function reconcileStaleCompletedSyncErrors(
+  syncStates: Array<{ id: string; status: string; error: string | null }>
+): Promise<void> {
+  const staleIds = syncStates
+    .filter(state => state.status === ChainSyncStatus.COMPLETED && state.error !== null)
+    .map(state => state.id);
+
+  if (staleIds.length === 0) {
+    return;
+  }
+
+  await prisma.chainSyncState.updateMany({
+    where: { id: { in: staleIds } },
+    data: { error: null },
+  });
+}
 
 function mergeCountMap(
   target: Map<string, number>,
@@ -35,6 +55,8 @@ export async function getAnalyzedWallets(): Promise<AnalyzedWalletListItem[]> {
     }),
   ]);
 
+  await reconcileStaleCompletedSyncErrors(syncStates);
+
   const eventsByRaw = new Map<string, number>();
   const actionsByRaw = new Map<string, number>();
   mergeCountMap(eventsByRaw, eventCounts);
@@ -55,7 +77,8 @@ export async function getAnalyzedWallets(): Promise<AnalyzedWalletListItem[]> {
       actionsCount: actionsByRaw.get(raw) ?? 0,
       lastUpdated: state.updatedAt.toISOString(),
       completedAt: state.completedAt?.toISOString() ?? null,
-      error: state.error,
+      error:
+        state.status === ChainSyncStatus.ERROR && state.error !== null ? state.error : null,
     });
   }
 
