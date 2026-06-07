@@ -33,16 +33,8 @@ import {
 import { parsePageParam } from "@/modules/wallet/domain/wallet-page.utils";
 import { ChainSyncStatus } from "@/shared/constants/chain-prisma.enums";
 import { explorerStyles } from "@/shared/presentation/components/explorer/explorer.styles";
+import { WalletTransactionsPageSkeleton } from "@/modules/wallet/presentation/components/wallet-transactions-page-skeleton";
 import { cn } from "@/shared/lib/utils";
-
-function WalletTransactionsSkeleton() {
-  return (
-    <div className="animate-pulse space-y-4 px-4 py-6 sm:px-8">
-      <div className="h-48 rounded-xl bg-explorer-surface-2" />
-      <div className="h-64 rounded-xl bg-explorer-surface-2" />
-    </div>
-  );
-}
 
 export interface WalletTransactionsPageProps {
   address: string;
@@ -89,7 +81,7 @@ export function WalletTransactionsPage({
       <WalletMobileToolbar />
       <WalletExplorerBreadcrumb address={address} />
 
-      {isLoading && <WalletTransactionsSkeleton />}
+      {isLoading && <WalletTransactionsPageSkeleton />}
 
       {!isLoading && (isError || !summaryQuery.data) && (
         <div className="mx-4 rounded-xl border border-loss/30 bg-loss/10 px-4 py-3 text-loss sm:mx-8">

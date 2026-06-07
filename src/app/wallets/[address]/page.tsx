@@ -1,5 +1,6 @@
 import { Suspense } from "react";
 import { Address } from "@ton/core";
+import { WalletTransactionsRouteFallback } from "@/modules/wallet/presentation/components/wallet-transactions-route-fallback";
 import { WalletTransactionsPage } from "@/modules/wallet/presentation/pages/WalletTransactionsPage";
 import { normalizeWalletAddress } from "@/shared/lib/ton/ton-address";
 import { decodeWalletAddressParam } from "@/shared/lib/wallet-route.utils";
@@ -34,13 +35,7 @@ export default async function WalletPage({ params, searchParams }: WalletPagePro
   const autoStartSync = query.sync === "1";
 
   return (
-    <Suspense
-      fallback={
-        <main className="flex min-h-screen items-center justify-center bg-background text-sm text-muted-foreground">
-          Loading wallet…
-        </main>
-      }
-    >
+    <Suspense fallback={<WalletTransactionsRouteFallback address={addressString} />}>
       <WalletTransactionsPage address={addressString} autoStartSync={autoStartSync} />
     </Suspense>
   );

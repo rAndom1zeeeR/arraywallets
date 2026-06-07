@@ -111,7 +111,17 @@ export function WalletsListPage({ wallets }: WalletsListPageProps) {
       </div>
 
       <section className={`${pageStyles.infoCard} mb-6`}>
-        <Suspense fallback={<div className="h-20 animate-pulse rounded-lg bg-secondary" />}>
+        <Suspense
+          fallback={
+            <div className="space-y-3" aria-busy="true" aria-label="Loading analyze form">
+              <div className="h-4 w-36 animate-pulse rounded-md bg-explorer-surface-2" />
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <div className="h-10 flex-1 animate-pulse rounded-lg bg-explorer-surface-2" />
+                <div className="h-10 w-full animate-pulse rounded-lg bg-explorer-surface-2 sm:w-28" />
+              </div>
+            </div>
+          }
+        >
           <AnalyzeWalletForm />
         </Suspense>
       </section>
