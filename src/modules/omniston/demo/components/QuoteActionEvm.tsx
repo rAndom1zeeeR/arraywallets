@@ -75,11 +75,11 @@ const _QuoteActionEvm = (props: Omit<ButtonProps, "children">) => {
       </Button>
 
       {buildError && (
-        <div className="animate-in slide-in-from-top-2 fade-in -mt-2 duration-200">
+        <div className="animate-in slide-in-from-top-2 fade-in mt-2 duration-200">
           <CopyJsonCard
             title={<span className="m-0 truncate text-red-500">{buildError.message}</span>}
             value={buildError}
-            className="rounded-t-none border-t-0 border-red-500/30 bg-gradient-to-b from-red-500/10 to-red-500/5 pt-2"
+            className="border-red-500/30 bg-gradient-to-b from-red-500/10 to-red-500/5"
           >
             <pre className="mt-1 overflow-x-auto text-xs break-words whitespace-pre-wrap text-red-500 opacity-70">
               {buildError.stack}

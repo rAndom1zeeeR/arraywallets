@@ -106,7 +106,7 @@ const _QuoteActionTon = (props: Omit<ButtonProps, "children">) => {
       {buildError?.isCancellation && (
         <div
           role="alert"
-          className="animate-in slide-in-from-top-2 fade-in -mt-2 flex items-center justify-center gap-2 rounded-b-md border border-t-0 border-red-500/40 bg-gradient-to-b from-red-500/20 to-red-500/10 px-3 py-2.5 pt-3 duration-200"
+          className="animate-in slide-in-from-top-2 fade-in mt-2 flex items-center justify-center gap-2 rounded-md border border-red-500/40 bg-gradient-to-b from-red-500/20 to-red-500/10 px-3 py-2.5 duration-200"
         >
           <CircleX className="size-4 shrink-0 text-red-500" aria-hidden />
           <p className="text-sm font-medium text-red-500">{buildError.message}</p>
@@ -114,11 +114,11 @@ const _QuoteActionTon = (props: Omit<ButtonProps, "children">) => {
       )}
 
       {buildError && !buildError.isCancellation && buildError.error && (
-        <div className="animate-in slide-in-from-top-2 fade-in -mt-2 duration-200">
+        <div className="animate-in slide-in-from-top-2 fade-in mt-2 duration-200">
           <CopyJsonCard
             title={<span className="m-0 truncate text-red-500">{buildError.message}</span>}
             value={buildError.error}
-            className="rounded-t-none border-t-0 border-red-500/30 bg-gradient-to-b from-red-500/10 to-red-500/5 pt-2"
+            className="border-red-500/30 bg-gradient-to-b from-red-500/10 to-red-500/5"
           >
             <pre className="mt-1 overflow-x-auto text-xs break-words whitespace-pre-wrap text-red-500 opacity-70">
               {buildError.error.stack}
