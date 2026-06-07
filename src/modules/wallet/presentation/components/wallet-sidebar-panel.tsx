@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { QrCode } from "lucide-react";
+import { AlertTriangle, QrCode } from "lucide-react";
+import { hasIncompletePnlValuation } from "@/modules/jetton/domain/pnl-display.utils";
+import type { WalletTabId } from "@/shared/lib/wallet-route.utils";
 import { getWalletPagePath } from "@/shared/lib/wallet-route.utils";
 import type { WalletSummaryQueryResult } from "@/modules/wallet/api/wallet-api.client";
 import { SyncButton } from "@/modules/wallet/presentation/components/SyncButton";
@@ -17,6 +19,7 @@ interface WalletSidebarPanelProps {
   summary: WalletSummaryQueryResult;
   isSyncing: boolean;
   autoStartSync?: boolean;
+  activeTab?: WalletTabId;
 }
 
 export const WalletSidebarPanel = ({
@@ -24,8 +27,11 @@ export const WalletSidebarPanel = ({
   summary,
   isSyncing,
   autoStartSync = false,
+  activeTab,
 }: WalletSidebarPanelProps) => {
   const { stats, syncState, swapStats } = summary;
+  const showPnlIncompleteWarning =
+    activeTab === "pnl" && hasIncompletePnlValuation(swapStats);
   const tonNet = formatMoneyTonFromNanoton(swapStats.aggregate.tonNetNanoton);
   const jettonCount = swapStats.byJetton.length;
   const isActive = syncState?.status !== ChainSyncStatus.ERROR;
@@ -126,6 +132,18 @@ export const WalletSidebarPanel = ({
           )}
         </div>
       </div>
+
+      {showPnlIncompleteWarning ? (
+        <div className="border-t border-border px-5 py-3">
+          <div
+            className="flex items-start gap-2 rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2.5 text-xs leading-relaxed text-amber-400"
+            role="status"
+          >
+            <AlertTriangle className="mt-0.5 size-3.5 shrink-0" aria-hidden />
+            <span>Some trades lack counterparty valuation</span>
+          </div>
+        </div>
+      ) : null}
 
       <SyncButton
         address={address}

@@ -120,6 +120,7 @@ export function WalletTransactionsPage({
               summary={summaryQuery.data}
               isSyncing={Boolean(isSyncing)}
               autoStartSync={autoStartSync}
+              activeTab={activeTab}
             />
             <WalletAccountBalancesPanel
               address={address}
@@ -235,12 +236,7 @@ export function WalletTransactionsPage({
                   </p>
                 </section>
               ) : (
-                <div
-                  id="wallet-tabpanel-pnl"
-                  role="tabpanel"
-                  aria-labelledby="wallet-tab-pnl"
-                  className={cn(explorerStyles.tabPanel, explorerStyles.card, "mx-4 p-5 lg:mx-0")}
-                >
+                <div className={cn(explorerStyles.tabPanel, "mx-4 space-y-4 lg:mx-0")}>
                   <WalletPnlPanel address={address} currentPage={currentPage} stats={swapStats} />
                 </div>
               ))}

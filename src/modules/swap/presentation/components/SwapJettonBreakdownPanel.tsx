@@ -43,7 +43,7 @@ export function SwapJettonBreakdownPanel({ stats, className }: SwapJettonBreakdo
         <div>
           <span className="text-sm font-semibold text-foreground">By jetton</span>
           <p className="mt-0.5 text-xs text-muted-foreground">
-            Asset + Price · Sold/Bought · TON got/paid · Other = USDT etc.
+            Asset · Price · Sold/Bought · Received/Spent (TON + USDT) · Swaps
           </p>
         </div>
       </div>

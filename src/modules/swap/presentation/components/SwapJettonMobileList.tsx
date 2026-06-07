@@ -9,10 +9,8 @@ import {
   getJettonRateQuote,
   useJettonRates,
 } from "@/modules/jetton/presentation/hooks/use-jetton-rates";
-import {
-  formatMoneyJetton,
-  formatMoneyTonFromNanoton,
-} from "@/modules/jetton/domain/money-format.utils";
+import { formatMoneyJetton } from "@/modules/jetton/domain/money-format.utils";
+import { SwapJettonMergedFlowMobileBlock } from "@/modules/swap/presentation/components/swap-jetton-flow-cell";
 import type { JettonRelatedSwapItem } from "@/modules/swap/domain/swap-transaction-list.utils";
 import type { JettonSwapBreakdownFormatted } from "@/modules/swap/domain/swap-stats.utils";
 import { RelatedSwapsPanel } from "@/modules/swap/presentation/components/SwapJettonTable";
@@ -100,18 +98,19 @@ export function SwapJettonMobileList({ rows, relatedByJetton }: SwapJettonMobile
                         {formatMoneyJetton(row.receivedRaw, row.jetton.decimals, row.jetton.symbol)}
                       </div>
                     </div>
-                    <div>
-                      <span className="text-muted-foreground">TON got</span>
-                      <div className="font-semibold tabular-nums text-profit">
-                        {formatMoneyTonFromNanoton(row.tonReceivedNanoton)}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-muted-foreground">TON paid</span>
-                      <div className="font-semibold tabular-nums text-loss">
-                        {formatMoneyTonFromNanoton(row.tonPaidNanoton)}
-                      </div>
-                    </div>
+                    <SwapJettonMergedFlowMobileBlock
+                      title="Received"
+                      tonNanoton={row.tonReceivedNanoton}
+                      otherText={row.counterpartsReceivedText}
+                      tone="profit"
+                    />
+                    <SwapJettonMergedFlowMobileBlock
+                      title="Spent"
+                      tonNanoton={row.tonPaidNanoton}
+                      otherText={row.counterpartsPaidText}
+                      tone="loss"
+                      align="right"
+                    />
                   </div>
 
                   <p className="mt-1.5 text-xs text-muted-foreground">

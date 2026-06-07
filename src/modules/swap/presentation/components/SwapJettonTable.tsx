@@ -5,6 +5,7 @@ import {
   createColumnHelper,
   getCoreRowModel,
   getSortedRowModel,
+  type Column,
   type SortingState,
   useReactTable,
 } from "@tanstack/react-table";
@@ -19,12 +20,16 @@ import {
   getJettonSwapRoleLabel,
   type JettonRelatedSwapItem,
 } from "@/modules/swap/domain/swap-transaction-list.utils";
-import { formatMoneyJetton, formatMoneyTonFromNanoton } from "@/modules/jetton/domain/money-format.utils";
+import { formatMoneyJetton } from "@/modules/jetton/domain/money-format.utils";
 import { formatTonFromNanoton, parseNanoton } from "@/shared/lib/ton/ton-amount.utils";
 import type { JettonSwapBreakdownFormatted } from "@/modules/swap/domain/swap-stats.utils";
 import { buildTonviewerTransactionUrl } from "@/shared/lib/tonviewer";
 import { tonapiBaseUrl } from "@/shared/config/env.public.config";
 import { SwapJettonMobileList } from "@/modules/swap/presentation/components/SwapJettonMobileList";
+import {
+  SWAP_JETTON_FLOW_SUBTITLE,
+  SwapJettonMergedFlowCell,
+} from "@/modules/swap/presentation/components/swap-jetton-flow-cell";
 import { DataTable } from "@/shared/presentation/components/data-table/data-table";
 import { ResponsiveDataTable } from "@/shared/presentation/components/data-table/responsive-data-table";
 import { DataTableSortHeader } from "@/shared/presentation/components/data-table/sortable-header";
@@ -132,6 +137,45 @@ interface SwapJettonTableRow extends JettonSwapBreakdownFormatted {
 
 const columnHelper = createColumnHelper<SwapJettonTableRow>();
 
+function resolveReceivedSortValue(row: JettonSwapBreakdownFormatted): bigint {
+  if (row.tonReceivedNanoton > 0n) {
+    return row.tonReceivedNanoton;
+  }
+
+  return sumCounterpartAmounts(row.counterpartsReceived);
+}
+
+function resolveSpentSortValue(row: JettonSwapBreakdownFormatted): bigint {
+  if (row.tonPaidNanoton > 0n) {
+    return row.tonPaidNanoton;
+  }
+
+  return sumCounterpartAmounts(row.counterpartsPaid);
+}
+
+interface MergedFlowColumnHeaderProps {
+  column: Column<SwapJettonTableRow, unknown>;
+  title: string;
+  className?: string;
+}
+
+function MergedFlowColumnHeader({ column, title, className }: MergedFlowColumnHeaderProps) {
+  return (
+    <DataTableSortHeader
+      column={column}
+      className={className}
+      label={
+        <span className="inline-flex flex-col items-end gap-0.5 leading-tight">
+          <span>{title}</span>
+          <span className="text-[10px] font-normal normal-case tracking-normal text-muted-foreground">
+            {SWAP_JETTON_FLOW_SUBTITLE}
+          </span>
+        </span>
+      }
+    />
+  );
+}
+
 function resolveSortPriceUsd(row: JettonSwapBreakdownFormatted): number | null {
   const dbUsd = row.jetton.price?.usd;
   if (dbUsd !== null && dbUsd !== undefined && dbUsd > 0) {
@@ -220,53 +264,45 @@ export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps)
         cell: ({ row }) =>
           formatMoneyJetton(row.original.receivedRaw, row.original.jetton.decimals, row.original.jetton.symbol),
       }),
-      columnHelper.accessor("tonReceivedNanoton", {
-        id: "tonGot",
-        header: ({ column }) => <DataTableSortHeader column={column} label="TON got" className="text-profit" />,
-        sortingFn: createBigintSortingFn("tonGot"),
+      columnHelper.accessor(resolveReceivedSortValue, {
+        id: "received",
+        header: ({ column }) => (
+          <MergedFlowColumnHeader column={column} title="Received" className="text-profit" />
+        ),
+        sortingFn: createBigintSortingFn("received"),
         meta: {
           align: "right",
           hideBelow: "md",
           headerClassName: "text-profit",
           cellClassName: "text-profit tabular-nums",
         },
-        cell: ({ row }) => formatMoneyTonFromNanoton(row.original.tonReceivedNanoton),
+        cell: ({ row }) => (
+          <SwapJettonMergedFlowCell
+            tonNanoton={row.original.tonReceivedNanoton}
+            otherText={row.original.counterpartsReceivedText}
+            tone="profit"
+          />
+        ),
       }),
-      columnHelper.accessor("tonPaidNanoton", {
-        id: "tonPaid",
-        header: ({ column }) => <DataTableSortHeader column={column} label="TON paid" className="text-loss" />,
-        sortingFn: createBigintSortingFn("tonPaid"),
+      columnHelper.accessor(resolveSpentSortValue, {
+        id: "spent",
+        header: ({ column }) => (
+          <MergedFlowColumnHeader column={column} title="Spent" className="text-loss" />
+        ),
+        sortingFn: createBigintSortingFn("spent"),
         meta: {
           align: "right",
           hideBelow: "md",
           headerClassName: "text-loss",
           cellClassName: "text-loss tabular-nums",
         },
-        cell: ({ row }) => formatMoneyTonFromNanoton(row.original.tonPaidNanoton),
-      }),
-      columnHelper.accessor(row => sumCounterpartAmounts(row.counterpartsReceived), {
-        id: "otherGot",
-        header: ({ column }) => <DataTableSortHeader column={column} label="Other got" className="text-profit" />,
-        sortingFn: createBigintSortingFn("otherGot"),
-        meta: {
-          align: "right",
-          hideBelow: "lg",
-          headerClassName: "text-profit",
-          cellClassName: "text-profit tabular-nums",
-        },
-        cell: ({ row }) => row.original.counterpartsReceivedText,
-      }),
-      columnHelper.accessor(row => sumCounterpartAmounts(row.counterpartsPaid), {
-        id: "otherPaid",
-        header: ({ column }) => <DataTableSortHeader column={column} label="Other paid" className="text-loss" />,
-        sortingFn: createBigintSortingFn("otherPaid"),
-        meta: {
-          align: "right",
-          hideBelow: "lg",
-          headerClassName: "text-loss",
-          cellClassName: "text-loss tabular-nums",
-        },
-        cell: ({ row }) => row.original.counterpartsPaidText,
+        cell: ({ row }) => (
+          <SwapJettonMergedFlowCell
+            tonNanoton={row.original.tonPaidNanoton}
+            otherText={row.original.counterpartsPaidText}
+            tone="loss"
+          />
+        ),
       }),
       columnHelper.accessor(row => row.legsIn + row.legsOut, {
         id: "swaps",
@@ -359,7 +395,7 @@ export function SwapJettonTable({ rows, relatedByJetton }: SwapJettonTableProps)
         desktop={
           <DataTable
             table={table}
-            tableClassName="min-w-[32rem] lg:min-w-[56rem]"
+            tableClassName="min-w-[32rem] lg:min-w-[48rem]"
             isRowExpanded={row => expandedRowIds[row.id] ?? false}
             renderSubComponent={renderSubComponent}
           />

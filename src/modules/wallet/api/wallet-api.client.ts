@@ -12,6 +12,11 @@ import {
   applyWalletHistoryFiltersToSearchParams,
   encodeWalletAddressParam,
 } from "@/shared/lib/wallet-route.utils";
+import {
+  sanitizeWalletAccountBalances,
+  sanitizeWalletEventsPage,
+  sanitizeWalletSwapStats,
+} from "@/shared/lib/hidden-jettons.utils";
 
 interface WalletSummaryResponse {
   totalEvents: number;
@@ -38,13 +43,13 @@ export async function fetchWalletSummary(address: string): Promise<WalletSummary
     totalEvents: data.totalEvents,
     syncState: data.syncState,
     stats: data.stats,
-    swapStats: reviveWalletSwapStats(data.swapStats),
+    swapStats: sanitizeWalletSwapStats(reviveWalletSwapStats(data.swapStats)),
   };
 }
 
 export function fetchWalletBalances(address: string): Promise<WalletAccountBalances> {
-  return apiClient<SerializedWalletAccountBalances>(`${walletApiBase(address)}/balances`).then(
-    reviveWalletAccountBalances
+  return apiClient<SerializedWalletAccountBalances>(`${walletApiBase(address)}/balances`).then(data =>
+    sanitizeWalletAccountBalances(reviveWalletAccountBalances(data))
   );
 }
 
@@ -57,5 +62,7 @@ export function fetchWalletEvents(
   params.set("page", String(page));
   applyWalletHistoryFiltersToSearchParams(params, filters);
 
-  return apiClient<WalletEventsPageData>(`${walletApiBase(address)}/events?${params.toString()}`);
+  return apiClient<WalletEventsPageData>(`${walletApiBase(address)}/events?${params.toString()}`).then(
+    sanitizeWalletEventsPage
+  );
 }

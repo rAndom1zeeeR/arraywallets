@@ -1,17 +1,16 @@
 "use client";
 
-import { Suspense } from "react";
+import { useMemo } from "react";
 import {
   JETTON_PNL_PAGE_SIZE,
   JettonPnlPagination,
 } from "@/modules/jetton/presentation/components/JettonPnlPagination";
-import { BaseAssetSwapPnlSection } from "@/modules/jetton/presentation/components/BaseAssetSwapPnlSection";
-import { TonPureTransfersSection } from "@/modules/jetton/presentation/components/TonPureTransfersSection";
-import { JettonPortfolioPnlTable } from "@/modules/jetton/presentation/components/JettonPortfolioPnlTable";
+import { WalletPnlSummaryCards } from "@/modules/jetton/presentation/components/wallet-pnl-summary-cards";
+import { WalletPnlTradesTable } from "@/modules/jetton/presentation/components/wallet-pnl-trades-table";
+import { WalletPnlUsdtNotice } from "@/modules/jetton/presentation/components/wallet-pnl-usdt-notice";
+import { formatUsd } from "@/modules/jetton/domain/money-format.utils";
+import type { JettonPortfolioPnlLine } from "@/modules/jetton/domain/jetton-portfolio-pnl.utils";
 import type { WalletSwapStatsResult } from "@/modules/swap/application/swap-stats.service";
-import { DataTableShell } from "@/shared/presentation/components/data-table/data-table-shell";
-import { pageStyles } from "@/shared/presentation/components/data-table/data-table.styles";
-import { cn } from "@/shared/lib/utils";
 
 export interface WalletPnlPanelProps {
   address: string;
@@ -19,85 +18,75 @@ export interface WalletPnlPanelProps {
   stats: WalletSwapStatsResult;
 }
 
-export function WalletPnlPanel({ address, currentPage, stats }: WalletPnlPanelProps) {
-  const { portfolio, pnl, tonPortfolio, usdtPortfolio, aggregate, tonPnlWithTransfers, tonTransfers } = stats;
+function buildTradeRows(
+  tonPortfolio: JettonPortfolioPnlLine | null,
+  portfolio: JettonPortfolioPnlLine[],
+  pageIndex: number,
+  pageSize: number
+): JettonPortfolioPnlLine[] {
+  const tonKey = tonPortfolio?.jetton.address.toLowerCase();
+  const jettonRows = portfolio.filter(
+    row => !tonKey || row.jetton.address.toLowerCase() !== tonKey
+  );
 
-  const totalJettons = portfolio.length;
-  const totalPages = Math.max(1, Math.ceil(totalJettons / JETTON_PNL_PAGE_SIZE));
-  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+  const totalPages = Math.max(1, Math.ceil(jettonRows.length / pageSize));
+  const safePage = Math.min(Math.max(1, pageIndex), totalPages);
+  const pagedJettons = jettonRows.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  const rows: JettonPortfolioPnlLine[] = [];
+  if (tonPortfolio) {
+    rows.push(tonPortfolio);
+  }
+  rows.push(...pagedJettons);
+
+  return rows;
+}
+
+export function WalletPnlPanel({ address, currentPage, stats }: WalletPnlPanelProps) {
+  const { portfolio, pnl, tonPortfolio, usdtPortfolio, tonPnlWithTransfers } = stats;
+
   const hasUsdtFlow = pnl.usdt.spentRaw > 0n || pnl.usdt.receivedRaw > 0n;
+  const jettonCount = portfolio.filter(
+    row => !tonPortfolio || row.jetton.address.toLowerCase() !== tonPortfolio.jetton.address.toLowerCase()
+  ).length;
+  const totalPages = Math.max(1, Math.ceil(jettonCount / JETTON_PNL_PAGE_SIZE));
+  const safePage = Math.min(Math.max(1, currentPage), totalPages);
+
+  const tradeRows = useMemo(
+    () => buildTradeRows(tonPortfolio, portfolio, safePage, JETTON_PNL_PAGE_SIZE),
+    [tonPortfolio, portfolio, safePage]
+  );
 
   return (
     <div
       id="wallet-tabpanel-pnl"
       role="tabpanel"
       aria-labelledby="wallet-tab-pnl"
-      className="space-y-6"
+      className="space-y-4"
     >
-      <BaseAssetSwapPnlSection
-        title="PnL TON (incl. pTON)"
-        subtitle="Swaps + pure TON transfers (excluding swap events). Total PnL includes withdrawn TON."
-        flowPnl={pnl.ton}
-        portfolioLine={tonPortfolio}
-        currency="ton"
-        swapCount={aggregate.swapCount}
-        tonPnlWithTransfers={tonPnlWithTransfers}
-      />
+      <WalletPnlSummaryCards flowPnl={pnl.ton} tonPnlWithTransfers={tonPnlWithTransfers} />
 
-      {hasUsdtFlow ? (
-        <BaseAssetSwapPnlSection
-          title={`PnL ${usdtPortfolio?.jetton.symbol ?? "USDT"}`}
-          subtitle="USDT / jUSDT on swaps — USD only, not mixed with TON."
-          flowPnl={pnl.usdt}
-          portfolioLine={usdtPortfolio}
-          currency="usd"
-          swapCount={aggregate.swapCount}
+      <WalletPnlTradesTable rows={tradeRows} />
+
+      {jettonCount > JETTON_PNL_PAGE_SIZE ? (
+        <JettonPnlPagination
+          address={address}
+          currentPage={safePage}
+          totalPages={totalPages}
+          totalJettons={jettonCount}
         />
-      ) : (
-        <section className={cn(pageStyles.section, "border-dashed")}>
-          <h2 className={pageStyles.sectionTitle}>PnL USDT</h2>
-          <p className={pageStyles.sectionSubtitle}>No swaps with USDT / jUSDT / USD₮ in wallet data.</p>
+      ) : null}
+
+      {hasUsdtFlow && usdtPortfolio ? (
+        <section className="rounded-xl border border-border bg-explorer-surface px-4 py-3 text-sm text-muted-foreground">
+          PnL {usdtPortfolio.jetton.symbol}:{" "}
+          <span className="text-foreground tabular-nums">
+            {formatUsd(usdtPortfolio.currentProfitUsd) ?? "—"}
+          </span>
         </section>
+      ) : (
+        <WalletPnlUsdtNotice symbol={usdtPortfolio?.jetton.symbol ?? "USDT"} />
       )}
-
-      {portfolio.length > 0 && (
-        <DataTableShell
-          title="Your Assets"
-          subtitle={`TON and USD legs separately · ${totalJettons} tokens`}
-        >
-          {totalJettons > JETTON_PNL_PAGE_SIZE && (
-            <div className="mb-4">
-              <JettonPnlPagination
-                address={address}
-                currentPage={safePage}
-                totalPages={totalPages}
-                totalJettons={totalJettons}
-              />
-            </div>
-          )}
-
-          <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
-            <JettonPortfolioPnlTable
-              rows={portfolio}
-              pageIndex={safePage - 1}
-              pageSize={JETTON_PNL_PAGE_SIZE}
-            />
-          </Suspense>
-
-          {totalJettons > JETTON_PNL_PAGE_SIZE && (
-            <div className="mt-4">
-              <JettonPnlPagination
-                address={address}
-                currentPage={safePage}
-                totalPages={totalPages}
-                totalJettons={totalJettons}
-              />
-            </div>
-          )}
-        </DataTableShell>
-      )}
-
-      <TonPureTransfersSection transfers={tonTransfers} />
     </div>
   );
 }
