@@ -9,6 +9,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Direct TCP (db.prisma.io) — migrations, Studio, introspection only
+    url: process.env["DIRECT_URL"] ?? process.env["DATABASE_URL"],
   },
 });
