@@ -5,6 +5,12 @@ const STORED_AMOUNT_LABEL_RE = /^([+-]?)((?:\d[\d ]*)?(?:\.\d+)?)\s+(.+)$/;
 const TON_DECIMALS = 9;
 const NANOTON_PER_TON = 10n ** BigInt(TON_DECIMALS);
 
+const COMPACT_THOUSAND = 1_000;
+const COMPACT_MILLION = 1_000_000;
+const COMPACT_SUBSCRIPT_ZERO_THRESHOLD = 4;
+const COMPACT_MAX_SUFFIX_FRACTION_DIGITS = 2;
+const COMPACT_MAX_SIGNIFICANT_FRACTION_DIGITS = 4;
+
 /** Table / card display presets. */
 export type MoneyFormatPreset =
   | "usd"
@@ -36,6 +42,204 @@ function formatPlainNumber(
   minFractionDigits = 0
 ): string {
   return getPlainNumberFormatter(maxFractionDigits, minFractionDigits).format(value);
+}
+
+function trimTrailingFractionZeros(value: string): string {
+  if (!value.includes(".")) {
+    return value;
+  }
+
+  return value.replace(/(\.\d*?[1-9])0+$/u, "$1").replace(/\.0+$/u, "").replace(/\.$/u, "");
+}
+
+function formatCompactScaledValue(scaled: number, maxFractionDigits: number): string {
+  const fixed = scaled.toFixed(maxFractionDigits);
+  return trimTrailingFractionZeros(fixed);
+}
+
+/**
+ * Compact decimal with subscript zero count: `0.0000154` → `0.0(3)154`.
+ * Parentheses hold how many extra zeros follow the displayed `0.0` before significant digits.
+ */
+export function formatCompactSubscriptDecimal(absDecimal: string): string {
+  const normalized = absDecimal.replace(/^0+(?=\d)/u, "");
+  const dotIndex = normalized.indexOf(".");
+
+  if (dotIndex === -1) {
+    return normalized || "0";
+  }
+
+  const fraction = normalized.slice(dotIndex + 1);
+  const firstNonZeroIndex = fraction.search(/[1-9]/u);
+
+  if (firstNonZeroIndex === -1) {
+    return "0";
+  }
+
+  const leadingZeros = firstNonZeroIndex;
+  const significant = fraction.slice(firstNonZeroIndex).replace(/0+$/u, "");
+  const compactSignificant = significant.slice(0, COMPACT_MAX_SIGNIFICANT_FRACTION_DIGITS);
+
+  if (leadingZeros < COMPACT_SUBSCRIPT_ZERO_THRESHOLD) {
+    const plain = `0.${fraction.slice(0, firstNonZeroIndex + compactSignificant.length)}`;
+    return trimTrailingFractionZeros(plain);
+  }
+
+  const subscriptZeroCount = leadingZeros - 1;
+  return `0.0(${subscriptZeroCount})${compactSignificant}`;
+}
+
+/** Matches compact subscript amounts like `0.0(5)937` or `-0.0(3)77 TON`. */
+export const COMPACT_MONEY_SUBSCRIPT_RE =
+  /^(-?)0\.0\((\d+)\)([\d.km]+?)(?:\s+(.+))?$/iu;
+
+export interface CompactMoneySubscriptParts {
+  sign: string;
+  zeroCount: string;
+  significant: string;
+  symbol?: string;
+}
+
+/** Parses subscript compact money text for UI rendering. */
+export function parseCompactMoneySubscript(value: string): CompactMoneySubscriptParts | null {
+  const match = value.trim().match(COMPACT_MONEY_SUBSCRIPT_RE);
+  if (!match) {
+    return null;
+  }
+
+  const [, sign = "", zeroCount = "", significant = "", symbol] = match;
+  return {
+    sign,
+    zeroCount,
+    significant,
+    symbol: symbol?.trim() || undefined,
+  };
+}
+
+/** Formats a human-readable decimal string (`"20010913.5"`) into compact money text. */
+export function formatCompactDecimalString(
+  decimal: string,
+  options?: { suffix?: string }
+): string {
+  const trimmed = decimal.trim();
+  if (!trimmed) {
+    return options?.suffix ? `0 ${options.suffix}` : "0";
+  }
+
+  const isNegative = trimmed.startsWith("-");
+  const unsigned = isNegative ? trimmed.slice(1) : trimmed;
+  const sign = isNegative ? "-" : "";
+
+  if (unsigned === "0" || unsigned === "0.0") {
+    const zero = options?.suffix ? `0 ${options.suffix}` : "0";
+    return isNegative ? `-${zero}` : zero;
+  }
+
+  const [wholePart = "0", fractionPart = ""] = unsigned.split(".");
+  const whole = BigInt(wholePart || "0");
+
+  if (whole >= BigInt(COMPACT_MILLION)) {
+    const scaled = Number(`${wholePart}.${fractionPart.slice(0, 6)}`) / COMPACT_MILLION;
+    const amount = `${sign}${formatCompactScaledValue(scaled, COMPACT_MAX_SUFFIX_FRACTION_DIGITS)}m`;
+    return options?.suffix ? `${amount} ${options.suffix}` : amount;
+  }
+
+  if (whole >= BigInt(COMPACT_THOUSAND)) {
+    const scaled = Number(`${wholePart}.${fractionPart.slice(0, 6)}`) / COMPACT_THOUSAND;
+    const amount = `${sign}${formatCompactScaledValue(scaled, COMPACT_MAX_SUFFIX_FRACTION_DIGITS)}k`;
+    return options?.suffix ? `${amount} ${options.suffix}` : amount;
+  }
+
+  if (whole >= 1n) {
+    const amount = `${sign}${trimTrailingFractionZeros(
+      fractionPart
+        ? `${wholePart}.${fractionPart.slice(0, COMPACT_MAX_SUFFIX_FRACTION_DIGITS)}`
+        : wholePart
+    )}`;
+    return options?.suffix ? `${amount} ${options.suffix}` : amount;
+  }
+
+  const subscriptAmount = `${sign}${formatCompactSubscriptDecimal(unsigned)}`;
+  return options?.suffix ? `${subscriptAmount} ${options.suffix}` : subscriptAmount;
+}
+
+/** Compact money: `20.01m`, `100k`, `0.0(3)154`. */
+export function formatCompactNumber(value: number, suffix?: string): string {
+  if (!Number.isFinite(value)) {
+    return "—";
+  }
+
+  if (value === 0) {
+    return suffix ? `0 ${suffix}` : "0";
+  }
+
+  const sign = value < 0 ? "-" : "";
+  const abs = Math.abs(value);
+
+  if (abs >= COMPACT_MILLION) {
+    const amount = `${sign}${formatCompactScaledValue(abs / COMPACT_MILLION, COMPACT_MAX_SUFFIX_FRACTION_DIGITS)}m`;
+    return suffix ? `${amount} ${suffix}` : amount;
+  }
+
+  if (abs >= COMPACT_THOUSAND) {
+    const amount = `${sign}${formatCompactScaledValue(abs / COMPACT_THOUSAND, COMPACT_MAX_SUFFIX_FRACTION_DIGITS)}k`;
+    return suffix ? `${amount} ${suffix}` : amount;
+  }
+
+  if (abs >= 1) {
+    const amount = `${sign}${formatCompactScaledValue(abs, COMPACT_MAX_SUFFIX_FRACTION_DIGITS)}`;
+    return suffix ? `${amount} ${suffix}` : amount;
+  }
+
+  const decimal = abs.toFixed(18).replace(/0+$/u, "");
+  return formatCompactDecimalString(`${sign}${decimal}`, { suffix });
+}
+
+function formatCompactFromRawUnits(
+  raw: bigint,
+  decimals: number,
+  suffix?: string
+): string {
+  const sign = raw < 0n ? "-" : "";
+  const abs = raw < 0n ? -raw : raw;
+
+  if (abs === 0n) {
+    return suffix ? `0 ${suffix}` : "0";
+  }
+
+  if (decimals <= 0) {
+    return formatCompactDecimalString(`${sign}${abs.toString()}`, { suffix });
+  }
+
+  const divisor = 10n ** BigInt(decimals);
+  const whole = abs / divisor;
+  const frac = abs % divisor;
+
+  if (frac === 0n) {
+    return formatCompactDecimalString(`${sign}${whole.toString()}`, { suffix });
+  }
+
+  const fracPadded = frac.toString().padStart(decimals, "0").replace(/0+$/u, "");
+  return formatCompactDecimalString(`${sign}${whole.toString()}.${fracPadded}`, { suffix });
+}
+
+/** Compact jetton balance from on-chain raw units. */
+export function formatCompactMoneyJetton(
+  raw: bigint | string | number | null | undefined,
+  decimals: number,
+  symbol = ""
+): string {
+  const amount = coerceNanoton(raw);
+  const suffix = symbol.trim() || undefined;
+  return formatCompactFromRawUnits(amount, decimals, suffix);
+}
+
+/** Compact TON balance from nanoton. */
+export function formatCompactMoneyTonFromNanoton(
+  nanoton: bigint | string | number | null | undefined
+): string {
+  const amount = coerceNanoton(nanoton);
+  return formatCompactFromRawUnits(amount, TON_DECIMALS, "TON");
 }
 
 /** Groups integer digits with spaces: `32545625` → `32 545 625`. */

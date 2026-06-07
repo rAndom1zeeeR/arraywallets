@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { formatMoneyJetton } from "@/modules/jetton/domain/money-format.utils";
+import { CompactMoneyJettonAmount } from "@/modules/jetton/presentation/components/CompactMoneyAmount";
 import { JettonAssetCell } from "@/modules/jetton/presentation/components/JettonAssetCell";
 import type { WalletAccountBalances } from "@/modules/wallet/domain/wallet-balances.types";
 import { walletBalancesQueryOptions } from "@/modules/wallet/presentation/hooks/wallet-query-options";
@@ -76,9 +76,11 @@ export const WalletAccountBalancesPanel = ({
       <div className={explorerStyles.cardBody}>
         <div className={explorerStyles.metricRow}>
           <span className={explorerStyles.metricLabel}>TON</span>
-          <span className={cn(explorerStyles.metricValue, "tabular-nums")}>
-            {formatMoneyJetton(tonBalanceNanoton, 9, "")}
-          </span>
+          <CompactMoneyJettonAmount
+            raw={tonBalanceNanoton}
+            decimals={9}
+            className={cn(explorerStyles.metricValue, "tabular-nums")}
+          />
         </div>
 
         {jettons.length > 0 ? (
@@ -95,9 +97,11 @@ export const WalletAccountBalancesPanel = ({
                     className="flex items-center justify-between gap-3 rounded-lg border border-border bg-explorer-surface-2/40 px-3 py-2"
                   >
                     <JettonAssetCell jetton={row.jetton} />
-                    <span className="shrink-0 text-right text-sm font-semibold text-foreground tabular-nums">
-                      {formatMoneyJetton(row.balanceRaw, row.jetton.decimals, "")}
-                    </span>
+                    <CompactMoneyJettonAmount
+                      raw={row.balanceRaw}
+                      decimals={row.jetton.decimals}
+                      className="shrink-0 text-right text-sm font-semibold text-foreground tabular-nums"
+                    />
                   </li>
                 ))}
               </ul>
