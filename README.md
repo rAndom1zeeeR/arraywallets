@@ -1,4 +1,4 @@
-# TON Wallets
+# ArrayWallets
 
 TON wallet events, sync, swap analytics, and jetton/portfolio PnL — built with Next.js 16, Prisma 7, and PostgreSQL.
 

@@ -1,4 +1,4 @@
-# TON Wallets
+# ArrayWallets
 
 > События кошельков TON, синхронизация, аналитика свапов и PnL жеттонов/портфеля — на Next.js 16, Prisma 7 и TonAPI.
 
