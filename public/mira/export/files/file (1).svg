@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <clipPath id="leftHalf">
+      <rect x="0" y="0" width="256" height="512"/>
+    </clipPath>
+    <clipPath id="rightHalf">
+      <rect x="256" y="0" width="256" height="512"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" fill="#000000"/>
+
+  <!-- Diamond outline - LEFT half (white) -->
+  <path d="M256 48 L464 256 L256 464 L48 256 Z" 
+        fill="none" stroke="#FFFFFF" stroke-width="28" stroke-linejoin="round"
+        clip-path="url(#leftHalf)"/>
+
+  <!-- Diamond outline - RIGHT half (blue) -->
+  <path d="M256 48 L464 256 L256 464 L48 256 Z" 
+        fill="none" stroke="#0099FF" stroke-width="28" stroke-linejoin="round"
+        clip-path="url(#rightHalf)"/>
+
+  <!-- Center vertical line - LEFT half (white) -->
+  <line x1="256" y1="100" x2="256" y2="412" 
+        stroke="#FFFFFF" stroke-width="20" stroke-linecap="round"
+        clip-path="url(#leftHalf)"/>
+
+  <!-- Center vertical line - RIGHT half (blue) -->
+  <line x1="256" y1="100" x2="256" y2="412" 
+        stroke="#0099FF" stroke-width="20" stroke-linecap="round"
+        clip-path="url(#rightHalf)"/>
+
+  <!-- Chain link TOP - LEFT half (white) -->
+  <path d="M256 140 C220 140 200 170 200 195 C200 220 220 240 256 240" 
+        fill="none" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round"
+        clip-path="url(#leftHalf)"/>
+
+  <!-- Chain link TOP - RIGHT half (blue) -->
+  <path d="M256 140 C292 140 312 170 312 195 C312 220 292 240 256 240" 
+        fill="none" stroke="#0099FF" stroke-width="20" stroke-linecap="round"
+        clip-path="url(#rightHalf)"/>
+
+  <!-- Chain link BOTTOM - LEFT half (white) -->
+  <path d="M256 272 C220 272 200 302 200 327 C200 352 220 372 256 372" 
+        fill="none" stroke="#FFFFFF" stroke-width="20" stroke-linecap="round"
+        clip-path="url(#leftHalf)"/>
+
+  <!-- Chain link BOTTOM - RIGHT half (blue) -->
+  <path d="M256 272 C292 272 312 302 312 327 C312 352 292 372 256 372" 
+        fill="none" stroke="#0099FF" stroke-width="20" stroke-linecap="round"
+        clip-path="url(#rightHalf)"/>
+
+  <!-- Circuit traces on right side (blue) -->
+  <!-- Top trace: from right edge to top node -->
+  <path d="M420 140 L340 140 L320 160" 
+        fill="none" stroke="#0099FF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Top node -->
+  <circle cx="320" cy="160" r="14" fill="#0099FF"/>
+
+  <!-- Middle trace: from right edge to middle node -->
+  <path d="M430 256 L340 256" 
+        fill="none" stroke="#0099FF" stroke-width="10" stroke-linecap="round"/>
+  <!-- Middle node -->
+  <circle cx="340" cy="256" r="14" fill="#0099FF"/>
+
+  <!-- Bottom trace: from right edge to bottom node -->
+  <path d="M420 372 L340 372 L320 352" 
+        fill="none" stroke="#0099FF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Bottom node -->
+  <circle cx="320" cy="352" r="14" fill="#0099FF"/>
+</svg>

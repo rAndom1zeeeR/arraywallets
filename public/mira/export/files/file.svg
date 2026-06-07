@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <clipPath id="leftClip">
+      <rect x="0" y="0" width="16" height="32"/>
+    </clipPath>
+    <clipPath id="rightClip">
+      <rect x="16" y="0" width="16" height="32"/>
+    </clipPath>
+  </defs>
+
+  <!-- Diamond outline - left half (white) -->
+  <path d="M16 2 L30 16 L16 30 L2 16 Z" 
+        fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"
+        clip-path="url(#leftClip)"/>
+
+  <!-- Diamond outline - right half (blue) -->
+  <path d="M16 2 L30 16 L16 30 L2 16 Z" 
+        fill="none" stroke="#0098EA" stroke-width="2" stroke-linejoin="round"
+        clip-path="url(#rightClip)"/>
+
+  <!-- Center vertical line -->
+  <line x1="16" y1="6" x2="16" y2="26" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round" clip-path="url(#leftClip)"/>
+  <line x1="16" y1="6" x2="16" y2="26" stroke="#0098EA" stroke-width="1.5" stroke-linecap="round" clip-path="url(#rightClip)"/>
+
+  <!-- Chain link top - left half -->
+  <path d="M16 8 C13 8 12 10 12 11.5 C12 13 13 14 16 14" 
+        fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"
+        clip-path="url(#leftClip)"/>
+
+  <!-- Chain link top - right half -->
+  <path d="M16 8 C19 8 20 10 20 11.5 C20 13 19 14 16 14" 
+        fill="none" stroke="#0098EA" stroke-width="1.5" stroke-linecap="round"
+        clip-path="url(#rightClip)"/>
+
+  <!-- Chain link bottom - left half -->
+  <path d="M16 18 C13 18 12 20 12 21.5 C12 23 13 24 16 24" 
+        fill="none" stroke="#FFFFFF" stroke-width="1.5" stroke-linecap="round"
+        clip-path="url(#leftClip)"/>
+
+  <!-- Chain link bottom - right half -->
+  <path d="M16 18 C19 18 20 20 20 21.5 C20 23 19 24 16 24" 
+        fill="none" stroke="#0098EA" stroke-width="1.5" stroke-linecap="round"
+        clip-path="url(#rightClip)"/>
+
+  <!-- Circuit nodes on right side -->
+  <line x1="20" y1="9.5" x2="25" y2="7" stroke="#0098EA" stroke-width="0.8" stroke-linecap="round"/>
+  <circle cx="25" cy="7" r="1" fill="#0098EA"/>
+
+  <line x1="20" y1="16" x2="26" y2="16" stroke="#0098EA" stroke-width="0.8" stroke-linecap="round"/>
+  <circle cx="26" cy="16" r="1" fill="#0098EA"/>
+
+  <line x1="20" y1="22.5" x2="25" y2="25" stroke="#0098EA" stroke-width="0.8" stroke-linecap="round"/>
+  <circle cx="25" cy="25" r="1" fill="#0098EA"/>
+</svg>

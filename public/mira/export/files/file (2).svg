@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000" width="1000" height="1000">
+  <defs>
+    <clipPath id="leftHalf">
+      <rect x="0" y="0" width="500" height="1000"/>
+    </clipPath>
+    <clipPath id="rightHalf">
+      <rect x="500" y="0" width="500" height="1000"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1000" height="1000" fill="#000000"/>
+
+  <!-- Diamond outline - LEFT half (white) -->
+  <path d="M500 60 L940 500 L500 940 L60 500 Z" 
+        fill="none" stroke="#FFFFFF" stroke-width="80" stroke-linejoin="round"
+        clip-path="url(#leftHalf)"/>
+
+  <!-- Diamond outline - RIGHT half (blue) -->
+  <path d="M500 60 L940 500 L500 940 L60 500 Z" 
+        fill="none" stroke="#009BFA" stroke-width="80" stroke-linejoin="round"
+        clip-path="url(#rightHalf)"/>
+
+  <!-- Center vertical bar - LEFT half (white) -->
+  <line x1="500" y1="200" x2="500" y2="800" 
+        stroke="#FFFFFF" stroke-width="60" stroke-linecap="round"
+        clip-path="url(#leftHalf)"/>
+
+  <!-- Center vertical bar - RIGHT half (blue) -->
+  <line x1="500" y1="200" x2="500" y2="800" 
+        stroke="#009BFA" stroke-width="60" stroke-linecap="round"
+        clip-path="url(#rightHalf)"/>
+
+  <!-- Chain link TOP - LEFT half (white) -->
+  <path d="M500 270 C410 270 370 340 370 400 C370 460 410 510 500 510" 
+        fill="none" stroke="#FFFFFF" stroke-width="60" stroke-linecap="round"
+        clip-path="url(#leftHalf)"/>
+
+  <!-- Chain link TOP - RIGHT half (blue) -->
+  <path d="M500 270 C590 270 630 340 630 400 C630 460 590 510 500 510" 
+        fill="none" stroke="#009BFA" stroke-width="60" stroke-linecap="round"
+        clip-path="url(#rightHalf)"/>
+
+  <!-- Chain link BOTTOM - LEFT half (white) -->
+  <path d="M500 490 C410 490 370 560 370 620 C370 680 410 730 500 730" 
+        fill="none" stroke="#FFFFFF" stroke-width="60" stroke-linecap="round"
+        clip-path="url(#leftHalf)"/>
+
+  <!-- Chain link BOTTOM - RIGHT half (blue) -->
+  <path d="M500 490 C590 490 630 560 630 620 C630 680 590 730 500 730" 
+        fill="none" stroke="#009BFA" stroke-width="60" stroke-linecap="round"
+        clip-path="url(#rightHalf)"/>
+
+  <!-- Circuit traces on right side (blue, thinner) -->
+
+  <!-- Top trace: exits chain right, goes right, turns up -->
+  <path d="M630 340 L710 340 L730 320" 
+        fill="none" stroke="#009BFA" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="730" cy="320" r="16" fill="#009BFA"/>
+
+  <!-- Middle trace: exits chain right, goes straight right -->
+  <path d="M630 500 L750 500" 
+        fill="none" stroke="#009BFA" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="750" cy="500" r="16" fill="#009BFA"/>
+
+  <!-- Bottom trace: exits chain right, goes right, turns down -->
+  <path d="M630 660 L710 660 L730 680" 
+        fill="none" stroke="#009BFA" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="730" cy="680" r="16" fill="#009BFA"/>
+</svg>
