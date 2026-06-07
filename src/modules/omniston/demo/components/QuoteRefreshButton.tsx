@@ -16,7 +16,7 @@ export const QuoteRefreshButton = () => {
       className="size-8 p-0"
       disabled={!canRefresh || isRefreshing}
       onClick={refresh}
-      aria-label="Обновить курс обмена"
+      aria-label="Refresh exchange rate"
     >
       <RefreshCw className={cn("size-4", isRefreshing && "animate-spin")} aria-hidden />
     </Button>

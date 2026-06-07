@@ -1,7 +1,7 @@
 import { UserRejectsError } from "@tonconnect/sdk";
 
 /** User-facing message when a TON Connect transaction is cancelled or rejected. */
-export const TON_TRANSACTION_CANCELLED_MESSAGE = "Транзакция отменена";
+export const TON_TRANSACTION_CANCELLED_MESSAGE = "Transaction cancelled";
 
 /**
  * Returns true when the user cancelled or rejected a TON Connect transaction.
