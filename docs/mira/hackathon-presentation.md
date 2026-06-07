@@ -1,4 +1,4 @@
-# TON Wallets — Hackathon Presentation
+# ArrayWallets — Hackathon Presentation
 
 ## STON.fi Vibe Coding Hackathon Wave 2
 
@@ -6,14 +6,14 @@
 
 ## Slide 1: Title
 
-**EN:** TON Wallets — Smart Wallet Analytics & Cross-Chain Swaps on TON  
-**RU:** TON Wallets — Умная аналитика кошельков и кросс-чейн свапы на TON
+**EN:** ArrayWallets — Smart Wallet Analytics & Cross-Chain Swaps on TON  
+**RU:** ArrayWallets — Умная аналитика кошельков и кросс-чейн свапы на TON
 
 _Subtitle:_  
 **EN:** Built for STON.fi Vibe Coding Hackathon Wave 2 — STON.fi Track + Mira Track  
 **RU:** Создано для STON.fi Vibe Coding Hackathon Wave 2 — STON.fi Track + Mira Track
 
-## **Visual:** Dark futuristic background with glowing TON diamond logo, STON.fi gradient wave, and Mira AI icon. Bold title "TON Wallets" in white. Hackathon badge "STON.fi Vibe Coding Hackathon Wave 2".
+## **Visual:** Dark futuristic background with glowing TON diamond logo, STON.fi gradient wave, and Mira AI icon. Bold title "ArrayWallets" in white. Hackathon badge "STON.fi Vibe Coding Hackathon Wave 2".
 
 ## Slide 2: The Problem
 
@@ -38,7 +38,7 @@ _Subtitle:_
 ## Slide 3: Our Solution
 
 **EN:**
-**TON Wallets** — an all-in-one platform that combines:
+**ArrayWallets** — an all-in-one platform that combines:
 
 1. **Wallet Explorer** — browse, search, and analyze any TON wallet
 2. **Jetton Portfolio & PnL** — real-time price tracking with 24h/7d/30d diffs
@@ -47,7 +47,7 @@ _Subtitle:_
 5. **AI-Powered Insights** — Mira AI agent for media content and documentations
 
 **RU:**
-**TON Wallets** — платформа «всё-в-одном», объединяющая:
+**ArrayWallets** — платформа «всё-в-одном», объединяющая:
 
 1. **Обозреватель кошельков** — поиск и анализ любого кошелька TON
 2. **Портфель жеттонов и PnL** — отслеживание цен в реальном времени (24ч/7д/30д)
@@ -346,7 +346,7 @@ TonAPI (блокчейн)         Дашборд UI
 ## Slide 13: What Makes Us Different
 
 **EN:**
-**Why TON Wallets stands out**
+**Why ArrayWallets stands out**
 
 1. **All-in-one** — Analytics + Swaps + AI in a single platform
 2. **Real PnL** — Not just balances, but actual profit/loss tracking per jetton
@@ -356,7 +356,7 @@ TonAPI (блокчейн)         Дашборд UI
 6. **Open architecture** — Modular codebase, easy to extend
 
 **RU:**
-**Почему TON Wallets выделяется**
+**Почему ArrayWallets выделяется**
 
 1. **Всё-в-одном** — Аналитика + Свапы + AI на одной платформе
 2. **Реальный PnL** — Не просто балансы, а отслеживание прибыли/убытка по жеттонам
@@ -675,7 +675,7 @@ TonAPI (данные блокчейна в реальном времени)
 
 | Slide | Visual Description (English, for image generation)                                                                                                                                                                                                              |
 | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1     | Dark futuristic background with glowing TON blockchain diamond logo, STON.fi gradient wave, and Mira AI icon. Bold title "TON Wallets" in white. Subtitle "Smart Wallet Analytics & Cross-Chain Swaps". Hackathon badge "STON.fi Vibe Coding Hackathon Wave 2". |
+| 1     | Dark futuristic background with glowing TON blockchain diamond logo, STON.fi gradient wave, and Mira AI icon. Bold title "ArrayWallets" in white. Subtitle "Smart Wallet Analytics & Cross-Chain Swaps". Hackathon badge "STON.fi Vibe Coding Hackathon Wave 2". |
 | 2     | Split screen: left side shows chaotic scattered data points, broken charts, question marks in muted gray. Right side shows a frustrated user silhouette. Title overlay: "The Problem".                                                                          |
 | 3     | Clean dashboard mockup showing 5 feature cards: Wallet Explorer, Jetton Portfolio, Swap Analytics, Cross-Chain Swaps, AI Insights. Bright accent colors on dark background. Title: "Our Solution".                                                              |
 | 4     | Hexagonal tech stack diagram with logos: Next.js, PostgreSQL, Prisma, Auth.js, TON, STON.fi Omniston, Reown, Mira, Docker. Dark theme with neon blue and purple accents.                                                                                        |
@@ -689,7 +689,7 @@ TonAPI (данные блокчейна в реальном времени)
 | 12    | Checklist with green checkmarks. Two track badges: "STON.fi Track" and "Mira Track". Clean, confident layout. Title: "Track Compliance".                                                                                                                        |
 | 13    | 6 feature cards in 2x3 grid: All-in-one, Real PnL, Cross-chain native, AI-assisted, Production-ready, Open architecture. Each with icon and short text. Bold accent colors.                                                                                     |
 | 14    | Horizontal timeline with 4 phases as milestones connected by gradient line. Icons for each phase. Title: "Roadmap".                                                                                                                                             |
-| 15    | Dark background. TON Wallets logo centered. Links below. STON.fi + Mira badges side by side. Large "Vote for us! 🚀" CTA.                                                                                                                                       |
+| 15    | Dark background. ArrayWallets logo centered. Links below. STON.fi + Mira badges side by side. Large "Vote for us! 🚀" CTA.                                                                                                                                       |
 | 16    | Dark terminal-style code block with syntax-highlighted JSON responses. API route diagram on the side. Green/blue accent colors. Title: "API Endpoints".                                                                                                         |
 | 17    | Step-by-step flow diagram with numbered stages. Two wallet icons (TON + EVM) at top, Omniston routing engine in the middle, blockchain icons at bottom. Arrows showing token flow. Title: "Cross-Chain Swap Flow".                                              |
 | 18    | Jetton PnL card mockup with green/red indicators. Mini sparkline charts for 24h/7d/30d. Clean dark UI with data visualization feel. Title: "Jetton PnL Engine".                                                                                                 |
