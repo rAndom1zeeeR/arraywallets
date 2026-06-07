@@ -11,7 +11,7 @@ interface AppLogoProps {
 /**
  * Theme-aware site logo: light variant for light mode, dark variant for dark mode.
  */
-export const AppLogo = ({ className, size = 32, alt = "Wallets App" }: AppLogoProps) => {
+export const AppLogo = ({ className, size = 32, alt = "ArrayWallets" }: AppLogoProps) => {
   return (
     <span className={cn("relative inline-flex shrink-0", className)}>
       <Image

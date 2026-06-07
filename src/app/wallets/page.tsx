@@ -5,7 +5,7 @@ import { getAnalyzedWallets } from "@/modules/wallet/application/wallets-list.qu
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Wallets | TON Wallet",
+  title: "Wallets | ArrayWallets",
   description: "List of analyzed TON wallets",
 };
 

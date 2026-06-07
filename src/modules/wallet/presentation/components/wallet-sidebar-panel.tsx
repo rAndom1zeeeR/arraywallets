@@ -49,7 +49,7 @@ export const WalletSidebarPanel = ({
                 value={address}
                 className="flex size-7 items-center justify-center rounded-lg bg-explorer-surface-2"
               />
-              <button
+              {/* <button
                 type="button"
                 className="flex size-7 items-center justify-center rounded-lg bg-explorer-surface-2 text-muted-foreground"
                 aria-label="Show QR code"
@@ -57,7 +57,7 @@ export const WalletSidebarPanel = ({
                 title="QR code coming soon"
               >
                 <QrCode className="size-3.5" aria-hidden />
-              </button>
+              </button> */}
             </div>
           </div>
         </div>

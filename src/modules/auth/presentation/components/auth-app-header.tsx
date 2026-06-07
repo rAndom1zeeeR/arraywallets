@@ -11,12 +11,12 @@ export const AuthAppHeader = () => {
     <header className={appShellStyles.header}>
       <Link
         href="/wallets"
-        aria-label="TON Wallets"
+        aria-label="ArrayWallets"
         className={cn(appShellStyles.headerTitle, "flex items-center gap-2")}
       >
         <AppLogo alt="" />
         <span className="hidden md:inline" aria-hidden>
-          TON WALLETS
+          ArrayWallets
         </span>
       </Link>
       <div className="flex items-center gap-2">

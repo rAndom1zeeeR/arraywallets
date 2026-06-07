@@ -55,7 +55,7 @@ export const WalletMobileSummaryCard = ({
               className="flex size-7 items-center justify-center rounded-lg bg-explorer-surface-2 text-muted-foreground"
               iconClassName="size-3"
             />
-            <button
+            {/* <button
               type="button"
               className="flex size-7 items-center justify-center rounded-lg bg-explorer-surface-2 text-muted-foreground"
               aria-label="Show QR code"
@@ -63,7 +63,7 @@ export const WalletMobileSummaryCard = ({
               title="QR code coming soon"
             >
               <QrCode className="size-3" aria-hidden />
-            </button>
+            </button> */}
           </div>
         </div>
 

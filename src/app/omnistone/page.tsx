@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { OmnistonDemoPage } from "@/modules/omniston/presentation/pages/OmnistonDemoPage";
 
 export const metadata: Metadata = {
-  title: "Omnistone | TON Wallets",
+  title: "Omnistone | ArrayWallets",
   description: "Cross-chain swaps powered by STON.fi Omniston",
 };
 

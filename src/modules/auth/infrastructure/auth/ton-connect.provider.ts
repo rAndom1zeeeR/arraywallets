@@ -7,7 +7,7 @@ import type { TonProofSignature } from "@/modules/auth/infrastructure/ton-proof/
 
 export const tonConnectProvider = Credentials({
   id: TON_CREDENTIALS_PROVIDER_ID,
-  name: "TON Wallet",
+  name: "ArrayWallets",
   credentials: {
     address: { label: "Address", type: "text" },
     proof: { label: "Proof", type: "text" },
@@ -37,9 +37,7 @@ export const tonConnectProvider = Credentials({
     }
 
     const network =
-      typeof credentials.network === "string" && credentials.network.length > 0
-        ? credentials.network
-        : "-239";
+      typeof credentials.network === "string" && credentials.network.length > 0 ? credentials.network : "-239";
 
     return await authenticateTonWallet({
       address: credentials.address,
