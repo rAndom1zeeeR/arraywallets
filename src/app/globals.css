@@ -223,3 +223,10 @@
 .scrollbar-thin-x::-webkit-scrollbar-thumb:hover {
   background: color-mix(in oklab, var(--foreground) 25%, transparent);
 }
+
+/* TonConnect modals must sit above Radix Dialog overlays (z-50). */
+[data-tc-wallets-modal-container="true"],
+[data-tc-actions-modal-container="true"],
+[data-tc-modal="true"] {
+  z-index: 100 !important;
+}

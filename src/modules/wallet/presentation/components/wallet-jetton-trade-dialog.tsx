@@ -3,6 +3,10 @@
 import { ArrowLeftRight, Settings } from "lucide-react";
 import { useMemo, useState } from "react";
 
+import {
+  isTonConnectDomTarget,
+  useTonConnectModalOpen,
+} from "@/modules/auth/presentation/hooks/use-ton-connect-modal-open";
 import { ConnectionStatus } from "@/modules/omniston/demo/components/ConnectionStatus";
 import { QuoteAction } from "@/modules/omniston/demo/components/QuoteAction";
 import { QuotePreview } from "@/modules/omniston/demo/components/QuotePreview";
@@ -83,13 +87,20 @@ export const WalletJettonTradeDialog = ({
   open,
   onOpenChange,
 }: WalletJettonTradeDialogProps) => {
+  const isTonConnectModalOpen = useTonConnectModalOpen();
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange} modal={!isTonConnectModalOpen}>
       <DialogContent
         className={cn(
           "flex w-[calc(100%-2rem)] max-w-[500px] flex-col gap-0 overflow-hidden p-0 sm:rounded-2xl",
           "max-h-[min(90vh,900px)]",
         )}
+        onInteractOutside={(event) => {
+          if (isTonConnectModalOpen || isTonConnectDomTarget(event.target)) {
+            event.preventDefault();
+          }
+        }}
       >
         <DialogHeader className="shrink-0 space-y-1 border-b border-border/50 px-4 py-4 pr-12 text-left sm:px-5">
           <DialogTitle className="text-lg font-semibold leading-tight sm:text-xl">

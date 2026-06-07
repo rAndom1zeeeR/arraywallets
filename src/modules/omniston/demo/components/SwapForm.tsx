@@ -145,16 +145,16 @@ interface SwapFormProps {
   hideModeTabs?: boolean;
 }
 
-export const SwapForm = (props: SwapFormProps) => {
+export const SwapForm = ({ className, hideModeTabs, ...cardProps }: SwapFormProps) => {
   useSyncQuoteToSwapForm();
 
   const { mode } = useOmnistonMode();
   const isTransferMode = mode === OmnistonMode.TRANSFER;
 
   return (
-    <Card {...props} className={cn("overflow-hidden border-border/50 bg-card/80", props.className)}>
+    <Card {...cardProps} className={cn("overflow-hidden border-border/50 bg-card/80", className)}>
       <CardContent className="flex flex-col gap-3 p-3 sm:p-4">
-        {!props.hideModeTabs ? <OmnistonModeTabs /> : null}
+        {!hideModeTabs ? <OmnistonModeTabs /> : null}
 
         <AssetPickerFieldProvider>
           <div className="flex flex-col gap-1">
