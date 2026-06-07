@@ -34,8 +34,8 @@ export function WalletsListPageSkeleton({ className }: WalletsListPageSkeletonPr
         <div className="hidden md:block">
           <div className="border-b border-border">
             <div className="flex gap-4 px-4 py-3">
-              {["w-24", "w-16", "w-14", "w-14", "w-20", "w-10"].map(width => (
-                <Skeleton key={width} className={cn("h-3", width)} />
+              {["w-24", "w-16", "w-14", "w-14", "w-20", "w-10"].map((width, index) => (
+                <Skeleton key={`header-col-${index}`} className={cn("h-3", width)} />
               ))}
             </div>
           </div>
