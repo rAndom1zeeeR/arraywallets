@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import { AuthProvider } from "@/modules/auth";
 import { ExplorerAppHeader } from "@/modules/auth/presentation/components/explorer-app-header";
+import { AppFooter } from "@/shared/presentation/components/AppFooter";
 import { QueryProvider } from "@/shared/providers/QueryProvider";
 import { AppShellProviders } from "@/shared/providers/AppShellProviders";
 import { ThemeProvider } from "@/shared/components/theme-provider";
@@ -55,8 +56,11 @@ export default function RootLayout({
           <AuthProvider>
             <QueryProvider>
               <AppShellProviders>
-                <ExplorerAppHeader />
-                {children}
+                <div className="flex min-h-dvh flex-col">
+                  <ExplorerAppHeader />
+                  <div className="flex flex-1 flex-col">{children}</div>
+                  <AppFooter />
+                </div>
               </AppShellProviders>
             </QueryProvider>
           </AuthProvider>

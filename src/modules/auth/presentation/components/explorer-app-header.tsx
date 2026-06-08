@@ -24,6 +24,11 @@ interface ExplorerNavItem {
 
 const NAV_ITEMS: ExplorerNavItem[] = [
   {
+    href: "/",
+    label: "Home",
+    isActive: (pathname) => pathname === "/",
+  },
+  {
     href: "/wallets",
     label: "Wallets",
     isActive: (pathname) => pathname === "/wallets" || pathname.startsWith("/wallets/"),
@@ -77,8 +82,8 @@ export const ExplorerAppHeader = () => {
     >
       <div className="flex min-w-0 flex-1 items-center gap-3 sm:gap-6">
         <Link
-          href="/wallets"
-          aria-label="ArrayWallets"
+          href="/"
+          aria-label="ArrayWallets home"
           className={cn(explorerHeaderStyles.brand, "flex shrink-0 items-center gap-2")}
         >
           <AppLogo alt="" />
