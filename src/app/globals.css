@@ -224,6 +224,16 @@
   background: color-mix(in oklab, var(--foreground) 25%, transparent);
 }
 
+/* Recharts tooltips — inherit theme foreground (white/light in dark mode). */
+.recharts-tooltip-wrapper .recharts-default-tooltip,
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-label,
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item,
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item-name,
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item-value,
+.recharts-tooltip-wrapper .recharts-default-tooltip .recharts-tooltip-item-separator {
+  color: var(--card-foreground) !important;
+}
+
 /* TonConnect modals must sit above Radix Dialog overlays (z-50). */
 [data-tc-wallets-modal-container="true"],
 [data-tc-actions-modal-container="true"],

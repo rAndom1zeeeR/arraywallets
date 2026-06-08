@@ -8,6 +8,7 @@ import {
 import { WalletPnlSummaryCards } from "@/modules/jetton/presentation/components/wallet-pnl-summary-cards";
 import { WalletPnlTradesTable } from "@/modules/jetton/presentation/components/wallet-pnl-trades-table";
 import { WalletPnlUsdtNotice } from "@/modules/jetton/presentation/components/wallet-pnl-usdt-notice";
+import { WalletPnlChartsPanel } from "@/modules/wallet/presentation/components/charts/wallet-pnl-charts-panel";
 import { formatUsd } from "@/modules/jetton/domain/money-format.utils";
 import type { JettonPortfolioPnlLine } from "@/modules/jetton/domain/jetton-portfolio-pnl.utils";
 import type { WalletSwapStatsResult } from "@/modules/swap/application/swap-stats.service";
@@ -16,6 +17,7 @@ export interface WalletPnlPanelProps {
   address: string;
   currentPage: number;
   stats: WalletSwapStatsResult;
+  chartsVisible?: boolean;
 }
 
 function buildTradeRows(
@@ -42,7 +44,12 @@ function buildTradeRows(
   return rows;
 }
 
-export function WalletPnlPanel({ address, currentPage, stats }: WalletPnlPanelProps) {
+export function WalletPnlPanel({
+  address,
+  currentPage,
+  stats,
+  chartsVisible = false,
+}: WalletPnlPanelProps) {
   const { portfolio, pnl, tonPortfolio, usdtPortfolio, tonPnlWithTransfers } = stats;
 
   const hasUsdtFlow = pnl.usdt.spentRaw > 0n || pnl.usdt.receivedRaw > 0n;
@@ -65,6 +72,12 @@ export function WalletPnlPanel({ address, currentPage, stats }: WalletPnlPanelPr
       className="space-y-4"
     >
       <WalletPnlSummaryCards flowPnl={pnl.ton} tonPnlWithTransfers={tonPnlWithTransfers} />
+
+      {chartsVisible ? (
+        <div id="wallet-charts-section">
+          <WalletPnlChartsPanel stats={stats} />
+        </div>
+      ) : null}
 
       <WalletPnlTradesTable rows={tradeRows} />
 

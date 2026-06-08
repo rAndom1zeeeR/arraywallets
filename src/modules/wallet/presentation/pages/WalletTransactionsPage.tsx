@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { SwapJettonBreakdownPanel } from "@/modules/swap/presentation/components/SwapJettonBreakdownPanel";
@@ -34,6 +34,10 @@ import { parsePageParam } from "@/modules/wallet/domain/wallet-page.utils";
 import { ChainSyncStatus } from "@/shared/constants/chain-prisma.enums";
 import { explorerStyles } from "@/shared/presentation/components/explorer/explorer.styles";
 import { WalletTransactionsPageSkeleton } from "@/modules/wallet/presentation/components/wallet-transactions-page-skeleton";
+import { WalletSwapChartsPanel } from "@/modules/wallet/presentation/components/charts/wallet-swap-charts-panel";
+import { WalletTokenChartsPanel } from "@/modules/wallet/presentation/components/charts/wallet-token-charts-panel";
+import { WalletActivityChartsPanel } from "@/modules/wallet/presentation/components/charts/wallet-activity-charts-panel";
+import { WalletChartsSidebarPanel } from "@/modules/wallet/presentation/components/charts/wallet-charts-sidebar-panel";
 import { cn } from "@/shared/lib/utils";
 
 export interface WalletTransactionsPageProps {
@@ -75,6 +79,7 @@ export function WalletTransactionsPage({
 
   const stats = summaryQuery.data?.stats;
   const swapStats = summaryQuery.data?.swapStats;
+  const [chartsVisible, setChartsVisible] = useState(false);
 
   return (
     <div className={explorerStyles.page}>
@@ -97,6 +102,11 @@ export function WalletTransactionsPage({
             isSyncing={Boolean(isSyncing)}
             autoStartSync={autoStartSync}
           />
+          <WalletChartsSidebarPanel
+            visible={chartsVisible}
+            onVisibleChange={setChartsVisible}
+            className="mx-4 lg:hidden"
+          />
 
           {activeTab === "swaps" && (
             <SwapStatsSidebarPanel
@@ -113,6 +123,10 @@ export function WalletTransactionsPage({
               isSyncing={Boolean(isSyncing)}
               autoStartSync={autoStartSync}
               activeTab={activeTab}
+            />
+            <WalletChartsSidebarPanel
+              visible={chartsVisible}
+              onVisibleChange={setChartsVisible}
             />
             <WalletAccountBalancesPanel
               address={address}
@@ -139,8 +153,13 @@ export function WalletTransactionsPage({
                 id="wallet-tabpanel-events"
                 role="tabpanel"
                 aria-labelledby="wallet-tab-events"
-                className={cn(explorerStyles.tabPanel, "mt-4 space-y-0 lg:mt-4")}
+                className={cn(explorerStyles.tabPanel, "mt-4 space-y-4 lg:mt-4")}
               >
+                {chartsVisible ? (
+                  <div id="wallet-charts-section">
+                    <WalletActivityChartsPanel stats={swapStats} />
+                  </div>
+                ) : null}
                 {hasActiveHistoryFilters(historyFilters) && (
                   <p className="mb-3 hidden text-sm text-muted-foreground lg:block">
                     {historyFilters.actionType !== WALLET_HISTORY_FILTER_ALL && (
@@ -209,6 +228,11 @@ export function WalletTransactionsPage({
                 aria-labelledby="wallet-tab-swaps"
                 className={cn(explorerStyles.tabPanel, "mt-4 space-y-4 lg:mt-4")}
               >
+                {chartsVisible ? (
+                  <div id="wallet-charts-section">
+                    <WalletSwapChartsPanel stats={swapStats} />
+                  </div>
+                ) : null}
                 <SwapJettonBreakdownPanel stats={swapStats} className="mx-4 lg:mx-0" />
                 <SwapRecentSwapsPanel swaps={swapStats.swaps} className="mx-4 lg:mx-0" />
               </div>
@@ -229,7 +253,12 @@ export function WalletTransactionsPage({
                 </section>
               ) : (
                 <div className={cn(explorerStyles.tabPanel, "mx-4 space-y-4 lg:mx-0")}>
-                  <WalletPnlPanel address={address} currentPage={currentPage} stats={swapStats} />
+                  <WalletPnlPanel
+                    address={address}
+                    currentPage={currentPage}
+                    stats={swapStats}
+                    chartsVisible={chartsVisible}
+                  />
                 </div>
               ))}
 
@@ -238,8 +267,13 @@ export function WalletTransactionsPage({
                 id="wallet-tabpanel-tokens"
                 role="tabpanel"
                 aria-labelledby="wallet-tab-tokens"
-                className={cn(explorerStyles.tabPanel, "mx-4 lg:mx-0")}
+                className={cn(explorerStyles.tabPanel, "mx-4 space-y-4 lg:mx-0")}
               >
+                {chartsVisible ? (
+                  <div id="wallet-charts-section">
+                    <WalletTokenChartsPanel stats={swapStats} />
+                  </div>
+                ) : null}
                 <WalletTokenHoldings
                   holdings={swapStats.byJetton}
                   totalCount={swapStats.byJetton.length}

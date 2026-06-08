@@ -54,6 +54,62 @@ export function formatTonFromNanoton(nanoton: bigint | string | number | null | 
 }
 
 /**
+ * Converts nanoton bigint to TON number without precision loss on the integer part.
+ */
+export function nanotonToTonNumber(
+  nanoton: bigint | string | number | null | undefined,
+): number {
+  const amount = coerceNanoton(nanoton);
+  if (amount === 0n) {
+    return 0;
+  }
+
+  const sign = amount < 0n ? -1 : 1;
+  const abs = amount < 0n ? -amount : amount;
+  const whole = abs / NANOTON_PER_TON;
+  const frac = abs % NANOTON_PER_TON;
+
+  if (frac === 0n) {
+    return sign * Number(whole);
+  }
+
+  return sign * (Number(whole) + Number(frac) / Number(NANOTON_PER_TON));
+}
+
+/**
+ * Converts jetton raw amount to human-readable number using jetton decimals.
+ */
+export function jettonRawToNumber(
+  raw: bigint | string | number | null | undefined,
+  decimals: number,
+): number {
+  const amount = coerceNanoton(raw);
+  if (amount === 0n) {
+    return 0;
+  }
+
+  const safeDecimals = Number.isFinite(decimals)
+    ? Math.max(0, Math.min(36, Math.floor(decimals)))
+    : 0;
+
+  if (safeDecimals === 0) {
+    return Number(amount);
+  }
+
+  const divisor = 10n ** BigInt(safeDecimals);
+  const sign = amount < 0n ? -1 : 1;
+  const abs = amount < 0n ? -amount : amount;
+  const whole = abs / divisor;
+  const frac = abs % divisor;
+
+  if (frac === 0n) {
+    return sign * Number(whole);
+  }
+
+  return sign * (Number(whole) + Number(frac) / Number(divisor));
+}
+
+/**
  * Formats jetton raw amount (smallest units) with decimals and symbol.
  */
 export function formatJettonFromRaw(
